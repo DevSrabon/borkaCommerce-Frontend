@@ -4,13 +4,15 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../../store';
-import { Plus, Trash, Folder, Check, AlertCircle } from 'lucide-react';
+import { Plus, Trash, Folder, Check, Pencil, Save, X, Upload } from 'lucide-react';
 
 interface Category {
   id: string;
   name: string;
   slug: string;
   description: string | null;
+  image: string | null;
+  image_alt_text: string | null;
   parent_id: string | null;
   is_active: boolean;
   parent?: Category | null;
@@ -28,9 +30,22 @@ export default function AdminCategoriesPage() {
     name: '',
     slug: '',
     description: '',
+    image: '',
+    image_alt_text: '',
     parent_id: '',
     is_active: true,
   });
+  const [editingCategory, setEditingCategory] = useState<{
+    id: string;
+    name: string;
+    slug: string;
+    description: string;
+    image: string;
+    image_alt_text: string;
+    parent_id: string;
+    is_active: boolean;
+  } | null>(null);
+  const [uploadingCategoryImage, setUploadingCategoryImage] = useState(false);
 
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -71,10 +86,10 @@ export default function AdminCategoriesPage() {
 
   const loadMockCategories = () => {
     setCategories([
-      { id: 'cat-1', name: 'Abaya', slug: 'abaya', description: 'Elegant Muslimah Abayas', parent_id: null, is_active: true },
-      { id: 'cat-2', name: 'Casual', slug: 'abaya-casual', description: 'Casual abayas', parent_id: 'cat-1', is_active: true },
-      { id: 'cat-3', name: 'Luxury', slug: 'abaya-luxury', description: 'Luxury abayas', parent_id: 'cat-1', is_active: true },
-      { id: 'cat-4', name: 'Shayla', slug: 'shayla', description: 'Matching Scarves', parent_id: null, is_active: true },
+      { id: 'cat-1', name: 'Abaya', slug: 'abaya', description: 'Elegant Muslimah Abayas', image: null, image_alt_text: null, parent_id: null, is_active: true },
+      { id: 'cat-2', name: 'Casual', slug: 'abaya-casual', description: 'Casual abayas', image: null, image_alt_text: null, parent_id: 'cat-1', is_active: true },
+      { id: 'cat-3', name: 'Luxury', slug: 'abaya-luxury', description: 'Luxury abayas', image: null, image_alt_text: null, parent_id: 'cat-1', is_active: true },
+      { id: 'cat-4', name: 'Shayla', slug: 'shayla', description: 'Matching Scarves', image: null, image_alt_text: null, parent_id: null, is_active: true },
     ]);
   };
 
@@ -107,7 +122,7 @@ export default function AdminCategoriesPage() {
         setSuccess('Category registered successfully!');
         setShowCreateForm(false);
         fetchCategories();
-        setForm({ name: '', slug: '', description: '', parent_id: '', is_active: true });
+        setForm({ name: '', slug: '', description: '', image: '', image_alt_text: '', parent_id: '', is_active: true });
       } else {
         const err = await res.json();
         setError(err.message || 'Creation failed');
@@ -118,6 +133,8 @@ export default function AdminCategoriesPage() {
         name: form.name,
         slug: form.slug,
         description: form.description || null,
+        image: form.image || null,
+        image_alt_text: form.image_alt_text || null,
         parent_id: form.parent_id || null,
         is_active: form.is_active,
         parent: form.parent_id ? categories.find((c) => c.id === form.parent_id) : null,
@@ -125,6 +142,84 @@ export default function AdminCategoriesPage() {
       setCategories((prev) => [...prev, newMock]);
       setSuccess('Preview inserted locally! (Backend offline)');
       setShowCreateForm(false);
+    }
+  };
+
+  const handleCategoryImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, mode: 'create' | 'edit') => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingCategoryImage(true);
+    setError('');
+    const formData = new FormData();
+    formData.append('image', file);
+    try {
+      const res = await fetch('http://localhost:8080/admin/uploads/category', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (mode === 'create') setForm((prev) => ({ ...prev, image: data.imageUrl }));
+        else setEditingCategory((prev) => prev ? { ...prev, image: data.imageUrl } : prev);
+      } else {
+        const err = await res.json();
+        setError(err.message || 'Image upload failed');
+      }
+    } catch {
+      setError('Image upload failed');
+    } finally {
+      setUploadingCategoryImage(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleEdit = (category: Category) => {
+    setEditingCategory({
+      id: category.id,
+      name: category.name,
+      slug: category.slug,
+      description: category.description || '',
+      image: category.image || '',
+      image_alt_text: category.image_alt_text || '',
+      parent_id: category.parent_id || '',
+      is_active: category.is_active,
+    });
+    setError('');
+    setSuccess('');
+  };
+
+  const handleUpdate = async () => {
+    if (!editingCategory) return;
+    setError('');
+    setSuccess('');
+    try {
+      const res = await fetch(`http://localhost:8080/admin/categories/${editingCategory.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          name: editingCategory.name,
+          slug: editingCategory.slug,
+          description: editingCategory.description,
+          image: editingCategory.image || null,
+          image_alt_text: editingCategory.image_alt_text || null,
+          parent_id: editingCategory.parent_id || null,
+          is_active: editingCategory.is_active,
+        }),
+      });
+      if (res.ok) {
+        setEditingCategory(null);
+        setSuccess('Category updated successfully!');
+        fetchCategories();
+      } else {
+        const err = await res.json();
+        setError(Array.isArray(err.message) ? err.message.join(', ') : (err.message || 'Update failed'));
+      }
+    } catch {
+      setError('Could not reach the backend server.');
     }
   };
 
@@ -166,6 +261,7 @@ export default function AdminCategoriesPage() {
           <span>{success}</span>
         </div>
       )}
+      {error && <p className="text-xs text-red-500 font-semibold">{error}</p>}
 
       {showCreateForm && (
         <form onSubmit={handleSubmit} className="bg-card border border-border p-6 rounded-md shadow-sm space-y-4">
@@ -233,6 +329,42 @@ export default function AdminCategoriesPage() {
             </div>
 
             <div className="space-y-1 sm:col-span-2">
+              <label className="text-[10px] font-semibold text-muted-foreground uppercase">Category Image</label>
+              <div className="flex flex-col gap-2 border border-dashed border-border rounded p-3">
+                {form.image && (
+                  <img src={form.image} alt={form.image_alt_text || form.name} className="h-24 w-40 rounded object-cover border border-border" />
+                )}
+                <div className="relative w-fit">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleCategoryImageUpload(e, 'create')}
+                    className="absolute inset-0 h-full w-full opacity-0 cursor-pointer"
+                  />
+                  <button type="button" className="px-3 py-1.5 border border-border rounded text-xs hover:bg-accent flex items-center gap-1.5 cursor-pointer">
+                    <Upload size={12} /> {uploadingCategoryImage ? 'Uploading...' : 'Upload Image'}
+                  </button>
+                </div>
+                <input
+                  type="url"
+                  name="image"
+                  placeholder="Or enter image URL"
+                  className="w-full text-xs bg-background border border-border rounded px-3 py-2 focus:outline-none"
+                  value={form.image}
+                  onChange={handleInputChange}
+                />
+                <input
+                  type="text"
+                  name="image_alt_text"
+                  placeholder="Image alt text"
+                  className="w-full text-xs bg-background border border-border rounded px-3 py-2 focus:outline-none"
+                  value={form.image_alt_text}
+                  onChange={handleInputChange}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1 sm:col-span-2">
               <label className="text-[10px] font-semibold text-muted-foreground uppercase">Description</label>
               <textarea
                 name="description"
@@ -287,7 +419,8 @@ export default function AdminCategoriesPage() {
                   const parentName = c.parent?.name || categories.find((parent) => parent.id === c.parent_id)?.name || 'Root Level';
 
                   return (
-                    <tr key={c.id} className="hover:bg-accent/40">
+                    <React.Fragment key={c.id}>
+                    <tr className="hover:bg-accent/40">
                       <td className="p-4 font-medium flex items-center gap-2">
                         <Folder size={14} className="text-primary" />
                         {c.name}
@@ -308,6 +441,13 @@ export default function AdminCategoriesPage() {
                       </td>
                       <td className="p-4 text-right">
                         <button
+                          onClick={() => handleEdit(c)}
+                          className="mr-2 p-1.5 border border-border rounded text-primary hover:bg-primary/10 hover:border-primary/20 transition cursor-pointer"
+                          title="Edit category"
+                        >
+                          <Pencil size={14} />
+                        </button>
+                        <button
                           onClick={() => handleDelete(c.id)}
                           className="p-1.5 border border-border rounded text-red-500 hover:bg-red-500/10 hover:border-red-500/20 transition cursor-pointer"
                         >
@@ -315,6 +455,89 @@ export default function AdminCategoriesPage() {
                         </button>
                       </td>
                     </tr>
+                    {editingCategory?.id === c.id && (
+                      <tr>
+                        <td colSpan={6} className="p-4 bg-background">
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <input
+                              type="text"
+                              className="text-xs bg-card border border-border rounded px-3 py-2 focus:outline-none"
+                              value={editingCategory.name}
+                              onChange={(e) => setEditingCategory({ ...editingCategory, name: e.target.value })}
+                              placeholder="Category name"
+                            />
+                            <input
+                              type="text"
+                              className="text-xs bg-card border border-border rounded px-3 py-2 focus:outline-none font-mono"
+                              value={editingCategory.slug}
+                              onChange={(e) => setEditingCategory({ ...editingCategory, slug: e.target.value })}
+                              placeholder="slug"
+                            />
+                            <select
+                              className="text-xs bg-card border border-border rounded px-3 py-2 focus:outline-none text-foreground"
+                              value={editingCategory.parent_id}
+                              onChange={(e) => setEditingCategory({ ...editingCategory, parent_id: e.target.value })}
+                            >
+                              <option value="">Root Level</option>
+                              {categories
+                                .filter((parent) => parent.id !== editingCategory.id)
+                                .map((parent) => (
+                                  <option key={parent.id} value={parent.id}>{parent.name}</option>
+                                ))}
+                            </select>
+                            <input
+                              type="url"
+                              className="text-xs bg-card border border-border rounded px-3 py-2 focus:outline-none md:col-span-2"
+                              value={editingCategory.image}
+                              onChange={(e) => setEditingCategory({ ...editingCategory, image: e.target.value })}
+                              placeholder="Category image URL"
+                            />
+                            <div className="relative">
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => handleCategoryImageUpload(e, 'edit')}
+                                className="absolute inset-0 h-full w-full opacity-0 cursor-pointer"
+                              />
+                              <button type="button" className="w-full px-3 py-2 border border-border rounded text-xs hover:bg-accent flex items-center justify-center gap-1.5 cursor-pointer">
+                                <Upload size={12} /> {uploadingCategoryImage ? 'Uploading...' : 'Upload Image'}
+                              </button>
+                            </div>
+                            <input
+                              type="text"
+                              className="text-xs bg-card border border-border rounded px-3 py-2 focus:outline-none"
+                              value={editingCategory.image_alt_text}
+                              onChange={(e) => setEditingCategory({ ...editingCategory, image_alt_text: e.target.value })}
+                              placeholder="Image alt text"
+                            />
+                            <select
+                              className="text-xs bg-card border border-border rounded px-3 py-2 focus:outline-none text-foreground"
+                              value={editingCategory.is_active ? 'true' : 'false'}
+                              onChange={(e) => setEditingCategory({ ...editingCategory, is_active: e.target.value === 'true' })}
+                            >
+                              <option value="true">Active</option>
+                              <option value="false">Inactive</option>
+                            </select>
+                            <textarea
+                              className="text-xs bg-card border border-border rounded px-3 py-2 focus:outline-none md:col-span-3"
+                              rows={2}
+                              value={editingCategory.description}
+                              onChange={(e) => setEditingCategory({ ...editingCategory, description: e.target.value })}
+                              placeholder="Description"
+                            />
+                            <div className="md:col-span-3 flex justify-end gap-2">
+                              <button type="button" onClick={() => setEditingCategory(null)} className="px-3 py-1.5 border border-border rounded text-xs hover:bg-accent flex items-center gap-1 cursor-pointer">
+                                <X size={12} /> Cancel
+                              </button>
+                              <button type="button" onClick={handleUpdate} className="px-3 py-1.5 btn-luxury rounded text-xs font-semibold flex items-center gap-1 cursor-pointer">
+                                <Save size={12} /> Save
+                              </button>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                    </React.Fragment>
                   );
                 })}
               </tbody>

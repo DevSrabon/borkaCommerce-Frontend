@@ -15,7 +15,13 @@ import RichTextEditor from '../../../components/RichTextEditor';
 interface ProductImage {
   id?: string;
   image_url: string;
+  alt_text?: string;
   is_thumbnail: boolean;
+}
+
+interface VariantImage {
+  image_url: string;
+  alt_text?: string;
 }
 
 interface Attribute {
@@ -24,18 +30,21 @@ interface Attribute {
 }
 
 interface Variant {
+  id?: string;
   sku: string;
   price: number;
   compare_price: number | null;
   initial_quantity: number;
   attributes: Attribute[];
-  images?: string[];
+  images?: VariantImage[];
 }
 
 interface Category {
   id: string;
   name: string;
   slug: string;
+  parent_id?: string | null;
+  children?: Category[];
 }
 
 interface APIProduct {
@@ -111,7 +120,7 @@ export default function AdminProductsPage() {
   const [editingAttrValue, setEditingAttrValue] = useState<{ id: string; value: string } | null>(null);
 
   // Category management state
-  const [editingCategory, setEditingCategory] = useState<{ id: string; name: string; slug: string } | null>(null);
+  const [editingCategory, setEditingCategory] = useState<{ id: string; name: string; slug: string; parent_id: string } | null>(null);
 
   // ─── Auth Guard ──────────────────────────────────────────────────────────
 
@@ -138,7 +147,7 @@ export default function AdminProductsPage() {
       ]);
 
       if (prodRes.ok) setProducts(await prodRes.json()); else loadMockCatalog();
-      if (catRes.ok) setCategories(await catRes.json());
+      if (catRes.ok) setCategories(flattenCategories(await catRes.json()));
       else setCategories([{ id: 'cat-1', name: 'Abaya', slug: 'abaya' }, { id: 'cat-2', name: 'Shayla', slug: 'shayla' }]);
       if (attrRes.ok) setDbAttributes(await attrRes.json());
       else setDbAttributes([
@@ -223,7 +232,7 @@ export default function AdminProductsPage() {
         });
         if (res.ok) {
           const data = await res.json();
-          uploadedImages.push({ image_url: data.imageUrl, is_thumbnail: false });
+          uploadedImages.push({ image_url: data.imageUrl, alt_text: '', is_thumbnail: false });
         }
       }
       if (uploadedImages.length > 0) {
@@ -250,18 +259,18 @@ export default function AdminProductsPage() {
     const files = e.target.files;
     if (!files || files.length === 0) return;
     setUploading(true);
-    const urls: string[] = [];
+    const uploadedImages: VariantImage[] = [];
     try {
       for (let i = 0; i < files.length; i++) {
         const fd = new FormData();
         fd.append('image', files[i]);
-        const res = await fetch('http://localhost:8080/admin/products/upload', {
+        const res = await fetch('http://localhost:8080/admin/uploads/product', {
           method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: fd,
         });
-        if (res.ok) { const data = await res.json(); urls.push(data.imageUrl); }
+        if (res.ok) { const data = await res.json(); uploadedImages.push({ image_url: data.imageUrl, alt_text: '' }); }
       }
-      if (urls.length > 0) {
-        setVariants(prev => prev.map((v, i) => i === varIdx ? { ...v, images: [...(v.images || []), ...urls] } : v));
+      if (uploadedImages.length > 0) {
+        setVariants(prev => prev.map((v, i) => i === varIdx ? { ...v, images: [...(v.images || []), ...uploadedImages] } : v));
       }
     } catch {
       setError('Variant image upload failed');
@@ -331,8 +340,9 @@ export default function AdminProductsPage() {
           category_ids: fullProd.product_categories?.map((pc: any) => pc.category_id) || [],
           status: fullProd.status,
         });
-        setImages(fullProd.images?.map((img: any) => ({ image_url: img.image_url, is_thumbnail: img.is_thumbnail })) || []);
+        setImages(fullProd.images?.map((img: any) => ({ id: img.id, image_url: img.image_url, alt_text: img.alt_text || '', is_thumbnail: img.is_thumbnail })) || []);
         setVariants(fullProd.variants?.map((v: any) => ({
+          id: v.id,
           sku: v.sku,
           price: Number(v.price),
           compare_price: v.compare_price ? Number(v.compare_price) : null,
@@ -341,10 +351,14 @@ export default function AdminProductsPage() {
             name: a.attribute_value?.attribute?.name || a.name || '',
             value: a.attribute_value?.value || a.value || '',
           })) || [],
-          images: v.images?.map((img: any) => img.image) || [],
+          images: v.images?.map((img: any) => ({ image_url: img.image, alt_text: img.alt_text || '' })) || [],
         })) || []);
         setShowEditForm(true);
         setShowCreateForm(false);
+      } else {
+        const body = await res.json().catch(() => null);
+        const message = Array.isArray(body?.message) ? body.message.join(', ') : body?.message;
+        setError(message || `Could not load product details (HTTP ${res.status}).`);
       }
     } catch {
       setError('Could not load product details');
@@ -423,6 +437,40 @@ export default function AdminProductsPage() {
       attributes: [{ name: 'Color', value: 'Black' }, { name: 'Size', value: '54' }, { name: 'Fabric', value: 'Nidha' }],
       images: [],
     }]);
+  };
+
+  const flattenCategories = (items: Category[]): Category[] =>
+    items.flatMap((category) => [
+      category,
+      ...flattenCategories(category.children || []),
+    ]);
+
+  const handleRemoveImage = async (image: ProductImage, index: number) => {
+    if (images.length <= 1) {
+      setError('At least one product image is required.');
+      return;
+    }
+
+    // Persisted images are removed immediately so the database and filesystem
+    // stay in sync. Newly uploaded images are handled by the next form submit.
+    if (editingProduct && image.id) {
+      try {
+        const response = await fetch(
+          `http://localhost:8080/admin/products/${editingProduct.id}/images/${image.id}`,
+          { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } },
+        );
+        if (!response.ok) {
+          const body = await response.json();
+          setError(body.message || 'Unable to remove image');
+          return;
+        }
+      } catch {
+        setError('Could not remove image from the server');
+        return;
+      }
+    }
+
+    setImages((current) => current.filter((_, currentIndex) => currentIndex !== index));
   };
 
   // ─── Attribute Management ─────────────────────────────────────────────────
@@ -531,6 +579,15 @@ export default function AdminProductsPage() {
             {images.map((img, idx) => (
               <div key={idx} className="relative group border border-border rounded overflow-hidden bg-card p-1.5 flex flex-col items-center">
                 <img src={img.image_url} className="h-16 w-full object-cover rounded" alt="" />
+                <input
+                  type="text"
+                  placeholder="Alt text"
+                  className="mt-2 w-full text-[10px] bg-background border border-border rounded px-2 py-1 focus:outline-none"
+                  value={img.alt_text || ''}
+                  onChange={(e) => setImages(prev => prev.map((item, i) => (
+                    i === idx ? { ...item, alt_text: e.target.value } : item
+                  )))}
+                />
                 <div className="flex items-center justify-between w-full mt-2 text-[9px]">
                   <label className="flex items-center gap-1 cursor-pointer">
                     <input
@@ -541,7 +598,7 @@ export default function AdminProductsPage() {
                   </label>
                   <button
                     type="button"
-                    onClick={() => setImages(prev => prev.filter((_, i) => i !== idx))}
+                    onClick={() => handleRemoveImage(img, idx)}
                     className="text-red-500 hover:text-red-700 font-bold"
                   >
                     Remove
@@ -673,16 +730,31 @@ export default function AdminProductsPage() {
               </div>
               {v.images && v.images.length > 0 && (
                 <div className="flex flex-wrap gap-2 pt-1">
-                  {v.images.map((imgUrl, imgIdx) => (
-                    <div key={imgIdx} className="relative h-10 w-10 border border-border rounded overflow-hidden group">
-                      <img src={imgUrl} className="h-full w-full object-cover" alt="" />
+                  {v.images.map((img, imgIdx) => (
+                    <div key={imgIdx} className="relative w-24 border border-border rounded overflow-hidden group bg-card p-1">
+                      <img src={img.image_url} className="h-10 w-full object-cover rounded" alt="" />
                       <button type="button"
                         onClick={() => setVariants(prev => prev.map((item, i) =>
                           i === varIdx ? { ...item, images: (item.images || []).filter((_, j) => j !== imgIdx) } : item
                         ))}
-                        className="absolute inset-0 bg-red-500/80 text-white flex items-center justify-center text-[10px] font-bold opacity-0 group-hover:opacity-100 transition">
+                        className="absolute inset-x-1 top-1 h-10 bg-red-500/80 text-white flex items-center justify-center text-[10px] font-bold opacity-0 group-hover:opacity-100 transition rounded">
                         ×
                       </button>
+                      <input
+                        type="text"
+                        placeholder="Alt text"
+                        className="mt-1.5 w-full text-[10px] bg-background border border-border rounded px-2 py-1 focus:outline-none"
+                        value={img.alt_text || ''}
+                        onChange={(e) => setVariants(prev => prev.map((item, i) => {
+                          if (i !== varIdx) return item;
+                          return {
+                            ...item,
+                            images: (item.images || []).map((variantImage, currentIndex) => (
+                              currentIndex === imgIdx ? { ...variantImage, alt_text: e.target.value } : variantImage
+                            )),
+                          };
+                        }))}
+                      />
                     </div>
                   ))}
                 </div>
@@ -807,6 +879,18 @@ export default function AdminProductsPage() {
                   onChange={e => setEditingCategory({ ...editingCategory, slug: e.target.value })}
                   className="w-40 text-xs bg-background border border-border rounded px-2 py-1 focus:outline-none font-mono"
                   placeholder="slug" />
+                <select
+                  value={editingCategory.parent_id}
+                  onChange={e => setEditingCategory({ ...editingCategory, parent_id: e.target.value })}
+                  className="w-44 text-xs bg-background border border-border rounded px-2 py-1 focus:outline-none text-foreground"
+                >
+                  <option value="">Root Level</option>
+                  {categories
+                    .filter((parent) => parent.id !== editingCategory.id)
+                    .map((parent) => (
+                      <option key={parent.id} value={parent.id}>{parent.name}</option>
+                    ))}
+                </select>
                 <button type="button"
                   onClick={async () => {
                     if (!editingCategory) return;
@@ -814,7 +898,11 @@ export default function AdminProductsPage() {
                       const res = await fetch(`http://localhost:8080/admin/categories/${editingCategory.id}`, {
                         method: 'PATCH',
                         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-                        body: JSON.stringify({ name: editingCategory.name, slug: editingCategory.slug }),
+                        body: JSON.stringify({
+                          name: editingCategory.name,
+                          slug: editingCategory.slug,
+                          parent_id: editingCategory.parent_id || null,
+                        }),
                       });
                       if (res.ok) { setEditingCategory(null); fetchCatalog(); }
                       else { const err = await res.json(); setError(err.message || 'Update failed'); }
@@ -832,7 +920,7 @@ export default function AdminProductsPage() {
               <>
                 <span className="flex-1 text-sm font-medium">{cat.name}</span>
                 <span className="text-xs font-mono text-muted-foreground">{cat.slug}</span>
-                <button type="button" onClick={() => setEditingCategory({ id: cat.id, name: cat.name, slug: cat.slug })}
+                <button type="button" onClick={() => setEditingCategory({ id: cat.id, name: cat.name, slug: cat.slug, parent_id: cat.parent_id || '' })}
                   className="p-1.5 rounded text-primary hover:bg-primary/10 border border-transparent hover:border-primary/20 cursor-pointer">
                   <Pencil size={12} />
                 </button>

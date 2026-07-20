@@ -12,6 +12,7 @@ interface Banner {
   cta_text: string | null;
   cta_link: string | null;
   image_url: string;
+  alt_text: string | null;
   is_active: boolean;
   sort_order: number;
 }
@@ -22,6 +23,7 @@ const EMPTY_FORM = {
   cta_text: '',
   cta_link: '',
   image_url: '',
+  alt_text: '',
   is_active: true,
   sort_order: 0,
 };
@@ -65,6 +67,7 @@ export default function BannersAdminPage() {
       cta_text: b.cta_text || '',
       cta_link: b.cta_link || '',
       image_url: b.image_url,
+      alt_text: b.alt_text || '',
       is_active: b.is_active,
       sort_order: b.sort_order,
     });
@@ -83,7 +86,7 @@ export default function BannersAdminPage() {
     formData.append('image', file);
 
     try {
-      const res = await fetch('http://localhost:8080/admin/products/upload', {
+      const res = await fetch('http://localhost:8080/admin/uploads/banner', {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
@@ -192,7 +195,7 @@ export default function BannersAdminPage() {
               {/* Image preview */}
               {form.image_url && (
                 <div className="h-32 w-full rounded-lg overflow-hidden border border-border bg-zinc-900">
-                  <img src={form.image_url} alt="Preview" className="h-full w-full object-cover" onError={(e) => (e.currentTarget.style.display = 'none')} />
+                  <img src={form.image_url} alt={form.alt_text || form.title || 'Preview'} className="h-full w-full object-cover" onError={(e) => (e.currentTarget.style.display = 'none')} />
                 </div>
               )}
 
@@ -219,6 +222,13 @@ export default function BannersAdminPage() {
                     className="w-full text-xs bg-background border border-border rounded px-3 py-2 focus:outline-none"
                     value={form.image_url}
                     onChange={(e) => setForm({ ...form, image_url: e.target.value })}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Image alt text"
+                    className="w-full text-xs bg-background border border-border rounded px-3 py-2 focus:outline-none"
+                    value={form.alt_text}
+                    onChange={(e) => setForm({ ...form, alt_text: e.target.value })}
                   />
                 </div>
               </div>
@@ -343,7 +353,7 @@ export default function BannersAdminPage() {
 
               {/* Thumbnail */}
               <div className="h-16 w-28 rounded-md overflow-hidden border border-border bg-zinc-900 shrink-0">
-                <img src={b.image_url} alt={b.title} className="h-full w-full object-cover" />
+                <img src={b.image_url} alt={b.alt_text || b.title} className="h-full w-full object-cover" />
               </div>
 
               {/* Info */}
