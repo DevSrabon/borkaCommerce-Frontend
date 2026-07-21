@@ -96,6 +96,8 @@ export default function AdminProductsPage() {
   };
 
   const [form, setForm] = useState(emptyForm);
+  const [slugMode, setSlugMode] = useState<'auto' | 'manual'>('auto');
+  const [skuMode, setSkuMode] = useState<'auto' | 'manual'>('auto');
   const [images, setImages] = useState<ProductImage[]>([]);
   const [variants, setVariants] = useState<Variant[]>([
     {
@@ -174,8 +176,43 @@ export default function AdminProductsPage() {
 
   // ─── Form Handlers ────────────────────────────────────────────────────────
 
+  const slugify = (value: string) =>
+    value
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+
+  const skuPrefixFromName = (value: string) =>
+    slugify(value)
+      .split('-')
+      .filter(Boolean)
+      .map((part) => part.slice(0, 3).toUpperCase())
+      .join('-')
+      .slice(0, 24);
+
+  const generatedSkuForIndex = (index: number, prefix = form.sku_prefix) =>
+    `${prefix || 'SKU'}-${String(index + 1).padStart(3, '0')}`;
+
+  const refreshAutoSkus = (prefix: string) => {
+    setVariants(prev => prev.map((variant, index) => (
+      variant.id ? variant : { ...variant, sku: generatedSkuForIndex(index, prefix) }
+    )));
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    const { name, value } = e.target;
+    setForm(prev => {
+      const next = { ...prev, [name]: value };
+      if (name === 'name') {
+        if (slugMode === 'auto') next.slug = slugify(value);
+        if (skuMode === 'auto') next.sku_prefix = skuPrefixFromName(value);
+      }
+      if (name === 'sku_prefix' && skuMode === 'manual') next.sku_prefix = value;
+      return next;
+    });
+    if (name === 'name' && skuMode === 'auto') refreshAutoSkus(skuPrefixFromName(value));
+    if (name === 'sku_prefix' && skuMode === 'manual') refreshAutoSkus(value);
   };
 
   const handleDescriptionChange = (html: string) => setForm(prev => ({ ...prev, description: html }));
@@ -191,7 +228,7 @@ export default function AdminProductsPage() {
     setVariants(prev => [
       ...prev,
       {
-        sku: `${form.sku_prefix ? `${form.sku_prefix}-` : ''}${variants.length + 1}`,
+        sku: skuMode === 'auto' ? generatedSkuForIndex(variants.length) : `${form.sku_prefix ? `${form.sku_prefix}-` : ''}${variants.length + 1}`,
         price: 250, compare_price: 300, initial_quantity: 20,
         attributes: [{ name: 'Color', value: 'Black' }, { name: 'Size', value: '56' }, { name: 'Fabric', value: 'Nidha' }],
         images: [],
@@ -327,7 +364,9 @@ export default function AdminProductsPage() {
       });
       if (res.ok) {
         const fullProd = await res.json();
-        setEditingProduct(fullProd);
+      setEditingProduct(fullProd);
+        setSlugMode('manual');
+        setSkuMode('manual');
         setForm({
           name: fullProd.name,
           slug: fullProd.slug,
@@ -430,6 +469,8 @@ export default function AdminProductsPage() {
   };
 
   const resetForm = () => {
+    setSlugMode('auto');
+    setSkuMode('auto');
     setForm(emptyForm);
     setImages([]);
     setVariants([{
