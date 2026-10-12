@@ -1,394 +1,347 @@
 'use client';
 
-import React, { useRef, useEffect, useCallback, useState } from 'react';
+import React, { useRef, useState, useEffect, useMemo } from 'react';
+import dynamic from 'next/dynamic';
+import { useSelector } from 'react-redux';
+import { RootState } from '../store';
+import { Image as ImageIcon, Upload, X, Search, CheckCircle } from 'lucide-react';
+
+const JoditEditor = dynamic(() => import('jodit-react'), { ssr: false });
+import 'jodit/es2021/jodit.min.css';
 
 interface RichTextEditorProps {
   value: string;
   onChange: (val: string) => void;
   placeholder?: string;
-  minHeight?: number;
 }
 
-type ToolbarButton = {
-  type: 'button';
-  title: string;
-  label: React.ReactNode;
-  action: () => void;
-  active?: () => boolean;
-};
-
-type ToolbarSelect = {
-  type: 'select';
-  title: string;
-  options: { label: string; value: string }[];
-  action: (val: string) => void;
-};
-
-type ToolbarSeparator = { type: 'separator' };
-
-type ToolbarItem = ToolbarButton | ToolbarSelect | ToolbarSeparator;
-
-function ToolbarBtn({
-  title,
-  label,
-  action,
-  active,
-}: Omit<ToolbarButton, 'type'>) {
-  const [isActive, setIsActive] = useState(false);
-
-  useEffect(() => {
-    const check = () => setIsActive(active?.() ?? false);
-    document.addEventListener('selectionchange', check);
-    return () => document.removeEventListener('selectionchange', check);
-  }, [active]);
-
-  return (
-    <button
-      type="button"
-      title={title}
-      onMouseDown={(e) => {
-        e.preventDefault();
-        action();
-      }}
-      className={`h-7 min-w-7 px-1.5 flex items-center justify-center rounded text-xs transition-all duration-150 cursor-pointer select-none ${
-        isActive
-          ? 'bg-primary/20 text-primary border border-primary/30'
-          : 'hover:bg-accent text-foreground/80 hover:text-foreground border border-transparent'
-      }`}
-    >
-      {label}
-    </button>
-  );
+interface MediaItem {
+  url: string;
+  path: string;
+  name: string;
+  folder: string;
 }
 
 export default function RichTextEditor({
   value,
   onChange,
-  placeholder = 'Write product description...',
-  minHeight = 200,
+  placeholder = 'Start typing...',
 }: RichTextEditorProps) {
-  const editorRef = useRef<HTMLDivElement>(null);
-  const [linkUrl, setLinkUrl] = useState('');
-  const [showLinkInput, setShowLinkInput] = useState(false);
-  const [focused, setFocused] = useState(false);
+  const editorRef = useRef<any>(null);
+  const token = useSelector((state: RootState) => state.auth.token);
 
-  // Sync initial value — don't override while editing
-  useEffect(() => {
-    const el = editorRef.current;
-    if (el && !focused && el.innerHTML !== (value || '')) {
-      el.innerHTML = value || '';
+  // Media Library state
+  const [showMediaModal, setShowMediaModal] = useState(false);
+  const [mediaList, setMediaList] = useState<MediaItem[]>([]);
+  const [loadingMedia, setLoadingMedia] = useState(false);
+  const [selectedMediaUrl, setSelectedMediaUrl] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'upload' | 'library'>('library');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [uploading, setUploading] = useState(false);
+
+  // Fetch media from backend
+  const fetchMedia = async () => {
+    if (!token) return;
+    setLoadingMedia(true);
+    try {
+      const res = await fetch('http://localhost:8080/admin/media', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        setMediaList(await res.json());
+      }
+    } catch (err) {
+      console.error('Failed to fetch media list:', err);
+    } finally {
+      setLoadingMedia(false);
     }
-  }, [value, focused]);
-
-  const exec = useCallback((command: string, arg?: string) => {
-    document.execCommand(command, false, arg ?? undefined);
-    editorRef.current?.focus();
-    if (editorRef.current) onChange(editorRef.current.innerHTML);
-  }, [onChange]);
-
-  const isActive = (command: string) => () => {
-    try { return document.queryCommandState(command); } catch { return false; }
   };
 
-  const insertLink = () => {
-    if (!linkUrl.trim()) return;
-    const url = linkUrl.startsWith('http') ? linkUrl : `https://${linkUrl}`;
-    exec('createLink', url);
-    setShowLinkInput(false);
-    setLinkUrl('');
+  useEffect(() => {
+    if (showMediaModal) {
+      fetchMedia();
+    }
+  }, [showMediaModal]);
+
+  const handleUploadMedia = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0 || !token) return;
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('image', files[0]);
+
+      const res = await fetch('http://localhost:8080/admin/media/upload?folder=product', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setSelectedMediaUrl(data.imageUrl);
+        setActiveTab('library');
+        fetchMedia(); // Refresh list
+      }
+    } catch (err) {
+      console.error('Media upload failed:', err);
+    } finally {
+      setUploading(false);
+    }
   };
 
-  const toolbarRows: ToolbarItem[][] = [
-    [
-      {
-        type: 'select',
-        title: 'Text style',
-        options: [
-          { label: 'Paragraph', value: 'p' },
-          { label: 'Heading 1', value: 'h1' },
-          { label: 'Heading 2', value: 'h2' },
-          { label: 'Heading 3', value: 'h3' },
-          { label: 'Heading 4', value: 'h4' },
-        ],
-        action: (val) => exec('formatBlock', val),
+  const handleInsertImage = () => {
+    if (!selectedMediaUrl) return;
+
+    // Use Jodit API to insert HTML at cursor
+    if (editorRef.current) {
+      editorRef.current.selection.insertHTML(
+        `<img src="${selectedMediaUrl}" style="max-width: 100%; height: auto; margin: 8px 0;" alt="Media Image" />`
+      );
+    } else {
+      // Fallback
+      onChange(value + `<img src="${selectedMediaUrl}" style="max-width: 100%; height: auto;" alt="Media Image" />`);
+    }
+
+    setShowMediaModal(false);
+    setSelectedMediaUrl(null);
+  };
+
+  // Filtered media by search query
+  const filteredMedia = useMemo(() => {
+    return mediaList.filter((item) =>
+      item.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [mediaList, searchQuery]);
+
+  // Jodit Configuration
+  const config = useMemo(() => {
+    return {
+      readonly: false,
+      placeholder,
+      askBeforePasteHTML: false,
+      askBeforePasteFromWord: false,
+      defaultActionOnPaste: 'insert_as_html',
+      defaultActionOnPasteFromWord: 'insert_as_html',
+      toolbarButtonSize: 'middle',
+      buttons: [
+        'source', '|',
+        'bold', 'italic', 'underline', 'strikethrough', '|',
+        'superscript', 'subscript', '|',
+        'ul', 'ol', '|',
+        'outdent', 'indent', '|',
+        'font', 'fontsize', 'brush', 'paragraph', '|',
+        'table', 'link', '|',
+        'align', 'undo', 'redo', '|',
+        'hr', 'eraser', 'fullsize',
+      ],
+      controls: {
+        paragraph: {
+          list: {
+            p: 'Normal',
+            h1: 'Heading 1',
+            h2: 'Heading 2',
+            h3: 'Heading 3',
+            h4: 'Heading 4',
+            blockquote: 'Quote'
+          }
+        }
       },
-      { type: 'separator' },
-      {
-        type: 'button', title: 'Bold (Ctrl+B)',
-        label: <strong>B</strong>,
-        action: () => exec('bold'),
-        active: isActive('bold'),
-      },
-      {
-        type: 'button', title: 'Italic (Ctrl+I)',
-        label: <em>I</em>,
-        action: () => exec('italic'),
-        active: isActive('italic'),
-      },
-      {
-        type: 'button', title: 'Underline (Ctrl+U)',
-        label: <span className="underline">U</span>,
-        action: () => exec('underline'),
-        active: isActive('underline'),
-      },
-      {
-        type: 'button', title: 'Strikethrough',
-        label: <span className="line-through">S</span>,
-        action: () => exec('strikeThrough'),
-        active: isActive('strikeThrough'),
-      },
-      { type: 'separator' },
-      {
-        type: 'button', title: 'Bullet list',
-        label: (
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <line x1="9" y1="6" x2="20" y2="6"/><line x1="9" y1="12" x2="20" y2="12"/>
-            <line x1="9" y1="18" x2="20" y2="18"/>
-            <circle cx="4" cy="6" r="1.5" fill="currentColor" stroke="none"/>
-            <circle cx="4" cy="12" r="1.5" fill="currentColor" stroke="none"/>
-            <circle cx="4" cy="18" r="1.5" fill="currentColor" stroke="none"/>
-          </svg>
-        ),
-        action: () => exec('insertUnorderedList'),
-        active: isActive('insertUnorderedList'),
-      },
-      {
-        type: 'button', title: 'Numbered list',
-        label: (
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/>
-            <line x1="10" y1="18" x2="21" y2="18"/>
-            <path d="M4 6h1v4" stroke="currentColor" strokeWidth="1.5" fill="none"/>
-            <path d="M4 10h2" stroke="currentColor" strokeWidth="1.5"/>
-            <path d="M6 18H4l2-2a1 1 0 10-1.7-1" stroke="currentColor" strokeWidth="1.5" fill="none"/>
-          </svg>
-        ),
-        action: () => exec('insertOrderedList'),
-        active: isActive('insertOrderedList'),
-      },
-      {
-        type: 'button', title: 'Blockquote',
-        label: (
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"/>
-            <path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3c0 1 0 1 1 1z"/>
-          </svg>
-        ),
-        action: () => exec('formatBlock', 'blockquote'),
-      },
-      { type: 'separator' },
-      {
-        type: 'button', title: 'Align left',
-        label: (
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <line x1="21" y1="6" x2="3" y2="6"/><line x1="15" y1="12" x2="3" y2="12"/>
-            <line x1="17" y1="18" x2="3" y2="18"/>
-          </svg>
-        ),
-        action: () => exec('justifyLeft'),
-        active: isActive('justifyLeft'),
-      },
-      {
-        type: 'button', title: 'Align center',
-        label: (
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <line x1="21" y1="6" x2="3" y2="6"/><line x1="17" y1="12" x2="7" y2="12"/>
-            <line x1="19" y1="18" x2="5" y2="18"/>
-          </svg>
-        ),
-        action: () => exec('justifyCenter'),
-        active: isActive('justifyCenter'),
-      },
-      {
-        type: 'button', title: 'Align right',
-        label: (
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="12" x2="9" y2="12"/>
-            <line x1="21" y1="18" x2="7" y2="18"/>
-          </svg>
-        ),
-        action: () => exec('justifyRight'),
-        active: isActive('justifyRight'),
-      },
-      { type: 'separator' },
-      {
-        type: 'button', title: 'Insert link',
-        label: (
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
-            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
-          </svg>
-        ),
-        action: () => setShowLinkInput((v) => !v),
-      },
-      {
-        type: 'button', title: 'Remove link',
-        label: (
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M18.84 12.25l1.72-1.71h-.02a5.004 5.004 0 0 0-.12-7.07 5.006 5.006 0 0 0-6.95 0l-1.72 1.71"/>
-            <path d="M5.17 11.75l-1.71 1.71a5.004 5.004 0 0 0 .12 7.07 5.006 5.006 0 0 0 6.95 0l1.71-1.71"/>
-            <line x1="8" y1="2" x2="8" y2="5"/><line x1="2" y1="8" x2="5" y2="8"/>
-            <line x1="16" y1="19" x2="16" y2="22"/><line x1="19" y1="16" x2="22" y2="16"/>
-          </svg>
-        ),
-        action: () => exec('unlink'),
-      },
-      { type: 'separator' },
-      {
-        type: 'button', title: 'Undo (Ctrl+Z)',
-        label: (
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M3 7v6h6"/><path d="M3 13c0-4.97 4.03-9 9-9a9 9 0 0 1 9 9 9 9 0 0 1-9 9 9.002 9.002 0 0 1-8.01-4.93"/>
-          </svg>
-        ),
-        action: () => exec('undo'),
-      },
-      {
-        type: 'button', title: 'Redo (Ctrl+Y)',
-        label: (
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M21 7v6h-6"/><path d="M21 13a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 10"/>
-          </svg>
-        ),
-        action: () => exec('redo'),
-      },
-      {
-        type: 'button', title: 'Clear formatting',
-        label: (
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M4 7V4h16v3"/><path d="M5 20h6"/><path d="M13 4l-8 16"/>
-            <line x1="18" y1="12" x2="22" y2="16"/><line x1="22" y1="12" x2="18" y2="16"/>
-          </svg>
-        ),
-        action: () => exec('removeFormat'),
-      },
-    ],
-  ];
+      extraButtons: [
+        {
+          name: 'mediaLibraryBtn',
+          icon: 'image',
+          tooltip: 'WordPress-like Media Library',
+          exec: (editorInstance: any) => {
+            editorRef.current = editorInstance;
+            setShowMediaModal(true);
+          },
+        },
+      ],
+    };
+  }, [placeholder]);
 
   return (
-    <div className={`border rounded-lg overflow-hidden transition-all duration-200 ${
-      focused
-        ? 'border-primary/50 shadow-sm shadow-primary/10 ring-1 ring-primary/20'
-        : 'border-border'
-    } bg-background`}>
-      {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-0.5 bg-accent/30 px-2 py-1.5 border-b border-border">
-        {toolbarRows[0].map((item, i) => {
-          if (item.type === 'separator') {
-            return <div key={`sep-${i}`} className="w-px h-5 bg-border mx-1 self-center" />;
-          }
-          if (item.type === 'select') {
-            return (
-              <select
-                key={`sel-${i}`}
-                title={item.title}
-                onMouseDown={(e) => e.preventDefault()}
-                onChange={(e) => { item.action(e.target.value); editorRef.current?.focus(); }}
-                className="h-7 text-[11px] font-medium bg-card border border-border rounded px-1.5 text-foreground cursor-pointer focus:outline-none focus:border-primary/50 hover:border-border transition-colors"
-              >
-                {item.options.map((opt) => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
-              </select>
-            );
-          }
-          return (
-            <ToolbarBtn
-              key={`btn-${i}`}
-              title={item.title}
-              label={item.label}
-              action={item.action}
-              active={item.active}
-            />
-          );
-        })}
+    <div className="relative w-full space-y-2 text-foreground">
+      {/* Quick Access Media Library Trigger */}
+      <div className="flex justify-end">
+        <button
+          type="button"
+          onClick={() => setShowMediaModal(true)}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded border border-border bg-card hover:bg-accent hover:text-foreground transition cursor-pointer"
+        >
+          <ImageIcon size={14} />
+          Add Media (WordPress Library)
+        </button>
       </div>
 
-      {/* Link input panel */}
-      {showLinkInput && (
-        <div className="flex items-center gap-2 px-3 py-2 bg-card border-b border-border">
-          <span className="text-[11px] text-muted-foreground font-medium whitespace-nowrap">Link URL:</span>
-          <input
-            type="url"
-            value={linkUrl}
-            onChange={(e) => setLinkUrl(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); insertLink(); } }}
-            placeholder="https://example.com"
-            className="flex-1 text-xs bg-background border border-border rounded px-2 py-1 focus:outline-none focus:border-primary/50 text-foreground placeholder:text-muted"
-            autoFocus
-          />
-          <button
-            type="button"
-            onClick={insertLink}
-            className="text-[11px] font-semibold px-3 py-1 rounded bg-primary text-primary-foreground hover:opacity-90 transition cursor-pointer"
-          >
-            Insert
-          </button>
-          <button
-            type="button"
-            onClick={() => { setShowLinkInput(false); setLinkUrl(''); }}
-            className="text-[11px] text-muted-foreground hover:text-foreground cursor-pointer"
-          >
-            ✕
-          </button>
+      <div className="border border-border rounded-lg overflow-hidden">
+        <JoditEditor
+          ref={editorRef}
+          value={value}
+          config={config as any}
+          onBlur={(newContent) => onChange(newContent)}
+          onChange={() => {}}
+        />
+      </div>
+
+      {/* WordPress-like Media Dialog Modal */}
+      {showMediaModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 sm:p-6">
+          <div className="relative bg-card border border-border w-full max-w-4xl h-[85vh] rounded-lg shadow-xl overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-border px-6 py-4 bg-background">
+              <div>
+                <h3 className="font-serif text-lg font-bold">Add Media</h3>
+                <p className="text-[11px] text-muted-foreground">Select an existing image or upload a new one to insert into the editor</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowMediaModal(false)}
+                className="p-1.5 rounded-full hover:bg-accent text-muted-foreground hover:text-foreground transition cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Modal Tabs */}
+            <div className="flex border-b border-border bg-background/50 px-6 gap-6">
+              <button
+                type="button"
+                onClick={() => setActiveTab('upload')}
+                className={`py-3 text-xs font-semibold uppercase tracking-wider border-b-2 transition cursor-pointer ${
+                  activeTab === 'upload' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                Upload Files
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('library')}
+                className={`py-3 text-xs font-semibold uppercase tracking-wider border-b-2 transition cursor-pointer ${
+                  activeTab === 'library' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                Media Library
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="flex-1 overflow-y-auto p-6 bg-background/30">
+              {activeTab === 'upload' ? (
+                <div className="h-full flex flex-col items-center justify-center border-2 border-dashed border-border rounded-lg bg-card/50 p-8 space-y-4">
+                  <div className="p-4 bg-primary/10 rounded-full text-primary">
+                    <Upload size={32} />
+                  </div>
+                  <div className="text-center space-y-1">
+                    <p className="text-sm font-semibold">Drag and drop file here</p>
+                    <p className="text-xs text-muted-foreground">or click below to browse</p>
+                  </div>
+                  <div className="relative">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleUploadMedia}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    />
+                    <button
+                      type="button"
+                      className="px-4 py-2 btn-luxury rounded text-xs font-semibold uppercase tracking-wider cursor-pointer"
+                    >
+                      {uploading ? 'Uploading...' : 'Select File'}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="h-full flex flex-col space-y-4">
+                  {/* Search Toolbar */}
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                      <input
+                        type="text"
+                        placeholder="Search media files by name..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full text-xs bg-card border border-border rounded pl-9 pr-3 py-2.5 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Media Grid */}
+                  <div className="flex-1 min-h-[300px]">
+                    {loadingMedia ? (
+                      <div className="h-full flex items-center justify-center text-xs text-muted-foreground">
+                        Loading media library files...
+                      </div>
+                    ) : filteredMedia.length === 0 ? (
+                      <div className="h-full flex items-center justify-center text-xs text-muted-foreground">
+                        No media files found.
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4">
+                        {filteredMedia.map((item) => {
+                          const isSelected = selectedMediaUrl === item.url;
+                          return (
+                            <button
+                              key={item.path}
+                              type="button"
+                              onClick={() => setSelectedMediaUrl(item.url)}
+                              className={`relative aspect-square border rounded-lg overflow-hidden bg-card hover:opacity-95 transition flex flex-col items-center justify-center ${
+                                isSelected ? 'border-primary ring-2 ring-primary/40' : 'border-border'
+                              }`}
+                            >
+                              <img
+                                src={item.url}
+                                alt={item.name}
+                                className="w-full h-full object-cover"
+                              />
+                              {isSelected && (
+                                <div className="absolute top-1 right-1 text-primary bg-background rounded-full">
+                                  <CheckCircle size={16} fill="currentColor" className="text-background fill-primary" />
+                                </div>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="border-t border-border px-6 py-4 bg-background flex items-center justify-between">
+              <div className="text-xs text-muted-foreground truncate max-w-md">
+                {selectedMediaUrl ? `Selected: ${selectedMediaUrl.split('/').pop()}` : 'No image selected'}
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowMediaModal(false)}
+                  className="px-4 py-2 border border-border rounded text-xs hover:bg-accent cursor-pointer text-foreground"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleInsertImage}
+                  disabled={!selectedMediaUrl}
+                  className={`px-5 py-2 rounded text-xs font-semibold uppercase tracking-wider ${
+                    selectedMediaUrl
+                      ? 'btn-luxury cursor-pointer'
+                      : 'bg-zinc-800 text-zinc-500 border border-zinc-700 cursor-not-allowed'
+                  }`}
+                >
+                  Insert into Editor
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
-
-      {/* Editable Content Area */}
-      <div className="relative">
-        <div
-          ref={editorRef}
-          contentEditable
-          suppressContentEditableWarning
-          onFocus={() => setFocused(true)}
-          onBlur={(e) => {
-            setFocused(false);
-            onChange(e.currentTarget.innerHTML);
-          }}
-          onInput={(e: React.FormEvent<HTMLDivElement>) => onChange((e.target as HTMLDivElement).innerHTML)}
-          className="px-4 py-3 text-sm focus:outline-none text-foreground leading-relaxed prose-editor"
-          style={{
-            minHeight,
-            fontFamily: 'inherit',
-          }}
-          data-placeholder={placeholder}
-        />
-        {/* Placeholder when empty */}
-        <style>{`
-          .prose-editor:empty:before {
-            content: attr(data-placeholder);
-            color: var(--muted-foreground, #6b7280);
-            opacity: 0.5;
-            pointer-events: none;
-            font-size: 0.875rem;
-          }
-          .prose-editor h1 { font-size: 1.5em; font-weight: 700; margin: 0.5em 0; }
-          .prose-editor h2 { font-size: 1.3em; font-weight: 700; margin: 0.5em 0; }
-          .prose-editor h3 { font-size: 1.1em; font-weight: 600; margin: 0.5em 0; }
-          .prose-editor h4 { font-size: 1em; font-weight: 600; margin: 0.4em 0; }
-          .prose-editor ul { list-style: disc; padding-left: 1.5em; margin: 0.4em 0; }
-          .prose-editor ol { list-style: decimal; padding-left: 1.5em; margin: 0.4em 0; }
-          .prose-editor blockquote {
-            border-left: 3px solid var(--primary);
-            padding-left: 1em;
-            margin: 0.5em 0;
-            opacity: 0.8;
-            font-style: italic;
-          }
-          .prose-editor a { color: var(--primary); text-decoration: underline; }
-          .prose-editor p { margin: 0.25em 0; }
-        `}</style>
-      </div>
-
-      {/* Footer hint */}
-      <div className="px-3 py-1.5 border-t border-border bg-accent/10 flex items-center justify-between">
-        <span className="text-[10px] text-muted-foreground">
-          Rich text · HTML formatting supported
-        </span>
-        <span className="text-[10px] text-muted-foreground">
-          Ctrl+B Bold · Ctrl+I Italic · Ctrl+U Underline
-        </span>
-      </div>
     </div>
   );
 }

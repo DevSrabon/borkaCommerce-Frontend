@@ -119,6 +119,48 @@ export default async function ProductDetailsPage({ params }: PageProps) {
           </div>
         )}
       </section>
+
+      {/* Related Products Section */}
+      {product.related_products && product.related_products.length > 0 && (
+        <section className="border-t border-border pt-12 space-y-6">
+          <div className="space-y-1">
+            <h2 className="font-serif text-2xl font-bold tracking-tight">Related Masterpieces</h2>
+            <p className="text-xs text-muted">Complete your collection with these matching designs</p>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {product.related_products.map((item: any) => (
+              <Link
+                key={item.id}
+                href={`/product/${item.slug}`}
+                className="group flex flex-col bg-card border border-border rounded-lg overflow-hidden hover:shadow-md transition"
+              >
+                <div className="aspect-square relative w-full overflow-hidden bg-zinc-100">
+                  <img
+                    src={item.thumbnail || (item.images && item.images[0])}
+                    alt={item.name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                  />
+                </div>
+                <div className="p-4 flex-1 flex flex-col justify-between space-y-2">
+                  <h3 className="font-serif font-bold text-xs text-foreground group-hover:text-primary transition line-clamp-1">
+                    {item.name}
+                  </h3>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-primary">
+                      AED {item.min_price}
+                    </span>
+                    {item.min_original_price > item.min_price && (
+                      <span className="text-[10px] text-muted line-through">
+                        AED {item.min_original_price}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

@@ -14,8 +14,53 @@ interface Variant {
   discounted_price: number;
   available_stock: number;
   attributes: { name: string; value: string }[];
-  offer: { name: string; discount_value: number; discount_type: string } | null;
+  offer: { name: string; discount_value: number; discount_type: string; end_date?: string } | null;
   images: string[];
+}
+
+function CountdownTimer({ endDate }: { endDate: string }) {
+  const [timeLeft, setTimeLeft] = useState<{ days: number; hours: number; minutes: number; seconds: number } | null>(null);
+
+  useEffect(() => {
+    const calculateTimeLeft = () => {
+      const difference = +new Date(endDate) - +new Date();
+      if (difference <= 0) return null;
+      return {
+        days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+        hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
+        minutes: Math.floor((difference / 1000 / 60) % 60),
+        seconds: Math.floor((difference / 1000) % 60),
+      };
+    };
+
+    setTimeLeft(calculateTimeLeft());
+
+    const timer = setInterval(() => {
+      const left = calculateTimeLeft();
+      setTimeLeft(left);
+      if (!left) clearInterval(timer);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [endDate]);
+
+  if (!timeLeft) {
+    return <div className="text-xs text-red-500 font-bold">Offer Ended</div>;
+  }
+
+  return (
+    <div className="flex gap-2 items-center bg-red-500/10 border border-red-500/20 px-3 py-2 rounded text-red-500 font-mono text-xs w-full max-w-sm justify-between mt-2">
+      <span className="font-sans font-semibold uppercase tracking-wider text-[10px]">Flash Sale Ends In:</span>
+      <div className="flex gap-1.5 font-bold">
+        {timeLeft.days > 0 && <span>{timeLeft.days}d</span>}
+        <span>{timeLeft.hours.toString().padStart(2, '0')}h</span>
+        <span>:</span>
+        <span>{timeLeft.minutes.toString().padStart(2, '0')}m</span>
+        <span>:</span>
+        <span>{timeLeft.seconds.toString().padStart(2, '0')}s</span>
+      </div>
+    </div>
+  );
 }
 
 interface ProductDetails {
@@ -152,25 +197,30 @@ export default function ProductClient({ product }: { product: ProductDetails }) 
 
         {/* Dynamic Pricing */}
         {selectedVariant ? (
-          <div className="border-y border-border py-4 flex items-center justify-between">
-            <DiscountedPrice
-              discountedAed={selectedVariant.discounted_price}
-              originalAed={selectedVariant.price}
-              offerName={selectedVariant.offer?.name}
-              size="lg"
-            />
+          <div className="space-y-4 border-y border-border py-4">
+            <div className="flex items-center justify-between">
+              <DiscountedPrice
+                discountedAed={selectedVariant.discounted_price}
+                originalAed={selectedVariant.price}
+                offerName={selectedVariant.offer?.name}
+                size="lg"
+              />
 
-            <div className="text-right">
-              {selectedVariant.available_stock > 0 ? (
-                <span className="text-xs text-green-500 font-semibold px-2 py-1 bg-green-500/10 border border-green-500/20 rounded">
-                  In Stock ({selectedVariant.available_stock} available)
-                </span>
-              ) : (
-                <span className="text-xs text-red-500 font-semibold px-2 py-1 bg-red-500/10 border border-red-500/20 rounded">
-                  Out of Stock
-                </span>
-              )}
+              <div className="text-right">
+                {selectedVariant.available_stock > 0 ? (
+                  <span className="text-xs text-green-500 font-semibold px-2 py-1 bg-green-500/10 border border-green-500/20 rounded">
+                    In Stock ({selectedVariant.available_stock} available)
+                  </span>
+                ) : (
+                  <span className="text-xs text-red-500 font-semibold px-2 py-1 bg-red-500/10 border border-red-500/20 rounded">
+                    Out of Stock
+                  </span>
+                )}
+              </div>
             </div>
+            {selectedVariant.offer?.end_date && (
+              <CountdownTimer endDate={selectedVariant.offer.end_date} />
+            )}
           </div>
         ) : (
           <div className="border-y border-border py-4">

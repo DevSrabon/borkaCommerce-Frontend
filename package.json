@@ -14,6 +14,8 @@
     "@stripe/stripe-js": "^9.10.0",
     "better-auth": "^1.6.23",
     "clsx": "^2.1.1",
+    "jodit": "^4.13.5",
+    "jodit-react": "^5.3.21",
     "lucide-react": "^1.25.0",
     "next": "16.2.10",
     "react": "19.2.4",

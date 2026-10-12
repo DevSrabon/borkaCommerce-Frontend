@@ -91,7 +91,9 @@ export default function AdminProductsPage() {
     seo_title: '',
     seo_description: '',
     seo_keywords: '',
+    tags: '',
     category_ids: [] as string[],
+    related_category_ids: [] as string[],
     status: 'DRAFT',
   };
 
@@ -180,37 +182,42 @@ export default function AdminProductsPage() {
     value
       .toLowerCase()
       .trim()
-      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/[^\w\s-]/g, '')
+      .replace(/[\s_-]+/g, '-')
       .replace(/^-+|-+$/g, '');
 
-  const skuPrefixFromName = (value: string) =>
-    slugify(value)
-      .split('-')
-      .filter(Boolean)
-      .map((part) => part.slice(0, 3).toUpperCase())
-      .join('-')
-      .slice(0, 24);
+  const skuPrefixFromName = (name: string) => {
+    const parts = name.split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return 'PROD';
+    if (parts.length === 1) return parts[0].substring(0, 3).toUpperCase();
+    return parts.map((p) => p[0].toUpperCase()).join('').substring(0, 4);
+  };
 
-  const generatedSkuForIndex = (index: number, prefix = form.sku_prefix) =>
-    `${prefix || 'SKU'}-${String(index + 1).padStart(3, '0')}`;
+  const generatedSkuForIndex = (index: number) => {
+    const prefix = form.sku_prefix || 'PROD';
+    return `${prefix}-${(index + 1).toString().padStart(3, '0')}`;
+  };
 
-  const refreshAutoSkus = (prefix: string) => {
-    setVariants(prev => prev.map((variant, index) => (
-      variant.id ? variant : { ...variant, sku: generatedSkuForIndex(index, prefix) }
-    )));
+  const refreshAutoSkus = (newPrefix: string) => {
+    setVariants((current) =>
+      current.map((v, index) => {
+        if (skuMode === 'manual') return v;
+        const prefix = newPrefix || 'PROD';
+        return {
+          ...v,
+          sku: `${prefix}-${(index + 1).toString().padStart(3, '0')}`,
+        };
+      })
+    );
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setForm(prev => {
-      const next = { ...prev, [name]: value };
-      if (name === 'name') {
-        if (slugMode === 'auto') next.slug = slugify(value);
-        if (skuMode === 'auto') next.sku_prefix = skuPrefixFromName(value);
-      }
-      if (name === 'sku_prefix' && skuMode === 'manual') next.sku_prefix = value;
-      return next;
-    });
+    setForm((prev) => ({ ...prev, [name]: value }));
+
+    if (name === 'name' && slugMode === 'auto') {
+      setForm((prev) => ({ ...prev, slug: slugify(value) }));
+    }
     if (name === 'name' && skuMode === 'auto') refreshAutoSkus(skuPrefixFromName(value));
     if (name === 'sku_prefix' && skuMode === 'manual') refreshAutoSkus(value);
   };
@@ -284,7 +291,7 @@ export default function AdminProductsPage() {
       } else {
         setError('No files uploaded — backend may be offline');
       }
-    } catch {
+    } catch (err) {
       setError('Image upload failed — backend may be offline');
     } finally {
       setUploading(false);
@@ -304,7 +311,10 @@ export default function AdminProductsPage() {
         const res = await fetch('http://localhost:8080/admin/uploads/product', {
           method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: fd,
         });
-        if (res.ok) { const data = await res.json(); uploadedImages.push({ image_url: data.imageUrl, alt_text: '' }); }
+        if (res.ok) {
+          const data = await res.json();
+          uploadedImages.push({ image_url: data.imageUrl, alt_text: '' });
+        }
       }
       if (uploadedImages.length > 0) {
         setVariants(prev => prev.map((v, i) => i === varIdx ? { ...v, images: [...(v.images || []), ...uploadedImages] } : v));
@@ -348,11 +358,19 @@ export default function AdminProductsPage() {
         resetForm();
         fetchCatalog();
       } else {
-        const err = await res.json();
-        setError(Array.isArray(err.message) ? err.message.join(', ') : (err.message || 'Creation failed'));
+        let errorMsg = 'Creation failed';
+        try {
+          const err = await res.json();
+          errorMsg = Array.isArray(err.message) ? err.message.join(', ') : (err.message || 'Creation failed');
+        } catch {
+          try {
+            errorMsg = await res.text();
+          } catch {}
+        }
+        setError(errorMsg);
       }
-    } catch {
-      setError('Could not reach the backend server.');
+    } catch (err: any) {
+      setError(`Request failed: ${err.message || err}`);
     }
   };
 
@@ -364,7 +382,7 @@ export default function AdminProductsPage() {
       });
       if (res.ok) {
         const fullProd = await res.json();
-      setEditingProduct(fullProd);
+        setEditingProduct(fullProd);
         setSlugMode('manual');
         setSkuMode('manual');
         setForm({
@@ -376,7 +394,9 @@ export default function AdminProductsPage() {
           seo_title: fullProd.seo_title || '',
           seo_description: fullProd.seo_description || '',
           seo_keywords: fullProd.seo_keywords || '',
+          tags: fullProd.tags || '',
           category_ids: fullProd.product_categories?.map((pc: any) => pc.category_id) || [],
+          related_category_ids: fullProd.related_categories?.map((rc: any) => rc.category_id) || [],
           status: fullProd.status,
         });
         setImages(fullProd.images?.map((img: any) => ({ id: img.id, image_url: img.image_url, alt_text: img.alt_text || '', is_thumbnail: img.is_thumbnail })) || []);
@@ -432,11 +452,19 @@ export default function AdminProductsPage() {
         setEditingProduct(null);
         fetchCatalog();
       } else {
-        const err = await res.json();
-        setError(Array.isArray(err.message) ? err.message.join(', ') : (err.message || 'Update failed'));
+        let errorMsg = 'Update failed';
+        try {
+          const err = await res.json();
+          errorMsg = Array.isArray(err.message) ? err.message.join(', ') : (err.message || 'Update failed');
+        } catch {
+          try {
+            errorMsg = await res.text();
+          } catch {}
+        }
+        setError(errorMsg);
       }
-    } catch {
-      setError('Could not reach the backend server.');
+    } catch (err: any) {
+      setError(`Request failed: ${err.message || err}`);
     }
   };
 
@@ -481,34 +509,29 @@ export default function AdminProductsPage() {
   };
 
   const flattenCategories = (items: Category[]): Category[] =>
-    items.flatMap((category) => [
-      category,
-      ...flattenCategories(category.children || []),
-    ]);
-
-  const handleRemoveImage = async (image: ProductImage, index: number) => {
-    if (images.length <= 1) {
-      setError('At least one product image is required.');
-      return;
-    }
-
-    // Persisted images are removed immediately so the database and filesystem
-    // stay in sync. Newly uploaded images are handled by the next form submit.
-    if (editingProduct && image.id) {
-      try {
-        const response = await fetch(
-          `http://localhost:8080/admin/products/${editingProduct.id}/images/${image.id}`,
-          { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } },
-        );
-        if (!response.ok) {
-          const body = await response.json();
-          setError(body.message || 'Unable to remove image');
-          return;
-        }
-      } catch {
-        setError('Could not remove image from the server');
-        return;
+    items.reduce<Category[]>((acc, item) => {
+      acc.push(item);
+      if (item.children && item.children.length > 0) {
+        acc.push(...flattenCategories(item.children));
       }
+      return acc;
+    }, []);
+
+  const handleRemoveImage = (img: ProductImage, index: number) => {
+    if (img.id) {
+      if (confirm('Are you sure you want to delete this image? This action will save immediately.')) {
+        fetch(`http://localhost:8080/admin/products/${editingProduct.id}/images/${img.id}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` },
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.deleted) {
+              setImages((current) => current.filter((_, currentIndex) => currentIndex !== index));
+            }
+          });
+      }
+      return;
     }
 
     setImages((current) => current.filter((_, currentIndex) => currentIndex !== index));
@@ -623,9 +646,8 @@ export default function AdminProductsPage() {
                 <input
                   type="text"
                   placeholder="Alt text"
-                  className="mt-2 w-full text-[10px] bg-background border border-border rounded px-2 py-1 focus:outline-none"
                   value={img.alt_text || ''}
-                  onChange={(e) => setImages(prev => prev.map((item, i) => (
+                  onChange={(e) => setImages((current) => current.map((item, i) => (
                     i === idx ? { ...item, alt_text: e.target.value } : item
                   )))}
                 />
@@ -771,31 +793,16 @@ export default function AdminProductsPage() {
               </div>
               {v.images && v.images.length > 0 && (
                 <div className="flex flex-wrap gap-2 pt-1">
-                  {v.images.map((img, imgIdx) => (
-                    <div key={imgIdx} className="relative w-24 border border-border rounded overflow-hidden group bg-card p-1">
-                      <img src={img.image_url} className="h-10 w-full object-cover rounded" alt="" />
+                  {v.images.map((imgUrl, imgIdx) => (
+                    <div key={imgIdx} className="relative h-10 w-10 border border-border rounded overflow-hidden group">
+                      <img src={imgUrl.image_url} className="h-full w-full object-cover" alt="" />
                       <button type="button"
                         onClick={() => setVariants(prev => prev.map((item, i) =>
                           i === varIdx ? { ...item, images: (item.images || []).filter((_, j) => j !== imgIdx) } : item
                         ))}
-                        className="absolute inset-x-1 top-1 h-10 bg-red-500/80 text-white flex items-center justify-center text-[10px] font-bold opacity-0 group-hover:opacity-100 transition rounded">
+                        className="absolute inset-0 bg-red-500/80 text-white flex items-center justify-center text-[10px] font-bold opacity-0 group-hover:opacity-100 transition">
                         ×
                       </button>
-                      <input
-                        type="text"
-                        placeholder="Alt text"
-                        className="mt-1.5 w-full text-[10px] bg-background border border-border rounded px-2 py-1 focus:outline-none"
-                        value={img.alt_text || ''}
-                        onChange={(e) => setVariants(prev => prev.map((item, i) => {
-                          if (i !== varIdx) return item;
-                          return {
-                            ...item,
-                            images: (item.images || []).map((variantImage, currentIndex) => (
-                              currentIndex === imgIdx ? { ...variantImage, alt_text: e.target.value } : variantImage
-                            )),
-                          };
-                        }))}
-                      />
                     </div>
                   ))}
                 </div>
@@ -921,7 +928,7 @@ export default function AdminProductsPage() {
                   className="w-40 text-xs bg-background border border-border rounded px-2 py-1 focus:outline-none font-mono"
                   placeholder="slug" />
                 <select
-                  value={editingCategory.parent_id}
+                  value={editingCategory.parent_id || ''}
                   onChange={e => setEditingCategory({ ...editingCategory, parent_id: e.target.value })}
                   className="w-44 text-xs bg-background border border-border rounded px-2 py-1 focus:outline-none text-foreground"
                 >
@@ -1009,6 +1016,12 @@ export default function AdminProductsPage() {
         <label className="text-[10px] font-semibold text-muted-foreground uppercase">Description</label>
         <RichTextEditor value={form.description} onChange={handleDescriptionChange} />
       </div>
+      <div className="space-y-1 sm:col-span-2">
+        <label className="text-[10px] font-semibold text-muted-foreground uppercase">Tags (Comma-separated for search)</label>
+        <input type="text" name="tags" placeholder="e.g. modest, classic, abaya, ramadan"
+          className="w-full text-xs bg-background border border-border rounded px-3 py-2.5 focus:outline-none"
+          value={form.tags} onChange={handleInputChange} />
+      </div>
       <div className="space-y-2 col-span-2">
         <label className="text-[10px] font-semibold text-muted-foreground uppercase block">Categories</label>
         <div className="flex flex-wrap gap-4 pt-1">
@@ -1016,6 +1029,29 @@ export default function AdminProductsPage() {
             <label key={cat.id} className="flex items-center gap-2 text-xs cursor-pointer">
               <input type="checkbox" checked={form.category_ids.includes(cat.id)}
                 onChange={() => handleCategoryCheckbox(cat.id)}
+                className="rounded text-primary focus:ring-primary" />
+              <span>{cat.name}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+      <div className="space-y-2 col-span-2 border-t border-border pt-4">
+        <label className="text-[10px] font-semibold text-muted-foreground uppercase block">Related Categories (For related product suggestions)</label>
+        <div className="flex flex-wrap gap-4 pt-1">
+          {categories.map(cat => (
+            <label key={`related-${cat.id}`} className="flex items-center gap-2 text-xs cursor-pointer">
+              <input type="checkbox" checked={form.related_category_ids.includes(cat.id)}
+                onChange={() => {
+                  setForm(prev => {
+                    const exists = prev.related_category_ids.includes(cat.id);
+                    return {
+                      ...prev,
+                      related_category_ids: exists
+                        ? prev.related_category_ids.filter(id => id !== cat.id)
+                        : [...prev.related_category_ids, cat.id]
+                    };
+                  });
+                }}
                 className="rounded text-primary focus:ring-primary" />
               <span>{cat.name}</span>
             </label>
@@ -1196,4 +1232,3 @@ export default function AdminProductsPage() {
     </div>
   );
 }
-
