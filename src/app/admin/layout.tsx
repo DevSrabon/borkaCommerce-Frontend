@@ -26,6 +26,8 @@ import {
   MessageSquare,
   FileText,
   BookOpen,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import { clearSession } from '../../store/authSlice';
 import { useDispatch } from 'react-redux';
@@ -59,10 +61,33 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [mounted, setMounted] = useState(false);
   const [validating, setValidating] = useState(true);
   const [chatUnread, setChatUnread] = useState(0);
+  const [adminTheme, setAdminTheme] = useState<'light' | 'dark'>('dark');
 
   useEffect(() => {
     setMounted(true);
+    const saved = localStorage.getItem('admin_theme') as 'light' | 'dark' | null;
+    if (saved === 'light' || saved === 'dark') {
+      setAdminTheme(saved);
+    }
   }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+    if (adminTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+      document.documentElement.classList.remove('light');
+      document.documentElement.setAttribute('data-theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      document.documentElement.classList.add('light');
+      document.documentElement.setAttribute('data-theme', 'light');
+    }
+    return () => {
+      document.documentElement.classList.remove('dark');
+      document.documentElement.classList.remove('light');
+      document.documentElement.removeAttribute('data-theme');
+    };
+  }, [adminTheme, mounted]);
 
   useEffect(() => {
     if (!token) return;
@@ -159,13 +184,24 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     router.push('/admin/login');
   };
 
+  const toggleTheme = () => {
+    const nextTheme = adminTheme === 'dark' ? 'light' : 'dark';
+    setAdminTheme(nextTheme);
+    localStorage.setItem('admin_theme', nextTheme);
+  };
+
   const isActive = (href: string, exact?: boolean) => {
     if (exact) return pathname === href;
     return pathname.startsWith(href);
   };
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div
+      className={`flex min-h-screen bg-background text-foreground transition-colors duration-200 ${
+        adminTheme === 'dark' ? 'dark' : 'light'
+      }`}
+      data-theme={adminTheme}
+    >
       {/* Sidebar */}
       <aside
         className={`fixed top-0 left-0 h-full z-50 flex flex-col border-r border-border bg-card transition-all duration-300 ${
@@ -216,8 +252,32 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           })}
         </nav>
 
-        {/* Footer — Collapse toggle + user info + storefront link */}
+        {/* Footer — Collapse toggle + theme switcher + user info + storefront link */}
         <div className="border-t border-border space-y-1 p-2">
+          {/* Sidebar theme toggle */}
+          <button
+            type="button"
+            onClick={toggleTheme}
+            className={`w-full flex items-center gap-3 rounded-md px-3 py-2 text-xs text-muted-foreground hover:bg-accent hover:text-foreground transition cursor-pointer ${
+              collapsed ? 'justify-center' : ''
+            }`}
+            title={`Switch to ${adminTheme === 'dark' ? 'Light' : 'Dark'} Mode`}
+          >
+            {adminTheme === 'dark' ? (
+              <Moon size={14} className="text-amber-400 shrink-0" />
+            ) : (
+              <Sun size={14} className="text-amber-600 shrink-0" />
+            )}
+            {!collapsed && (
+              <div className="flex-1 flex items-center justify-between text-left">
+                <span>Theme</span>
+                <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-accent border border-border text-foreground">
+                  {adminTheme === 'dark' ? 'Dark' : 'Light'}
+                </span>
+              </div>
+            )}
+          </button>
+
           <Link
             href="/"
             target="_blank"
@@ -267,19 +327,39 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {/* Main content area */}
       <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${collapsed ? 'ml-16' : 'ml-60'}`}>
         {/* Top bar */}
-        <header className="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur-sm px-6 py-3 flex items-center justify-between">
+        <header className="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur-sm px-6 py-3 flex items-center justify-between shadow-xs">
           <div>
             <h2 className="text-sm font-semibold text-foreground">
               {NAV_MODULES.find((m) => isActive(m.href, m.exact))?.label ?? 'Admin'}
             </h2>
-            <p className="text-[10px] text-muted-foreground">
+            <p className="text-[10px] text-muted-foreground font-mono">
               {pathname}
             </p>
           </div>
-          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-            <span className="hidden sm:block">
+          <div className="flex items-center gap-3 sm:gap-4 text-xs">
+            <span className="hidden sm:block text-muted-foreground font-medium">
               {new Date().toLocaleDateString('en-AE', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
             </span>
+
+            {/* Production-Grade Theme Toggle */}
+            <button
+              type="button"
+              onClick={toggleTheme}
+              title={`Switch to ${adminTheme === 'dark' ? 'Light' : 'Dark'} Mode`}
+              className="relative inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-border bg-background hover:bg-accent text-foreground transition-all duration-200 shadow-xs cursor-pointer group"
+              aria-label="Toggle theme mode"
+            >
+              <div className="flex items-center justify-center w-5 h-5 rounded-full bg-primary/10 text-primary transition-transform duration-300 group-hover:rotate-12">
+                {adminTheme === 'dark' ? (
+                  <Moon size={13} className="text-amber-400 fill-amber-400/20" />
+                ) : (
+                  <Sun size={13} className="text-amber-600 fill-amber-600/20" />
+                )}
+              </div>
+              <span className="text-[11px] font-semibold tracking-wider uppercase text-muted-foreground group-hover:text-foreground">
+                {adminTheme === 'dark' ? 'Dark Mode' : 'Light Mode'}
+              </span>
+            </button>
           </div>
         </header>
 

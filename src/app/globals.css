@@ -2,47 +2,67 @@
 @import "tailwindcss";
 
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
-  --background: #fafafa;
-  --foreground: #111111;
+  --background: #faf8f5;
+  --foreground: #1c1917;
   --card: #ffffff;
-  --card-foreground: #111111;
+  --card-foreground: #1c1917;
   --popover: #ffffff;
-  --popover-foreground: #111111;
-  --primary: #b89047; /* Luxury Gold */
+  --popover-foreground: #1c1917;
+  --primary: #b8860b; /* Luxury Emirati Gold */
   --primary-foreground: #ffffff;
-  --secondary: #1f2937;
-  --secondary-foreground: #fafafa;
-  --muted: #6b7280;
-  --muted-foreground: #9ca3af;
-  --accent: #f3f4f6;
-  --accent-foreground: #111111;
-  --border: #e5e7eb;
-  --input: #e5e7eb;
-  --ring: #b89047;
-  --radius: 0.5rem;
+  --secondary: #f4f1ea;
+  --secondary-foreground: #292524;
+  --muted: #78716c;
+  --muted-foreground: #71717a;
+  --accent: #f5f2eb;
+  --accent-foreground: #1c1917;
+  --border: #e7e5e4;
+  --input: #e7e5e4;
+  --ring: #b8860b;
+  --radius: 0.625rem;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #09090b;
-    --foreground: #fafafa;
-    --card: #18181b;
-    --card-foreground: #fafafa;
-    --popover: #18181b;
-    --popover-foreground: #fafafa;
-    --primary: #cda254;
-    --primary-foreground: #09090b;
-    --secondary: #27272a;
-    --secondary-foreground: #fafafa;
-    --muted: #9ca3af;
-    --muted-foreground: #4b5563;
-    --accent: #27272a;
-    --accent-foreground: #fafafa;
-    --border: #27272a;
-    --input: #27272a;
-    --ring: #cda254;
-  }
+.light, [data-theme="light"] {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  --popover: #ffffff;
+  --popover-foreground: #0f172a;
+  --primary: #b8860b;
+  --primary-foreground: #ffffff;
+  --secondary: #f1f5f9;
+  --secondary-foreground: #0f172a;
+  --muted: #64748b;
+  --muted-foreground: #64748b;
+  --accent: #f1f5f9;
+  --accent-foreground: #0f172a;
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #b8860b;
+}
+
+.dark, [data-theme="dark"] {
+  --background: #09090b;
+  --foreground: #f4f4f5;
+  --card: #141416;
+  --card-foreground: #f4f4f5;
+  --popover: #141416;
+  --popover-foreground: #f4f4f5;
+  --primary: #d4af37;
+  --primary-foreground: #09090b;
+  --secondary: #222226;
+  --secondary-foreground: #f4f4f5;
+  --muted: #a1a1aa;
+  --muted-foreground: #71717a;
+  --accent: #222226;
+  --accent-foreground: #f4f4f5;
+  --border: #27272a;
+  --input: #27272a;
+  --ring: #d4af37;
 }
 
 @theme inline {
