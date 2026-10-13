@@ -2,16 +2,28 @@
 
 import { API_BASE_URL } from '@/config/api';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../../store';
 import {
   Plus, Trash, Tag, PlusCircle, Check, Edit2, Upload,
-  Eye, EyeOff, X, Pencil, Save, ExternalLink,
+  Eye, EyeOff, X, Pencil, Save, ExternalLink, Video, Search,
 } from 'lucide-react';
 import RichTextEditor from '../../../components/RichTextEditor';
+
+// Helper to convert any YouTube URL into an embed link
+export function getYoutubeEmbedUrl(url?: string): string {
+  if (!url) return '';
+  const trimmed = url.trim();
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=|shorts\/)([^#&?]*).*/;
+  const match = trimmed.match(regExp);
+  if (match && match[2] && match[2].length === 11) {
+    return `https://www.youtube-nocookie.com/embed/${match[2]}`;
+  }
+  return '';
+}
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -56,7 +68,8 @@ interface APIProduct {
   slug: string;
   status: string;
   created_at: string;
-  variants: { price: number; inventories: { quantity: number }[] }[];
+  video_url?: string | null;
+  variants: { id?: string; sku?: string; price: number; inventories: { quantity: number }[] }[];
 }
 
 interface DbAttribute {
@@ -91,6 +104,7 @@ export default function AdminProductsPage() {
     description: '',
     short_description: '',
     sku_prefix: '',
+    video_url: '',
     seo_title: '',
     seo_description: '',
     seo_keywords: '',
@@ -120,7 +134,6 @@ export default function AdminProductsPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [uploading, setUploading] = useState(false);
-
   // Attribute management state
   const [newAttrName, setNewAttrName] = useState('');
   const [newAttrValueMap, setNewAttrValueMap] = useState<Record<string, string>>({});
@@ -129,6 +142,51 @@ export default function AdminProductsPage() {
 
   // Category management state
   const [editingCategory, setEditingCategory] = useState<{ id: string; name: string; slug: string; parent_id: string } | null>(null);
+
+  // Search and filter states with debounce
+  const [productSearch, setProductSearch] = useState('');
+  const [debouncedProductSearch, setDebouncedProductSearch] = useState('');
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('ALL');
+  const [selectedStatusFilter, setSelectedStatusFilter] = useState('ALL');
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedProductSearch(productSearch.trim().toLowerCase());
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [productSearch]);
+
+  const filteredProducts = useMemo(() => {
+    return products.filter((p) => {
+      // Category filter
+      if (selectedCategoryFilter !== 'ALL') {
+        const hasCat = (p as any).product_categories?.some(
+          (pc: any) => pc.category_id === selectedCategoryFilter || pc.category?.id === selectedCategoryFilter
+        );
+        if (!hasCat) return false;
+      }
+
+      // Status filter
+      if (selectedStatusFilter !== 'ALL' && p.status !== selectedStatusFilter) {
+        return false;
+      }
+
+      // Search filter (name, slug, tags, variant SKUs)
+      if (debouncedProductSearch) {
+        const nameMatch = p.name?.toLowerCase().includes(debouncedProductSearch);
+        const slugMatch = p.slug?.toLowerCase().includes(debouncedProductSearch);
+        const tagMatch = (p as any).tags?.toLowerCase().includes(debouncedProductSearch);
+        const skuMatch = p.variants?.some((v) =>
+          v.sku?.toLowerCase().includes(debouncedProductSearch)
+        );
+        if (!nameMatch && !slugMatch && !tagMatch && !skuMatch) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [products, debouncedProductSearch, selectedCategoryFilter, selectedStatusFilter]);
 
   // ─── Auth Guard ──────────────────────────────────────────────────────────
 
@@ -395,6 +453,7 @@ export default function AdminProductsPage() {
           description: fullProd.description || '',
           short_description: fullProd.short_description || '',
           sku_prefix: fullProd.sku_prefix || '',
+          video_url: fullProd.video_url || '',
           seo_title: fullProd.seo_title || '',
           seo_description: fullProd.seo_description || '',
           seo_keywords: fullProd.seo_keywords || '',
@@ -1036,6 +1095,39 @@ export default function AdminProductsPage() {
           value={form.sku_prefix} onChange={handleInputChange} />
       </div>
       <div className="space-y-1 sm:col-span-2">
+        <div className="flex items-center justify-between">
+          <label className="text-[10px] font-semibold text-muted-foreground uppercase flex items-center gap-1.5">
+            <Video size={13} className="text-red-500" /> YouTube Video URL (Optional)
+          </label>
+          <span className="text-[10px] text-muted-foreground">Supports watch, share, shorts &amp; embed links</span>
+        </div>
+        <input
+          type="url"
+          name="video_url"
+          placeholder="e.g. https://www.youtube.com/watch?v=... or https://youtu.be/..."
+          className="w-full text-xs bg-background border border-border rounded px-3 py-2.5 focus:outline-none text-foreground font-mono"
+          value={form.video_url}
+          onChange={handleInputChange}
+        />
+        {form.video_url && getYoutubeEmbedUrl(form.video_url) && (
+          <div className="mt-2 rounded-lg overflow-hidden border border-border bg-black/40 p-2.5 max-w-sm">
+            <p className="text-[10px] text-zinc-400 mb-1.5 flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span className="font-semibold text-foreground">Live YouTube Preview:</span>
+            </p>
+            <div className="aspect-video w-full rounded overflow-hidden">
+              <iframe
+                src={getYoutubeEmbedUrl(form.video_url)}
+                title="Product YouTube Preview"
+                className="w-full h-full border-0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            </div>
+          </div>
+        )}
+      </div>
+      <div className="space-y-1 sm:col-span-2">
         <label className="text-[10px] font-semibold text-muted-foreground uppercase">Description</label>
         <RichTextEditor value={form.description} onChange={handleDescriptionChange} />
       </div>
@@ -1196,13 +1288,81 @@ export default function AdminProductsPage() {
 
           {/* Products Table */}
           <section className="bg-card border border-border rounded-md shadow-sm overflow-hidden">
-            <div className="border-b border-border p-4 bg-background">
-              <h2 className="font-serif text-lg font-bold">Catalog Items Table</h2>
+            <div className="border-b border-border p-4 bg-background flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <h2 className="font-serif text-lg font-bold">Catalog Items Table</h2>
+                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-primary/10 text-primary border border-primary/20">
+                  {filteredProducts.length} {filteredProducts.length === 1 ? 'item' : 'items'}
+                  {filteredProducts.length !== products.length && ` (of ${products.length})`}
+                </span>
+              </div>
+
+              {/* Search & Filter Bar with Debounce */}
+              <div className="flex flex-wrap items-center gap-2.5">
+                <div className="relative min-w-[220px] sm:min-w-[260px]">
+                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                  <input
+                    type="text"
+                    placeholder="Search title, SKU, slug..."
+                    value={productSearch}
+                    onChange={(e) => setProductSearch(e.target.value)}
+                    className="w-full text-xs bg-card border border-border rounded-lg pl-8 pr-7 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                  />
+                  {productSearch && (
+                    <button
+                      type="button"
+                      onClick={() => setProductSearch('')}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5 rounded cursor-pointer"
+                    >
+                      <X size={12} />
+                    </button>
+                  )}
+                </div>
+
+                {/* Category filter */}
+                <select
+                  value={selectedCategoryFilter}
+                  onChange={(e) => setSelectedCategoryFilter(e.target.value)}
+                  className="text-xs bg-card border border-border rounded-lg px-2.5 py-2 text-foreground focus:outline-none cursor-pointer"
+                >
+                  <option value="ALL">All Categories</option>
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+
+                {/* Status filter */}
+                <select
+                  value={selectedStatusFilter}
+                  onChange={(e) => setSelectedStatusFilter(e.target.value)}
+                  className="text-xs bg-card border border-border rounded-lg px-2.5 py-2 text-foreground focus:outline-none cursor-pointer"
+                >
+                  <option value="ALL">All Statuses</option>
+                  <option value="PUBLISHED">Published</option>
+                  <option value="DRAFT">Draft</option>
+                  <option value="ARCHIVED">Archived</option>
+                </select>
+              </div>
             </div>
             {loading ? (
               <div className="p-8 text-center text-sm text-muted font-light">Loading catalog...</div>
-            ) : products.length === 0 ? (
-              <div className="p-8 text-center text-sm text-muted font-light">No products registered yet.</div>
+            ) : filteredProducts.length === 0 ? (
+              <div className="p-8 text-center text-sm text-muted font-light space-y-2">
+                <p>No products match your search or filter criteria.</p>
+                {(productSearch || selectedCategoryFilter !== 'ALL' || selectedStatusFilter !== 'ALL') && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setProductSearch('');
+                      setSelectedCategoryFilter('ALL');
+                      setSelectedStatusFilter('ALL');
+                    }}
+                    className="text-xs text-primary underline font-medium cursor-pointer"
+                  >
+                    Clear All Filters
+                  </button>
+                )}
+              </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse text-xs">
@@ -1219,7 +1379,7 @@ export default function AdminProductsPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border font-light">
-                    {products.map(p => {
+                    {filteredProducts.map(p => {
                       const startingPrice = p.variants[0]?.price || 0;
                       const totalStock = p.variants.reduce((acc, v) => acc + (v.inventories?.reduce((sum: number, inv: any) => sum + (inv.quantity || 0), 0) || (v.inventories?.[0]?.quantity || 0)), 0);
                       const rating = (p as any).rating || { average: 0, count: 0 };

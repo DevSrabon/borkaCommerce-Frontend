@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-export type Currency = 'AED' | 'USD' | 'GBP' | 'EUR' | 'SAR';
+export type Currency = 'AED' | 'USD' | 'GBP' | 'EUR';
 
 interface CurrencyContextType {
   currency: Currency;
@@ -18,7 +18,6 @@ const RATES: Record<Currency, number> = {
   USD: 1 / 3.67,
   GBP: 1 / 4.70,
   EUR: 1 / 4.00,
-  SAR: 1.02,
 };
 
 const SYMBOLS: Record<Currency, string> = {
@@ -26,7 +25,6 @@ const SYMBOLS: Record<Currency, string> = {
   USD: '$',
   GBP: '£',
   EUR: '€',
-  SAR: 'SAR ',
 };
 
 const CurrencyContext = createContext<CurrencyContextType>({
@@ -43,8 +41,11 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
   // Persist currency preference across page loads
   useEffect(() => {
     const stored = localStorage.getItem('preferred_currency') as Currency | null;
-    if (stored && RATES[stored]) {
+    if (stored && stored !== ('SAR' as any) && RATES[stored]) {
       setCurrencyState(stored);
+    } else if (stored === ('SAR' as any)) {
+      setCurrencyState('AED');
+      localStorage.setItem('preferred_currency', 'AED');
     }
   }, []);
 

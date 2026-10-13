@@ -3,9 +3,20 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { addToCart } from '../../../store/cartSlice';
-import { Check, Info, ShoppingBag, Truck, ShieldCheck, Clock, Star, Share2, Ruler, X } from 'lucide-react';
+import { Check, Info, ShoppingBag, Truck, ShieldCheck, Clock, Star, Share2, Ruler, X, Play } from 'lucide-react';
 import { DiscountedPrice } from '../../../components/PriceDisplay';
 import { API_BASE_URL } from '@/config/api';
+
+function getYoutubeEmbedUrl(url?: string): string {
+  if (!url) return '';
+  const trimmed = url.trim();
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=|shorts\/)([^#&?]*).*/;
+  const match = trimmed.match(regExp);
+  if (match && match[2] && match[2].length === 11) {
+    return `https://www.youtube-nocookie.com/embed/${match[2]}`;
+  }
+  return '';
+}
 
 interface Variant {
   id: string;
@@ -69,6 +80,8 @@ interface ProductDetails {
   name: string;
   slug: string;
   description: string;
+  short_description?: string;
+  video_url?: string;
   images: string[];
   variants: Variant[];
   rating: { average: number; count: number };
@@ -95,6 +108,8 @@ export default function ProductClient({ product }: { product: ProductDetails }) 
   const [selections, setSelections] = useState<Record<string, string>>({});
   const [selectedVariant, setSelectedVariant] = useState<Variant | null>(null);
   const [activeImage, setActiveImage] = useState<string>(product.images[0] || '');
+  const [activeMediaMode, setActiveMediaMode] = useState<'image' | 'video'>('image');
+  const embedUrl = getYoutubeEmbedUrl(product.video_url);
   const [addedAlert, setAddedAlert] = useState(false);
   const [shippingInfo, setShippingInfo] = useState<{
     base_fee: number;
@@ -212,42 +227,86 @@ export default function ProductClient({ product }: { product: ProductDetails }) 
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-      {/* Product Image Section */}
-      <div className="space-y-4">
-        <div className="relative h-[32rem] sm:h-[40rem] w-full border border-border bg-zinc-100 rounded-md overflow-hidden">
-          <img
-            src={activeImage}
-            alt={product.name}
-            className="w-full h-full object-cover object-center transition duration-300"
-          />
+    <div className="space-y-16 w-full">
+      {/* 2-Column Product Showcase & Purchase Box */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+        {/* Product Image / Video Section */}
+        <div className="space-y-4">
+          <div className="relative h-[32rem] sm:h-[40rem] w-full border border-border bg-zinc-100 dark:bg-zinc-900 rounded-lg overflow-hidden shadow-sm">
+            {activeMediaMode === 'video' && embedUrl ? (
+              <iframe
+                src={`${embedUrl}?autoplay=1`}
+                title={`${product.name} Video`}
+                className="w-full h-full border-0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            ) : (
+              <img
+                src={activeImage}
+                alt={product.name}
+                className="w-full h-full object-cover object-center transition duration-300"
+              />
+            )}
+            {embedUrl && activeMediaMode === 'image' && (
+              <button
+                type="button"
+                onClick={() => setActiveMediaMode('video')}
+                className="absolute bottom-4 right-4 bg-black/80 hover:bg-black text-white text-xs font-semibold px-3.5 py-2 rounded-full backdrop-blur-md border border-white/20 flex items-center gap-2 shadow-xl cursor-pointer transition hover:scale-105"
+              >
+                <Play size={14} className="fill-red-500 text-red-500" />
+                <span>Watch Product Video</span>
+              </button>
+            )}
+          </div>
+          {/* Thumbnails with Video Tab */}
+          {(() => {
+            const galleryImages = Array.from(new Set([
+              ...(product.images || []),
+              ...(selectedVariant?.images || [])
+            ])).filter(Boolean);
+
+            if (galleryImages.length <= 1 && !embedUrl) return null;
+
+            return (
+              <div className="flex gap-4 overflow-x-auto py-2">
+                {galleryImages.map((img, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => {
+                      setActiveImage(img);
+                      setActiveMediaMode('image');
+                    }}
+                    className={`relative h-20 w-20 shrink-0 border rounded-lg overflow-hidden transition cursor-pointer ${
+                      activeMediaMode === 'image' && activeImage === img
+                        ? 'border-primary ring-2 ring-primary'
+                        : 'border-border opacity-75 hover:opacity-100'
+                    }`}
+                  >
+                    <img src={img} alt="" className="h-full w-full object-cover object-center" />
+                  </button>
+                ))}
+                {embedUrl && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveMediaMode('video')}
+                    className={`relative h-20 w-20 shrink-0 border rounded-lg overflow-hidden flex flex-col items-center justify-center bg-zinc-950 transition cursor-pointer ${
+                      activeMediaMode === 'video'
+                        ? 'border-primary ring-2 ring-primary text-primary'
+                        : 'border-border text-zinc-400 hover:text-white hover:border-zinc-500'
+                    }`}
+                    title="Watch YouTube Product Video"
+                  >
+                    <div className="h-7 w-7 rounded-full bg-red-600 text-white flex items-center justify-center shadow-md">
+                      <Play size={13} className="ml-0.5 fill-white text-white" />
+                    </div>
+                    <span className="text-[10px] font-bold mt-1 tracking-wider uppercase">Video</span>
+                  </button>
+                )}
+              </div>
+            );
+          })()}
         </div>
-        {/* Thumbnails */}
-        {(() => {
-          const galleryImages = Array.from(new Set([
-            ...(product.images || []),
-            ...(selectedVariant?.images || [])
-          ])).filter(Boolean);
-
-          if (galleryImages.length <= 1) return null;
-
-          return (
-            <div className="flex gap-4 overflow-x-auto py-2">
-              {galleryImages.map((img, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setActiveImage(img)}
-                  className={`relative h-20 w-20 shrink-0 border rounded overflow-hidden transition ${
-                    activeImage === img ? 'border-primary ring-1 ring-primary' : 'border-border opacity-75 hover:opacity-100'
-                  }`}
-                >
-                  <img src={img} alt="" className="h-full w-full object-cover object-center" />
-                </button>
-              ))}
-            </div>
-          );
-        })()}
-      </div>
 
       {/* Product Details Section */}
       <div className="space-y-6 lg:py-4">
@@ -448,17 +507,78 @@ export default function ProductClient({ product }: { product: ProductDetails }) 
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Product Details description */}
-        <div className="space-y-3 pt-6 border-t border-border">
-          <h3 className="text-sm font-semibold uppercase tracking-wider">Product Description</h3>
-          <div 
-            className="text-sm text-muted-foreground leading-relaxed font-light prose prose-sm dark:prose-invert prose-zinc max-w-none font-sans"
+          {/* Quick jump to full description */}
+          <div className="pt-2 text-left">
+            <a
+              href="#product-description"
+              className="text-xs text-primary hover:underline font-medium inline-flex items-center gap-1"
+            >
+              <span>Read complete craftsmanship description &amp; details</span>
+              <span>&darr;</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {/* Dedicated Full-Width Product Description Section starting from LEFT */}
+    <div id="product-description" className="border-t border-border pt-12 space-y-8 text-left scroll-mt-24">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-4 text-left">
+        <div className="space-y-1 text-left">
+          <span className="text-[11px] font-semibold tracking-wider text-primary uppercase">
+            Signature Design &amp; Details
+          </span>
+          <h2 className="font-serif text-2xl sm:text-3xl font-bold tracking-tight text-foreground text-left">
+            Product Description
+          </h2>
+        </div>
+        {embedUrl && (
+          <button
+            type="button"
+            onClick={() => {
+              setActiveMediaMode('video');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            className="inline-flex items-center gap-1.5 text-xs text-red-500 font-semibold hover:underline cursor-pointer"
+          >
+            <Play size={13} className="fill-red-500" /> Watch Video Demonstration &uarr;
+          </button>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 text-left items-start">
+        <div className={`${embedUrl ? 'lg:col-span-7' : 'lg:col-span-12'} space-y-4 text-left`}>
+          <div
+            className="text-sm sm:text-base text-muted-foreground leading-relaxed font-light prose prose-sm sm:prose-base dark:prose-invert prose-zinc max-w-none font-sans text-left"
+            style={{ textAlign: 'left', direction: 'ltr' }}
+            dir="ltr"
             dangerouslySetInnerHTML={{ __html: product.description }}
           />
         </div>
+
+        {embedUrl && (
+          <div className="lg:col-span-5 space-y-3.5 text-left bg-card border border-border rounded-xl p-4 shadow-sm">
+            <div className="flex items-center gap-2 text-foreground font-semibold text-sm text-left">
+              <Play size={14} className="text-red-500 fill-red-500" />
+              <span>Official Video Showcase</span>
+            </div>
+            <div className="aspect-video w-full rounded-lg overflow-hidden border border-border shadow-inner bg-black">
+              <iframe
+                src={embedUrl}
+                title={`${product.name} Video Showcase`}
+                className="w-full h-full border-0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            </div>
+            <p className="text-[11px] text-muted-foreground text-left">
+              High-definition presentation demonstrating fabric texture, silhouette cut, and fluid motion.
+            </p>
+          </div>
+        )}
       </div>
+    </div>
 
       {/* Sizing Guide & Chart Modal */}
       {showSizeModal && (() => {

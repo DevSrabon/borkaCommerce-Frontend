@@ -58,7 +58,52 @@ export default function Navbar() {
   const [expandedMobileCats, setExpandedMobileCats] = useState<Record<string, boolean>>({});
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [searchSuggestions, setSearchSuggestions] = useState<any[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
+
+  // Debounce search query by 300ms
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery.trim());
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Fetch product suggestions when debounced search has at least 2 characters
+  useEffect(() => {
+    if (!debouncedSearch || debouncedSearch.length < 2) {
+      setSearchSuggestions([]);
+      setSearchLoading(false);
+      return;
+    }
+
+    let active = true;
+    setSearchLoading(true);
+
+    fetch(`${API_BASE_URL}/ecommerce/products?search=${encodeURIComponent(debouncedSearch)}`)
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => {
+        if (active) {
+          if (Array.isArray(data)) {
+            setSearchSuggestions(data.slice(0, 5));
+          } else {
+            setSearchSuggestions([]);
+          }
+        }
+      })
+      .catch(() => {
+        if (active) setSearchSuggestions([]);
+      })
+      .finally(() => {
+        if (active) setSearchLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [debouncedSearch]);
 
   const dropdownTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const allCatsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -429,26 +474,96 @@ export default function Navbar() {
               {/* Search Toggle */}
               <div className="relative">
                 {searchOpen ? (
-                  <form
-                    onSubmit={handleSearchSubmit}
-                    className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center bg-card dark:bg-zinc-900 border border-border rounded-md px-2.5 py-1.5 w-64 sm:w-72 shadow-2xl z-50 animate-in fade-in"
-                  >
-                    <input
-                      type="text"
-                      placeholder="Search abayas, fabrics..."
-                      className="w-full bg-transparent text-xs focus:outline-none pr-6 text-foreground"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      autoFocus
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setSearchOpen(false)}
-                      className="absolute right-2 text-muted-foreground hover:text-foreground cursor-pointer"
+                  <div className="absolute right-0 top-1/2 -translate-y-1/2 z-50">
+                    <form
+                      onSubmit={handleSearchSubmit}
+                      className="flex items-center bg-card dark:bg-zinc-900 border border-border rounded-md px-2.5 py-1.5 w-72 sm:w-80 shadow-2xl animate-in fade-in"
                     >
-                      <X size={15} />
-                    </button>
-                  </form>
+                      <input
+                        type="text"
+                        placeholder="Search abayas, fabrics..."
+                        className="w-full bg-transparent text-xs focus:outline-none pr-6 text-foreground"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        autoFocus
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSearchOpen(false);
+                          setSearchQuery('');
+                          setSearchSuggestions([]);
+                        }}
+                        className="absolute right-2 text-muted-foreground hover:text-foreground cursor-pointer"
+                      >
+                        <X size={15} />
+                      </button>
+                    </form>
+
+                    {/* Live Desktop Search Suggestions Dropdown */}
+                    {debouncedSearch.length >= 2 && (
+                      <div className="absolute right-0 top-full mt-2 w-72 sm:w-80 bg-card dark:bg-zinc-950 border border-border rounded-xl shadow-2xl overflow-hidden text-foreground animate-in fade-in slide-in-from-top-1">
+                        <div className="p-2 border-b border-border bg-accent/40 flex items-center justify-between text-[11px] text-muted-foreground">
+                          <span>
+                            {searchLoading ? 'Searching items...' : `${searchSuggestions.length} found`}
+                          </span>
+                          {searchLoading && <span className="h-1.5 w-1.5 rounded-full bg-primary animate-ping"></span>}
+                        </div>
+
+                        {searchLoading && searchSuggestions.length === 0 ? (
+                          <div className="p-3 space-y-2">
+                            <div className="h-3.5 bg-muted/40 rounded animate-pulse w-3/4"></div>
+                            <div className="h-3.5 bg-muted/40 rounded animate-pulse w-1/2"></div>
+                          </div>
+                        ) : searchSuggestions.length > 0 ? (
+                          <div className="divide-y divide-border/60 max-h-72 overflow-y-auto">
+                            {searchSuggestions.map((prod: any) => (
+                              <button
+                                key={prod.id}
+                                type="button"
+                                onClick={() => {
+                                  router.push(`/product/${prod.slug}`);
+                                  setSearchOpen(false);
+                                  setSearchQuery('');
+                                }}
+                                className="w-full text-left p-2.5 flex items-center gap-2.5 hover:bg-accent/60 transition cursor-pointer"
+                              >
+                                <div className="h-9 w-9 rounded overflow-hidden bg-muted shrink-0 border border-border/50">
+                                  <img
+                                    src={prod.thumbnail || (prod.images && prod.images[0]) || '/placeholder.png'}
+                                    alt={prod.name}
+                                    className="h-full w-full object-cover"
+                                  />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-xs font-medium text-foreground truncate">{prod.name}</p>
+                                  <p className="text-[11px] font-semibold text-primary">AED {prod.min_price}</p>
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="p-3 text-center text-xs text-muted-foreground">
+                            No products matching &quot;{debouncedSearch}&quot;
+                          </div>
+                        )}
+
+                        <div className="p-2 border-t border-border bg-accent/20">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              router.push(`/catalog?search=${encodeURIComponent(debouncedSearch)}`);
+                              setSearchOpen(false);
+                              setSearchQuery('');
+                            }}
+                            className="w-full py-1 text-center text-xs text-primary font-semibold hover:underline cursor-pointer"
+                          >
+                            View all results for &quot;{debouncedSearch}&quot; &rarr;
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 ) : (
                   <button
                     onClick={() => setSearchOpen(true)}
@@ -593,17 +708,72 @@ export default function Navbar() {
                 </button>
               </div>
 
-              {/* Mobile Search Input */}
-              <form onSubmit={handleSearchSubmit} className="relative">
-                <input
-                  type="text"
-                  placeholder="Search abayas, niqabs..."
-                  className="w-full bg-card border border-border rounded-lg pl-9 pr-3 py-2 text-xs focus:outline-none focus:border-primary text-foreground"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-                <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              </form>
+              {/* Mobile Search Input with Suggestions */}
+              <div className="space-y-2">
+                <form onSubmit={handleSearchSubmit} className="relative">
+                  <input
+                    type="text"
+                    placeholder="Search abayas, niqabs..."
+                    className="w-full bg-card border border-border rounded-lg pl-9 pr-8 py-2 text-xs focus:outline-none focus:border-primary text-foreground"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                  <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+                    >
+                      <X size={13} />
+                    </button>
+                  )}
+                </form>
+
+                {/* Mobile live suggestions */}
+                {debouncedSearch.length >= 2 && (
+                  <div className="bg-card border border-border rounded-lg overflow-hidden text-foreground">
+                    <div className="p-2 border-b border-border bg-accent/30 text-[10px] text-muted-foreground uppercase font-semibold">
+                      {searchLoading ? 'Searching...' : `Suggestions (${searchSuggestions.length})`}
+                    </div>
+                    {searchSuggestions.map((prod: any) => (
+                      <button
+                        key={prod.id}
+                        type="button"
+                        onClick={() => {
+                          router.push(`/product/${prod.slug}`);
+                          setMobileMenuOpen(false);
+                          setSearchQuery('');
+                        }}
+                        className="w-full text-left p-2 flex items-center gap-2.5 hover:bg-accent/40 border-b border-border/40 last:border-b-0 cursor-pointer"
+                      >
+                        <div className="h-8 w-8 rounded overflow-hidden bg-muted shrink-0">
+                          <img
+                            src={prod.thumbnail || (prod.images && prod.images[0]) || '/placeholder.png'}
+                            alt=""
+                            className="h-full w-full object-cover"
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium truncate">{prod.name}</p>
+                          <p className="text-[10px] font-bold text-primary">AED {prod.min_price}</p>
+                        </div>
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        router.push(`/catalog?search=${encodeURIComponent(debouncedSearch)}`);
+                        setMobileMenuOpen(false);
+                        setSearchQuery('');
+                      }}
+                      className="w-full p-2 text-center text-xs text-primary font-semibold hover:underline bg-accent/10 cursor-pointer"
+                    >
+                      See all results &rarr;
+                    </button>
+                  </div>
+                )}
+              </div>
 
               {/* Mobile Categorized Accordion */}
               <div className="space-y-1">

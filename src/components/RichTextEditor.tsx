@@ -64,7 +64,16 @@ export default function RichTextEditor({
   const [loadingMedia, setLoadingMedia] = useState(false);
   const [selectedMediaUrl, setSelectedMediaUrl] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [uploading, setUploading] = useState(false);
+
+  // Debounce media search query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery.trim().toLowerCase());
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   // Web Image State
   const [webImageUrl, setWebImageUrl] = useState('');
@@ -484,12 +493,13 @@ export default function RichTextEditor({
     }
   };
 
-  // Filtered media by search query
+  // Filtered media by debounced search query
   const filteredMedia = useMemo(() => {
+    if (!debouncedSearchQuery) return mediaList;
     return mediaList.filter((item) =>
-      item.name.toLowerCase().includes(searchQuery.toLowerCase())
+      item.name.toLowerCase().includes(debouncedSearchQuery)
     );
-  }, [mediaList, searchQuery]);
+  }, [mediaList, debouncedSearchQuery]);
 
   // Jodit Configuration
   const config = useMemo(() => {

@@ -94,11 +94,21 @@ export default function CatalogClient({
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
   // Active filter states
+  const [catalogSearch, setCatalogSearch] = useState(currentSearch);
+  const [debouncedCatalogSearch, setDebouncedCatalogSearch] = useState(currentSearch.trim().toLowerCase());
   const [selectedCategory, setSelectedCategory] = useState<string>(currentCategory);
   const [saleOnly, setSaleOnly] = useState<boolean>(initialOnSale);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<'featured' | 'price-asc' | 'price-desc' | 'discount'>('featured');
+
+  // Debounce catalog search by 300ms
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedCatalogSearch(catalogSearch.trim().toLowerCase());
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [catalogSearch]);
 
   // Compute overall min & max price from products
   const { globalMinPrice, globalMaxPrice } = useMemo(() => {
@@ -190,6 +200,7 @@ export default function CatalogClient({
 
   // Reset all filters
   const resetFilters = () => {
+    setCatalogSearch('');
     setSelectedCategory('');
     setSaleOnly(false);
     setSelectedColors([]);
@@ -201,6 +212,7 @@ export default function CatalogClient({
   };
 
   const hasActiveFilters =
+    Boolean(catalogSearch) ||
     Boolean(selectedCategory) ||
     saleOnly ||
     selectedColors.length > 0 ||
@@ -212,6 +224,14 @@ export default function CatalogClient({
   const filteredProducts = useMemo(() => {
     return initialProducts
       .filter((prod) => {
+        // Search filter with debounce
+        if (debouncedCatalogSearch) {
+          const matchName = prod.name.toLowerCase().includes(debouncedCatalogSearch);
+          const matchDesc = (prod.short_description || '').toLowerCase().includes(debouncedCatalogSearch);
+          const matchCat = prod.categories.some((c) => c.name.toLowerCase().includes(debouncedCatalogSearch));
+          if (!matchName && !matchDesc && !matchCat) return false;
+        }
+
         // Category filter
         if (selectedCategory) {
           const matchCat = prod.categories.some(
@@ -548,6 +568,27 @@ export default function CatalogClient({
           </div>
 
           <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+            {/* Catalog Live Search Bar with Debounce */}
+            <div className="relative min-w-[180px] sm:min-w-[220px]">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder="Search catalog..."
+                value={catalogSearch}
+                onChange={(e) => setCatalogSearch(e.target.value)}
+                className="w-full text-xs bg-card border border-border rounded-lg pl-8 pr-7 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-primary shadow-xs"
+              />
+              {catalogSearch && (
+                <button
+                  type="button"
+                  onClick={() => setCatalogSearch('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5 rounded cursor-pointer"
+                >
+                  <X size={12} />
+                </button>
+              )}
+            </div>
+
             {/* Mobile Filter Button */}
             <button
               type="button"

@@ -9,7 +9,6 @@ const CURRENCIES: { value: Currency; label: string; flag: string }[] = [
   { value: 'USD', label: 'USD $', flag: '🇺🇸' },
   { value: 'GBP', label: 'GBP £', flag: '🇬🇧' },
   { value: 'EUR', label: 'EUR €', flag: '🇪🇺' },
-  { value: 'SAR', label: 'SAR ر.س', flag: '🇸🇦' },
 ];
 
 export default function CurrencySelector() {
