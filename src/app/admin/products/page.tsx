@@ -9,7 +9,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../../../store';
 import {
   Plus, Trash, Tag, PlusCircle, Check, Edit2, Upload,
-  Eye, EyeOff, X, Pencil, Save, ExternalLink, Video, Search,
+  Eye, EyeOff, X, Pencil, Save, ExternalLink, Video, Search, Layers,
 } from 'lucide-react';
 import RichTextEditor from '../../../components/RichTextEditor';
 
@@ -293,13 +293,101 @@ export default function AdminProductsPage() {
     });
   };
 
+  // Derived active attribute names across all variants
+  const allActiveAttributeNames = useMemo(() => {
+    const names = new Set<string>();
+    variants.forEach((v) => {
+      v.attributes.forEach((a) => {
+        if (a.name?.trim()) names.add(a.name.trim());
+      });
+    });
+    return Array.from(names);
+  }, [variants]);
+
+  const handleAddAttributeToAllVariants = (attrName: string) => {
+    let nameToAdd = attrName;
+    if (attrName === '__custom__') {
+      const custom = window.prompt('Enter new attribute name (e.g. Sleeve Length, Material, Pattern):');
+      if (!custom || !custom.trim()) return;
+      nameToAdd = custom.trim();
+    }
+
+    const dbAttr = dbAttributes.find(da => da.name.toLowerCase() === nameToAdd.toLowerCase());
+    const defaultValue = dbAttr && dbAttr.values[0] ? dbAttr.values[0].value : '';
+
+    setVariants(prev => prev.map(v => {
+      const exists = v.attributes.some(a => a.name.toLowerCase() === nameToAdd.toLowerCase());
+      if (exists) return v;
+      return {
+        ...v,
+        attributes: [...v.attributes, { name: nameToAdd, value: defaultValue }]
+      };
+    }));
+  };
+
+  const handleRemoveAttributeFromAllVariants = (attrName: string) => {
+    setVariants(prev => prev.map(v => ({
+      ...v,
+      attributes: v.attributes.filter(a => a.name.toLowerCase() !== attrName.toLowerCase())
+    })));
+  };
+
+  const handleAddAttributeToVariant = (varIdx: number, attrName: string) => {
+    let nameToAdd = attrName;
+    if (attrName === '__custom__') {
+      const custom = window.prompt('Enter new attribute name:');
+      if (!custom || !custom.trim()) return;
+      nameToAdd = custom.trim();
+    }
+    const dbAttr = dbAttributes.find(da => da.name.toLowerCase() === nameToAdd.toLowerCase());
+    const defaultValue = dbAttr && dbAttr.values[0] ? dbAttr.values[0].value : '';
+
+    setVariants(prev => prev.map((v, i) => {
+      if (i !== varIdx) return v;
+      if (v.attributes.some(a => a.name.toLowerCase() === nameToAdd.toLowerCase())) return v;
+      return {
+        ...v,
+        attributes: [...v.attributes, { name: nameToAdd, value: defaultValue }]
+      };
+    }));
+  };
+
+  const handleRemoveAttributeFromVariant = (varIdx: number, attrIdx: number) => {
+    setVariants(prev => prev.map((v, i) => {
+      if (i !== varIdx) return v;
+      return {
+        ...v,
+        attributes: v.attributes.filter((_, j) => j !== attrIdx)
+      };
+    }));
+  };
+
   const handleAddVariant = () => {
+    // Collect attributes dynamically from existing variants or active attribute schema
+    const templateAttrs = variants.length > 0 && variants[0].attributes.length > 0
+      ? variants[0].attributes.map(a => {
+          const dbAttr = dbAttributes.find(da => da.name.toLowerCase() === a.name.toLowerCase());
+          return {
+            name: a.name,
+            value: dbAttr?.values[0]?.value || a.value || '',
+          };
+        })
+      : allActiveAttributeNames.map(name => {
+          const dbAttr = dbAttributes.find(da => da.name.toLowerCase() === name.toLowerCase());
+          return {
+            name,
+            value: dbAttr?.values[0]?.value || '',
+          };
+        });
+
     setVariants(prev => [
       ...prev,
       {
         sku: skuMode === 'auto' ? generatedSkuForIndex(variants.length) : `${form.sku_prefix ? `${form.sku_prefix}-` : ''}${variants.length + 1}`,
-        price: 250, compare_price: 300, initial_quantity: 20,
-        attributes: [{ name: 'Color', value: 'Black' }, { name: 'Size', value: '56' }, { name: 'Fabric', value: 'Nidha' }],
+        price: 250,
+        compare_price: 300,
+        initial_quantity: 20,
+        attributes: templateAttrs,
         images: [],
       },
     ]);
@@ -583,9 +671,12 @@ export default function AdminProductsPage() {
     setSkuMode('auto');
     setForm(emptyForm);
     setImages([]);
+    const defaultAttrs = dbAttributes.length > 0
+      ? dbAttributes.slice(0, 2).map(da => ({ name: da.name, value: da.values[0]?.value || '' }))
+      : [{ name: 'Color', value: 'Black' }, { name: 'Size', value: '54' }];
     setVariants([{
       sku: '', price: 250, compare_price: 300, initial_quantity: 50,
-      attributes: [{ name: 'Color', value: 'Black' }, { name: 'Size', value: '54' }, { name: 'Fabric', value: 'Nidha' }],
+      attributes: defaultAttrs,
       images: [],
     }]);
   };
@@ -801,66 +892,196 @@ export default function AdminProductsPage() {
   // ─── Variants Section ─────────────────────────────────────────────────────
 
   const VariantsSection = () => (
-    <div className="space-y-4 pt-6 border-t border-border">
-      <div className="flex justify-between items-center border-b border-border pb-2">
-        <h3 className="text-sm font-semibold uppercase tracking-wider">Product Variants ({variants.length})</h3>
+    <div className="space-y-6 pt-6 border-t border-border">
+      {/* Product Attributes Schema Selector */}
+      <div className="bg-card border border-border p-4 rounded-xl space-y-3 shadow-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-foreground flex items-center gap-1.5">
+              <Layers size={14} className="text-primary" />
+              Dynamic Product Attributes
+            </h4>
+            <p className="text-[11px] text-muted-foreground mt-0.5">
+              Select which attributes apply to this product&apos;s variants (e.g. Color, Size, Fabric, Length, Sleeve).
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <select
+              value=""
+              onChange={(e) => {
+                if (e.target.value) handleAddAttributeToAllVariants(e.target.value);
+              }}
+              className="text-xs bg-background border border-border rounded-lg px-3 py-1.5 text-foreground cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary shadow-xs"
+            >
+              <option value="">+ Add Attribute to Variants...</option>
+              {dbAttributes
+                .filter(da => !allActiveAttributeNames.some(n => n.toLowerCase() === da.name.toLowerCase()))
+                .map(da => (
+                  <option key={da.id} value={da.name}>{da.name}</option>
+                ))}
+              <option value="__custom__">+ Create Custom Attribute...</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Active attribute tags */}
+        <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-border/50">
+          <span className="text-[10px] uppercase font-semibold text-muted-foreground mr-1">Active Attributes:</span>
+          {allActiveAttributeNames.map(attrName => (
+            <span
+              key={attrName}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs bg-primary/10 text-primary border border-primary/20 font-medium"
+            >
+              <span>{attrName}</span>
+              <button
+                type="button"
+                onClick={() => handleRemoveAttributeFromAllVariants(attrName)}
+                className="hover:text-red-500 cursor-pointer font-bold ml-1 text-xs"
+                title={`Remove ${attrName} from all variants`}
+              >
+                ×
+              </button>
+            </span>
+          ))}
+          {allActiveAttributeNames.length === 0 && (
+            <span className="text-[11px] text-amber-500 italic">
+              No attributes configured. Click &ldquo;+ Add Attribute to Variants&rdquo; above to add options.
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Header with Add Variant button */}
+      <div className="flex justify-between items-center border-b border-border pb-3">
+        <div>
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-foreground">
+            Product Variants ({variants.length})
+          </h3>
+          <p className="text-[11px] text-muted-foreground">Each variant defines specific SKU, price, stock and attribute values.</p>
+        </div>
         <button
           type="button" onClick={handleAddVariant}
-          className="text-xs text-primary font-semibold flex items-center gap-1 hover:underline cursor-pointer"
+          className="text-xs btn-luxury px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 shadow-sm cursor-pointer"
         >
           <PlusCircle size={14} /> Add Variant
         </button>
       </div>
+
+      {/* List of Variants */}
       <div className="space-y-4">
         {variants.map((v, varIdx) => (
-          <div key={varIdx} className="bg-background border border-border p-4 rounded-md grid grid-cols-1 sm:grid-cols-4 gap-4 relative">
-            <div className="space-y-1">
-              <label className="text-[9px] font-semibold text-muted-foreground uppercase">SKU</label>
-              <input type="text" required
-                className="w-full text-xs bg-card border border-border rounded px-2.5 py-2 focus:outline-none"
-                value={v.sku} onChange={e => handleVariantChange(varIdx, 'sku', e.target.value)} />
-            </div>
-            <div className="space-y-1">
-              <label className="text-[9px] font-semibold text-muted-foreground uppercase">Price (AED)</label>
-              <input type="number" required
-                className="w-full text-xs bg-card border border-border rounded px-2.5 py-2 focus:outline-none"
-                value={v.price} onChange={e => handleVariantChange(varIdx, 'price', e.target.value)} />
-            </div>
-            <div className="space-y-1">
-              <label className="text-[9px] font-semibold text-muted-foreground uppercase">Initial Qty</label>
-              <input type="number" required
-                className="w-full text-xs bg-card border border-border rounded px-2.5 py-2 focus:outline-none"
-                value={v.initial_quantity} onChange={e => handleVariantChange(varIdx, 'initial_quantity', e.target.value)} />
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              {v.attributes.map((attr, attrIdx) => {
-                const dbAttr = dbAttributes.find(da => da.name.toLowerCase() === attr.name.toLowerCase());
-                const options = dbAttr ? dbAttr.values.map(val => val.value) : [];
-                return (
-                  <div key={attrIdx} className="space-y-1">
-                    <label className="text-[9px] font-semibold text-muted-foreground uppercase">{attr.name}</label>
-                    {options.length > 0 ? (
-                      <select
-                        className="w-full text-xs bg-card border border-border rounded px-2 py-2 focus:outline-none text-foreground"
-                        value={attr.value}
-                        onChange={e => handleVariantAttributeChange(varIdx, attrIdx, e.target.value)}
-                        required
-                      >
-                        {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                      </select>
-                    ) : (
-                      <input type="text"
-                        className="w-full text-xs bg-card border border-border rounded px-2 py-2 focus:outline-none"
-                        value={attr.value}
-                        onChange={e => handleVariantAttributeChange(varIdx, attrIdx, e.target.value)}
-                        required />
-                    )}
-                  </div>
-                );
-              })}
+          <div key={varIdx} className="bg-background border border-border p-4 sm:p-5 rounded-xl space-y-4 relative shadow-xs">
+            {/* Top row: SKU, Price, Compare Price, Qty */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-3 pr-8">
+              <div className="space-y-1">
+                <label className="text-[9px] font-semibold text-muted-foreground uppercase">SKU Code</label>
+                <input type="text" required
+                  className="w-full text-xs bg-card border border-border rounded-lg px-2.5 py-2 focus:outline-none text-foreground font-mono"
+                  value={v.sku} onChange={e => handleVariantChange(varIdx, 'sku', e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[9px] font-semibold text-muted-foreground uppercase">Price (AED)</label>
+                <input type="number" required
+                  className="w-full text-xs bg-card border border-border rounded-lg px-2.5 py-2 focus:outline-none text-foreground font-semibold"
+                  value={v.price} onChange={e => handleVariantChange(varIdx, 'price', e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[9px] font-semibold text-muted-foreground uppercase">Compare Price (Optional)</label>
+                <input type="number"
+                  placeholder="e.g. 300"
+                  className="w-full text-xs bg-card border border-border rounded-lg px-2.5 py-2 focus:outline-none text-foreground"
+                  value={v.compare_price || ''} onChange={e => handleVariantChange(varIdx, 'compare_price', e.target.value ? Number(e.target.value) : null)} />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[9px] font-semibold text-muted-foreground uppercase">Stock Qty</label>
+                <input type="number" required
+                  className="w-full text-xs bg-card border border-border rounded-lg px-2.5 py-2 focus:outline-none text-foreground"
+                  value={v.initial_quantity} onChange={e => handleVariantChange(varIdx, 'initial_quantity', e.target.value)} />
+              </div>
             </div>
 
-            {/* Variant images */}
+            {/* Middle row: Dynamic Attributes for this Variant */}
+            <div className="border-t border-border/70 pt-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] font-semibold text-muted-foreground uppercase flex items-center gap-1.5">
+                  <Layers size={12} className="text-primary" />
+                  Variant Attributes ({v.attributes.length})
+                </label>
+                {/* Per-variant Add Attribute button */}
+                <select
+                  value=""
+                  onChange={(e) => {
+                    if (e.target.value) handleAddAttributeToVariant(varIdx, e.target.value);
+                  }}
+                  className="text-[10px] bg-card border border-border rounded px-2 py-1 text-muted-foreground hover:text-foreground cursor-pointer focus:outline-none"
+                >
+                  <option value="">+ Add Attribute...</option>
+                  {dbAttributes
+                    .filter(da => !v.attributes.some(a => a.name.toLowerCase() === da.name.toLowerCase()))
+                    .map(da => (
+                      <option key={da.id} value={da.name}>{da.name}</option>
+                    ))}
+                  <option value="__custom__">+ Custom Attribute...</option>
+                </select>
+              </div>
+
+              {v.attributes.length === 0 ? (
+                <p className="text-xs text-muted-foreground italic bg-card/40 p-2.5 rounded-lg border border-dashed border-border">
+                  No attributes defined for this variant. Click &ldquo;+ Add Attribute...&rdquo; to assign Color, Size, etc.
+                </p>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                  {v.attributes.map((attr, attrIdx) => {
+                    const dbAttr = dbAttributes.find(da => da.name.toLowerCase() === attr.name.toLowerCase());
+                    const options = dbAttr ? dbAttr.values.map(val => val.value) : [];
+
+                    return (
+                      <div key={attrIdx} className="bg-card border border-border p-2.5 rounded-lg space-y-1.5 relative group shadow-xs">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-bold text-primary uppercase tracking-wider truncate">
+                            {attr.name}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveAttributeFromVariant(varIdx, attrIdx)}
+                            className="text-muted-foreground hover:text-red-500 font-bold text-xs p-0.5 rounded cursor-pointer transition"
+                            title={`Remove ${attr.name} from this variant`}
+                          >
+                            ×
+                          </button>
+                        </div>
+
+                        {options.length > 0 ? (
+                          <select
+                            className="w-full text-xs bg-background border border-border rounded px-2.5 py-1.5 focus:outline-none text-foreground font-medium cursor-pointer"
+                            value={attr.value}
+                            onChange={e => handleVariantAttributeChange(varIdx, attrIdx, e.target.value)}
+                            required
+                          >
+                            {!options.includes(attr.value) && attr.value && (
+                              <option value={attr.value}>{attr.value}</option>
+                            )}
+                            {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                          </select>
+                        ) : (
+                          <input
+                            type="text"
+                            placeholder={`Enter ${attr.name}...`}
+                            className="w-full text-xs bg-background border border-border rounded px-2.5 py-1.5 focus:outline-none text-foreground"
+                            value={attr.value}
+                            onChange={e => handleVariantAttributeChange(varIdx, attrIdx, e.target.value)}
+                            required
+                          />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Bottom row: Variant images */}
             <div className="sm:col-span-4 border-t border-border pt-3 mt-1 flex flex-col gap-2">
               <div className="flex items-center gap-3">
                 <label className="text-[10px] font-semibold text-muted-foreground uppercase">Variant Images</label>
@@ -882,7 +1103,7 @@ export default function AdminProductsPage() {
                         onClick={() => setVariants(prev => prev.map((item, i) =>
                           i === varIdx ? { ...item, images: (item.images || []).filter((_, j) => j !== imgIdx) } : item
                         ))}
-                        className="absolute inset-0 bg-red-500/80 text-white flex items-center justify-center text-[10px] font-bold opacity-0 group-hover:opacity-100 transition">
+                        className="absolute inset-0 bg-red-500/80 text-white flex items-center justify-center text-[10px] font-bold opacity-0 group-hover:opacity-100 transition cursor-pointer">
                         ×
                       </button>
                     </div>
@@ -891,10 +1112,12 @@ export default function AdminProductsPage() {
               )}
             </div>
 
+            {/* Remove variant button */}
             {variants.length > 1 && (
               <button type="button"
                 onClick={() => setVariants(variants.filter((_, idx) => idx !== varIdx))}
-                className="absolute top-2 right-2 text-red-500 hover:text-red-700 font-bold">
+                className="absolute top-3 right-3 text-red-500 hover:text-red-700 font-bold text-sm cursor-pointer p-1"
+                title="Remove this variant">
                 ×
               </button>
             )}
