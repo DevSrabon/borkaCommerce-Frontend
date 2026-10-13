@@ -69,6 +69,7 @@ interface APIProduct {
   status: string;
   created_at: string;
   video_url?: string | null;
+  images?: ProductImage[];
   variants: { id?: string; sku?: string; price: number; inventories: { quantity: number }[] }[];
 }
 
@@ -1620,9 +1621,33 @@ export default function AdminProductsPage() {
                       const startingPrice = p.variants[0]?.price || 0;
                       const totalStock = p.variants.reduce((acc, v) => acc + (v.inventories?.reduce((sum: number, inv: any) => sum + (inv.quantity || 0), 0) || (v.inventories?.[0]?.quantity || 0)), 0);
                       const rating = (p as any).rating || { average: 0, count: 0 };
+                      const featuredImg = p.images?.find((img: any) => img.is_thumbnail)?.image_url || p.images?.[0]?.image_url || '';
+                      const resolvedImgUrl = featuredImg
+                        ? (featuredImg.startsWith('http') ? featuredImg : `${API_BASE_URL}${featuredImg.startsWith('/') ? '' : '/'}${featuredImg}`)
+                        : '';
                       return (
                         <tr key={p.id} className="hover:bg-accent/40 text-foreground">
-                          <td className="p-4 font-medium">{p.name}</td>
+                          <td className="p-4 font-medium">
+                            <div className="flex items-center gap-3">
+                              <div className="w-11 h-11 rounded-lg overflow-hidden bg-muted border border-border shrink-0 shadow-xs relative flex items-center justify-center">
+                                {resolvedImgUrl ? (
+                                  <img
+                                    src={resolvedImgUrl}
+                                    alt={p.name}
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center text-[9px] text-muted-foreground font-semibold bg-muted/50">
+                                    No Img
+                                  </div>
+                                )}
+                              </div>
+                              <div className="min-w-0">
+                                <p className="font-semibold text-foreground line-clamp-1">{p.name}</p>
+                                <p className="text-[10px] text-muted-foreground font-mono truncate">{p.variants?.[0]?.sku || ''}</p>
+                              </div>
+                            </div>
+                          </td>
                           <td className="p-4 font-mono text-muted">{p.slug}</td>
                           <td className="p-4 font-semibold">AED {startingPrice}</td>
                           <td className="p-4">

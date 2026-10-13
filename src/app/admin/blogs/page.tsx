@@ -36,6 +36,7 @@ interface BlogAdminItem {
   is_published: boolean;
   published_at: string;
   created_at: string;
+  featured_image?: string;
   total_comments?: number;
 }
 
@@ -62,6 +63,8 @@ export default function AdminBlogsPage() {
   const [blogs, setBlogs] = useState<BlogAdminItem[]>([]);
   const [loadingBlogs, setLoadingBlogs] = useState(true);
   const [blogSearch, setBlogSearch] = useState('');
+  const [categories, setCategories] = useState<string[]>([]);
+  const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
 
   // Comments state
   const [comments, setComments] = useState<CommentAdminItem[]>([]);
@@ -71,6 +74,8 @@ export default function AdminBlogsPage() {
   // Modals & form state
   const [showBlogModal, setShowBlogModal] = useState(false);
   const [editingBlogId, setEditingBlogId] = useState<string | null>(null);
+  const [isCustomCategory, setIsCustomCategory] = useState(false);
+  const [customCategoryInput, setCustomCategoryInput] = useState('');
   const [formData, setFormData] = useState({
     title: '',
     slug: '',
@@ -117,6 +122,21 @@ export default function AdminBlogsPage() {
     }
   };
 
+  // Fetch dynamic categories
+  const fetchCategories = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/blogs/categories`);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          setCategories(data);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load categories:', err);
+    }
+  };
+
   // Fetch blogs
   const fetchBlogs = async () => {
     if (!token) return;
@@ -157,6 +177,7 @@ export default function AdminBlogsPage() {
   useEffect(() => {
     fetchBlogs();
     fetchComments();
+    fetchCategories();
   }, [token]);
 
   // Comment Moderation Actions
@@ -201,10 +222,12 @@ export default function AdminBlogsPage() {
   // Blog Management Actions
   const handleOpenCreateModal = () => {
     setEditingBlogId(null);
+    setIsCustomCategory(false);
+    setCustomCategoryInput('');
     setFormData({
       title: '',
       slug: '',
-      category: 'Abaya',
+      category: categories[0] || 'Abaya',
       excerpt: '',
       content: '',
       featured_image: '',
@@ -215,21 +238,27 @@ export default function AdminBlogsPage() {
 
   const handleOpenEditModal = async (blog: BlogAdminItem) => {
     setEditingBlogId(blog.id);
+    setIsCustomCategory(false);
+    setCustomCategoryInput('');
     try {
       const res = await fetch(`${API_BASE_URL}/admin/blogs/${blog.id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
         const data = await res.json();
+        const cat = data.category || 'Abaya';
         setFormData({
           title: data.title || '',
           slug: data.slug || '',
-          category: data.category || 'Abaya',
+          category: cat,
           excerpt: data.excerpt || '',
           content: data.content || '',
           featured_image: data.featured_image || '',
           is_published: data.is_published ?? true,
         });
+        if (!categories.includes(cat)) {
+          setCategories((prev) => [...prev, cat]);
+        }
         setShowBlogModal(true);
       }
     } catch {
@@ -241,6 +270,15 @@ export default function AdminBlogsPage() {
     e.preventDefault();
     if (!token) return;
     setSavingBlog(true);
+
+    const resolvedCategory = isCustomCategory && customCategoryInput.trim()
+      ? customCategoryInput.trim()
+      : (formData.category || 'Abaya');
+
+    const payload = {
+      ...formData,
+      category: resolvedCategory,
+    };
 
     try {
       const url = editingBlogId
@@ -255,7 +293,7 @@ export default function AdminBlogsPage() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
 
       if (!res.ok) {
@@ -263,9 +301,22 @@ export default function AdminBlogsPage() {
         throw new Error(err.message || 'Failed to save blog');
       }
 
+      // If a new custom category was used, persist it
+      if (isCustomCategory && customCategoryInput.trim()) {
+        fetch(`${API_BASE_URL}/admin/blogs/categories`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ name: customCategoryInput.trim() }),
+        }).then(() => fetchCategories()).catch(() => {});
+      }
+
       showNotification('success', editingBlogId ? 'Blog post updated' : 'Blog post published');
       setShowBlogModal(false);
       fetchBlogs();
+      fetchCategories();
     } catch (err: any) {
       showNotification('error', err.message || 'Failed to save blog');
     } finally {
@@ -374,20 +425,40 @@ export default function AdminBlogsPage() {
       {/* ==================================================== */}
       {activeTab === 'blogs' && (
         <div className="space-y-4">
-          {/* Search bar */}
-          <div className="flex items-center gap-3">
-            <div className="relative flex-1 max-w-sm">
+          {/* Search bar and category filter */}
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="relative flex-1 min-w-[200px] max-w-sm">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <input
                 type="text"
-                placeholder="Search articles by title..."
+                placeholder="Search articles by title or slug..."
                 value={blogSearch}
                 onChange={(e) => setBlogSearch(e.target.value)}
                 className="w-full pl-9 pr-3 py-1.5 text-xs bg-card border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
+
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className="px-3 py-1.5 text-xs bg-card border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
+            >
+              <option value="ALL">All Categories ({blogs.length})</option>
+              {categories.map((c) => {
+                const count = blogs.filter((b) => b.category?.toLowerCase() === c.toLowerCase()).length;
+                return (
+                  <option key={c} value={c}>
+                    {c} {count > 0 ? `(${count})` : ''}
+                  </option>
+                );
+              })}
+            </select>
+
             <button
-              onClick={fetchBlogs}
+              onClick={() => {
+                fetchBlogs();
+                fetchCategories();
+              }}
               className="p-2 border border-border rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground transition cursor-pointer"
               title="Refresh"
             >
@@ -425,12 +496,34 @@ export default function AdminBlogsPage() {
                     </tr>
                   ) : (
                     blogs
-                      .filter((b) => b.title.toLowerCase().includes(blogSearch.toLowerCase()))
+                      .filter((b) => {
+                        const q = blogSearch.toLowerCase();
+                        const matchesSearch = b.title.toLowerCase().includes(q) || b.slug.toLowerCase().includes(q);
+                        const matchesCat = categoryFilter === 'ALL' || b.category.toLowerCase() === categoryFilter.toLowerCase();
+                        return matchesSearch && matchesCat;
+                      })
                       .map((blog) => (
                         <tr key={blog.id} className="hover:bg-muted/20 transition">
-                          <td className="py-3.5 px-4 font-medium text-foreground max-w-xs">
-                            <div className="line-clamp-1 font-semibold">{blog.title}</div>
-                            <div className="text-[10px] text-muted-foreground font-mono">/{blog.slug}</div>
+                          <td className="py-3.5 px-4 font-medium text-foreground max-w-sm">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-md overflow-hidden bg-muted border border-border shrink-0">
+                                {blog.featured_image ? (
+                                  <img
+                                    src={blog.featured_image}
+                                    alt={blog.title}
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center text-[9px] text-muted-foreground font-semibold">
+                                    Blog
+                                  </div>
+                                )}
+                              </div>
+                              <div className="min-w-0">
+                                <div className="line-clamp-1 font-semibold">{blog.title}</div>
+                                <div className="text-[10px] text-muted-foreground font-mono truncate">/{blog.slug}</div>
+                              </div>
+                            </div>
                           </td>
                           <td className="py-3.5 px-4 text-muted-foreground">
                             <span className="px-2 py-0.5 bg-muted rounded-full text-[10px] font-medium border border-border">
@@ -655,14 +748,56 @@ export default function AdminBlogsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block font-semibold mb-1">Category</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Abaya, Bridal, Haute Couture"
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full px-3 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-                  />
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block font-semibold">Category</label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const next = !isCustomCategory;
+                        setIsCustomCategory(next);
+                        if (!next && categories.length > 0) {
+                          setFormData({ ...formData, category: categories[0] });
+                        }
+                      }}
+                      className="text-[11px] text-primary hover:underline font-medium cursor-pointer"
+                    >
+                      {isCustomCategory ? 'Choose Existing' : '+ Add New'}
+                    </button>
+                  </div>
+
+                  {isCustomCategory ? (
+                    <input
+                      type="text"
+                      placeholder="Type new category name..."
+                      value={customCategoryInput}
+                      onChange={(e) => setCustomCategoryInput(e.target.value)}
+                      className="w-full px-3 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                      autoFocus
+                    />
+                  ) : (
+                    <select
+                      value={formData.category}
+                      onChange={(e) => {
+                        if (e.target.value === '__NEW__') {
+                          setIsCustomCategory(true);
+                          setCustomCategoryInput('');
+                        } else {
+                          setFormData({ ...formData, category: e.target.value });
+                        }
+                      }}
+                      className="w-full px-3 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
+                    >
+                      {categories.map((cat) => (
+                        <option key={cat} value={cat}>
+                          {cat}
+                        </option>
+                      ))}
+                      {!categories.includes(formData.category) && formData.category && (
+                        <option value={formData.category}>{formData.category}</option>
+                      )}
+                      <option value="__NEW__">+ Add New Category...</option>
+                    </select>
+                  )}
                 </div>
               </div>
 

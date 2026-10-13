@@ -45,7 +45,31 @@ interface OrderItem {
   quantity: number;
   discount: number | string;
   subtotal: number | string;
+  variant?: {
+    images?: { image: string }[];
+    product?: {
+      name?: string;
+      images?: { image_url: string; is_thumbnail?: boolean }[];
+    };
+  };
 }
+
+const getOrderItemFeaturedImage = (item: any) => {
+  if (!item) return '';
+  const variantImg = item.variant?.images?.[0]?.image;
+  if (variantImg) {
+    return variantImg.startsWith('http') ? variantImg : `${API_BASE_URL}${variantImg.startsWith('/') ? '' : '/'}${variantImg}`;
+  }
+  const thumb = item.variant?.product?.images?.find((img: any) => img.is_thumbnail)?.image_url;
+  if (thumb) {
+    return thumb.startsWith('http') ? thumb : `${API_BASE_URL}${thumb.startsWith('/') ? '' : '/'}${thumb}`;
+  }
+  const first = item.variant?.product?.images?.[0]?.image_url;
+  if (first) {
+    return first.startsWith('http') ? first : `${API_BASE_URL}${first.startsWith('/') ? '' : '/'}${first}`;
+  }
+  return '';
+};
 
 interface OrderDetail {
   id: string;
@@ -837,33 +861,69 @@ export default function AdminOrderDetailPage() {
 
             {!isEditingItems ? (
               <div className="divide-y divide-border">
-                {(order.items || []).map((item) => (
-                  <div key={item.id} className="p-5 flex items-center justify-between gap-4">
-                    <div className="space-y-1">
-                      <h3 className="text-sm font-semibold text-foreground">{item.product_name}</h3>
-                      <p className="text-xs text-muted-foreground">{item.variant_name}</p>
-                      <p className="text-[11px] font-mono text-muted-foreground">SKU: {item.sku}</p>
+                {(order.items || []).map((item) => {
+                  const itemImg = getOrderItemFeaturedImage(item);
+                  return (
+                    <div key={item.id} className="p-5 flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-4 min-w-0">
+                        <div className="w-14 h-14 rounded-lg overflow-hidden bg-muted border border-border shrink-0 shadow-xs relative">
+                          {itemImg ? (
+                            <img
+                              src={itemImg}
+                              alt={item.product_name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-[10px] text-muted-foreground font-semibold bg-muted/40">
+                              Item
+                            </div>
+                          )}
+                        </div>
+                        <div className="space-y-0.5 min-w-0">
+                          <h3 className="text-sm font-semibold text-foreground truncate">{item.product_name}</h3>
+                          <p className="text-xs text-muted-foreground">{item.variant_name}</p>
+                          <p className="text-[11px] font-mono text-muted-foreground">SKU: {item.sku}</p>
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-xs text-muted-foreground">
+                          AED {Number(item.price || 0).toFixed(2)} &times; {item.quantity}
+                        </p>
+                        <p className="text-sm font-bold text-foreground mt-0.5">
+                          AED {Number(item.subtotal || 0).toFixed(2)}
+                        </p>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-xs text-muted-foreground">
-                        AED {Number(item.price || 0).toFixed(2)} &times; {item.quantity}
-                      </p>
-                      <p className="text-sm font-bold text-foreground mt-0.5">
-                        AED {Number(item.subtotal || 0).toFixed(2)}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div className="divide-y divide-border">
-                {editableItems.map((item) => (
-                  <div key={item.variant_id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div className="space-y-0.5">
-                      <h3 className="text-sm font-semibold text-foreground">{item.product_name}</h3>
-                      <p className="text-xs text-muted-foreground">{item.variant_name}</p>
-                      <p className="text-[11px] font-mono text-muted-foreground">SKU: {item.sku}</p>
-                    </div>
+                {editableItems.map((item) => {
+                  const origItem = order.items?.find((it) => it.variant_id === item.variant_id);
+                  const itemImg = origItem ? getOrderItemFeaturedImage(origItem) : '';
+                  return (
+                    <div key={item.variant_id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-12 h-12 rounded-lg overflow-hidden bg-muted border border-border shrink-0 shadow-xs">
+                          {itemImg ? (
+                            <img
+                              src={itemImg}
+                              alt={item.product_name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-[9px] text-muted-foreground font-semibold bg-muted/40">
+                              Item
+                            </div>
+                          )}
+                        </div>
+                        <div className="space-y-0.5 min-w-0">
+                          <h3 className="text-sm font-semibold text-foreground truncate">{item.product_name}</h3>
+                          <p className="text-xs text-muted-foreground">{item.variant_name}</p>
+                          <p className="text-[11px] font-mono text-muted-foreground">SKU: {item.sku}</p>
+                        </div>
+                      </div>
 
                     <div className="flex items-center justify-between sm:justify-end gap-3">
                       {/* Price input */}
@@ -931,8 +991,9 @@ export default function AdminOrderDetailPage() {
                       </button>
                     </div>
                   </div>
-                ))}
-              </div>
+                );
+              })}
+            </div>
             )}
 
             {/* Financial Summary */}

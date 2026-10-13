@@ -32,17 +32,40 @@ export default function BlogsPage() {
   const [blogs, setBlogs] = useState<BlogItem[]>([]);
   const [latestBlogs, setLatestBlogs] = useState<SidebarBlogItem[]>([]);
   const [popularBlogs, setPopularBlogs] = useState<SidebarBlogItem[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeSort, setActiveSort] = useState<'latest' | 'popular'>('latest');
   const [loading, setLoading] = useState(true);
 
-  // Fetch blogs when search or sort changes
+  // Fetch dynamic categories
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/blogs/categories`);
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) {
+            setCategories(data);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load categories:', err);
+      }
+    };
+    fetchCategories();
+  }, []);
+
+  // Fetch blogs when search, category, or sort changes
   useEffect(() => {
     const fetchBlogs = async () => {
       setLoading(true);
       try {
         const queryParams = new URLSearchParams();
         if (searchQuery.trim()) queryParams.set('search', searchQuery.trim());
+        if (selectedCategory && selectedCategory.toLowerCase() !== 'all') {
+          queryParams.set('category', selectedCategory);
+        }
         if (activeSort) queryParams.set('sort', activeSort);
 
         const res = await fetch(`${API_BASE_URL}/blogs?${queryParams.toString()}`);
@@ -59,7 +82,7 @@ export default function BlogsPage() {
 
     const timer = setTimeout(fetchBlogs, 250);
     return () => clearTimeout(timer);
-  }, [searchQuery, activeSort]);
+  }, [searchQuery, selectedCategory, activeSort]);
 
   // Fetch sidebar widgets
   useEffect(() => {
@@ -108,23 +131,57 @@ export default function BlogsPage() {
   return (
     <div className="min-h-screen bg-background text-foreground py-10 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto space-y-10">
-        {/* Top Search Bar (Centered, matching screenshot) */}
-        <div className="flex justify-center">
-          <div className="relative w-full max-w-md">
-            <input
-              type="text"
-              placeholder="Search blogs..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-5 pr-12 py-3 bg-card border border-border rounded-full text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary shadow-xs transition"
-            />
+        {/* Top Search Bar & Category Filter Pills */}
+        <div className="space-y-5">
+          <div className="flex justify-center">
+            <div className="relative w-full max-w-md">
+              <input
+                type="text"
+                placeholder="Search blogs..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-5 pr-12 py-3 bg-card border border-border rounded-full text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary shadow-xs transition"
+              />
+              <button
+                type="button"
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full text-primary hover:bg-primary/10 transition cursor-pointer"
+                aria-label="Search"
+              >
+                <Search size={18} />
+              </button>
+            </div>
+          </div>
+
+          {/* Dynamic Category Filter Pills */}
+          <div className="flex items-center justify-center flex-wrap gap-2 pt-1">
             <button
               type="button"
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full text-primary hover:bg-primary/10 transition cursor-pointer"
-              aria-label="Search"
+              onClick={() => setSelectedCategory('all')}
+              className={`px-4 py-1.5 rounded-full text-xs font-semibold transition cursor-pointer ${
+                selectedCategory.toLowerCase() === 'all'
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'bg-card border border-border text-muted-foreground hover:text-foreground hover:border-primary/50'
+              }`}
             >
-              <Search size={18} />
+              All Categories
             </button>
+            {categories.map((cat) => {
+              const isActive = selectedCategory.toLowerCase() === cat.toLowerCase();
+              return (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setSelectedCategory(isActive ? 'all' : cat)}
+                  className={`px-4 py-1.5 rounded-full text-xs font-semibold transition cursor-pointer ${
+                    isActive
+                      ? 'bg-primary text-primary-foreground shadow-sm'
+                      : 'bg-card border border-border text-muted-foreground hover:text-foreground hover:border-primary/50'
+                  }`}
+                >
+                  {cat}
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -134,9 +191,19 @@ export default function BlogsPage() {
           <div className="lg:col-span-8 space-y-6">
             {/* Header: All Posts with sort tabs */}
             <div className="flex items-center justify-between pb-3 border-b border-border">
-              <h1 className="text-xl sm:text-2xl font-serif font-bold text-foreground">
-                All Posts
-              </h1>
+              <div className="flex items-center gap-3">
+                <h1 className="text-xl sm:text-2xl font-serif font-bold text-foreground">
+                  {selectedCategory.toLowerCase() === 'all' ? 'All Posts' : `${selectedCategory}`}
+                </h1>
+                {selectedCategory.toLowerCase() !== 'all' && (
+                  <button
+                    onClick={() => setSelectedCategory('all')}
+                    className="text-xs text-primary hover:underline font-medium cursor-pointer"
+                  >
+                    (Reset to all)
+                  </button>
+                )}
+              </div>
 
               <div className="flex items-center gap-4 text-xs font-semibold">
                 <button
@@ -183,14 +250,19 @@ export default function BlogsPage() {
                 <p className="text-xs text-muted-foreground max-w-sm mx-auto">
                   {searchQuery
                     ? `No articles matched "${searchQuery}". Try a different keyword.`
+                    : selectedCategory.toLowerCase() !== 'all'
+                    ? `No articles found in category "${selectedCategory}".`
                     : 'Check back soon for latest modest fashion guides and abaya styling tips.'}
                 </p>
-                {searchQuery && (
+                {(searchQuery || selectedCategory.toLowerCase() !== 'all') && (
                   <button
-                    onClick={() => setSearchQuery('')}
-                    className="text-xs text-primary font-bold hover:underline"
+                    onClick={() => {
+                      setSearchQuery('');
+                      setSelectedCategory('all');
+                    }}
+                    className="text-xs text-primary font-bold hover:underline cursor-pointer"
                   >
-                    Clear search filter
+                    Clear all filters
                   </button>
                 )}
               </div>
@@ -214,10 +286,18 @@ export default function BlogsPage() {
                           Saba Al Wadi
                         </div>
                       )}
-                      {/* Category Badge (top left) */}
-                      <span className="absolute top-3 left-3 px-3 py-1 bg-emerald-800 text-white text-[11px] font-semibold rounded-full shadow-md">
+                      {/* Clickable Category Badge (top left) */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setSelectedCategory(blog.category || 'Abaya');
+                        }}
+                        className="absolute top-3 left-3 px-3 py-1 bg-emerald-800 hover:bg-emerald-700 text-white text-[11px] font-semibold rounded-full shadow-md transition cursor-pointer"
+                        title={`Filter by ${blog.category || 'Abaya'}`}
+                      >
                         {blog.category || 'Abaya'}
-                      </span>
+                      </button>
                     </div>
 
                     {/* Content */}
@@ -259,6 +339,46 @@ export default function BlogsPage() {
 
           {/* Right Column: Sidebar (4 of 12 cols) */}
           <aside className="lg:col-span-4 space-y-8">
+            {/* Dynamic Categories Sidebar Card */}
+            {categories.length > 0 && (
+              <div className="bg-card border border-border rounded-xl p-5 shadow-xs space-y-3">
+                <h2 className="text-base font-serif font-bold text-emerald-800 dark:text-emerald-400 pb-2 border-b border-border flex items-center justify-between">
+                  <span>Categories</span>
+                  <Sparkles size={14} className="text-primary" />
+                </h2>
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedCategory('all')}
+                    className={`px-3 py-1 rounded-full text-xs font-medium transition cursor-pointer ${
+                      selectedCategory.toLowerCase() === 'all'
+                        ? 'bg-primary text-primary-foreground font-bold'
+                        : 'bg-muted/50 border border-border text-foreground hover:border-primary/40'
+                    }`}
+                  >
+                    All
+                  </button>
+                  {categories.map((cat) => {
+                    const isActive = selectedCategory.toLowerCase() === cat.toLowerCase();
+                    return (
+                      <button
+                        key={cat}
+                        type="button"
+                        onClick={() => setSelectedCategory(isActive ? 'all' : cat)}
+                        className={`px-3 py-1 rounded-full text-xs font-medium transition cursor-pointer ${
+                          isActive
+                            ? 'bg-primary text-primary-foreground font-bold'
+                            : 'bg-muted/50 border border-border text-foreground hover:border-primary/40'
+                        }`}
+                      >
+                        {cat}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* 1. Latest Blogs Card */}
             <div className="bg-card border border-border rounded-xl p-5 shadow-xs space-y-4">
               <h2 className="text-base font-serif font-bold text-emerald-800 dark:text-emerald-400 pb-2 border-b border-border flex items-center gap-2">

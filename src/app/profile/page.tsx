@@ -147,6 +147,23 @@ export default function ProfilePage() {
     }
   };
 
+  const getItemImage = (item: any) => {
+    if (!item) return '';
+    const variantImg = item.variant?.images?.[0]?.image;
+    if (variantImg) {
+      return variantImg.startsWith('http') ? variantImg : `${API_BASE_URL}${variantImg.startsWith('/') ? '' : '/'}${variantImg}`;
+    }
+    const thumb = item.variant?.product?.images?.find((img: any) => img.is_thumbnail)?.image_url;
+    if (thumb) {
+      return thumb.startsWith('http') ? thumb : `${API_BASE_URL}${thumb.startsWith('/') ? '' : '/'}${thumb}`;
+    }
+    const first = item.variant?.product?.images?.[0]?.image_url;
+    if (first) {
+      return first.startsWith('http') ? first : `${API_BASE_URL}${first.startsWith('/') ? '' : '/'}${first}`;
+    }
+    return '';
+  };
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8 w-full space-y-12">
       {/* Welcome Banner */}
@@ -265,15 +282,37 @@ export default function ProfilePage() {
 
                   {/* Order Items */}
                   <div className="p-6 space-y-4">
-                    {(order.items || []).map((item) => (
-                      <div key={item.id} className="flex justify-between items-center text-sm">
-                        <div className="space-y-0.5">
-                          <h4 className="font-medium text-xs text-foreground">{item.product_name}</h4>
-                          <p className="text-[10px] text-muted-foreground font-mono">SKU: {item.sku} &bull; Qty: {item.quantity}</p>
+                    {(order.items || []).map((item) => {
+                      const itemImg = getItemImage(item);
+                      return (
+                        <div key={item.id} className="flex justify-between items-center text-sm gap-4">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-12 h-12 rounded-lg overflow-hidden bg-muted border border-border shrink-0 shadow-xs relative">
+                              {itemImg ? (
+                                <img
+                                  src={itemImg}
+                                  alt={item.product_name}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-[9px] text-muted-foreground font-semibold bg-muted/40">
+                                  Item
+                                </div>
+                              )}
+                            </div>
+                            <div className="space-y-0.5 min-w-0">
+                              <h4 className="font-medium text-xs text-foreground truncate">{item.product_name}</h4>
+                              <p className="text-[10px] text-muted-foreground font-mono">
+                                SKU: {item.sku} &bull; Qty: {item.quantity}
+                              </p>
+                            </div>
+                          </div>
+                          <span className="font-semibold text-xs shrink-0">
+                            {order.currency || 'AED'} {Number(item.subtotal ?? 0).toFixed(2)}
+                          </span>
                         </div>
-                        <span className="font-semibold text-xs">{order.currency || 'AED'} {Number(item.subtotal ?? 0).toFixed(2)}</span>
-                      </div>
-                    ))}
+                      );
+                    })}
 
                     {(order.delivery_partner || order.tracking_number) && (
                       <div className="bg-primary/5 border border-primary/20 rounded-md p-3.5 flex flex-wrap items-center justify-between gap-3 text-xs">

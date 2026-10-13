@@ -9,6 +9,22 @@ import { RefreshCw, Eye, Trash2, Search, PlusCircle, Truck, ExternalLink } from 
 import Link from 'next/link';
 import CreateManualOrderModal from '@/components/admin/CreateManualOrderModal';
 
+interface OrderItem {
+  id: string;
+  product_name: string;
+  variant_name?: string;
+  sku?: string;
+  quantity: number;
+  price: number;
+  variant?: {
+    images?: { image: string }[];
+    product?: {
+      name?: string;
+      images?: { image_url: string; is_thumbnail?: boolean }[];
+    };
+  };
+}
+
 interface Order {
   id: string;
   order_number: string;
@@ -20,6 +36,7 @@ interface Order {
   tracking_number?: string | null;
   tracking_url?: string | null;
   created_at: string;
+  items?: OrderItem[];
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -30,6 +47,22 @@ const STATUS_COLORS: Record<string, string> = {
   PENDING:   'bg-yellow-500/10 text-yellow-500 border-yellow-500/20',
   CANCELLED: 'bg-red-500/10 text-red-500 border-red-500/20',
   REFUNDED:  'bg-zinc-500/10 text-zinc-400 border-zinc-500/20',
+};
+
+const getItemFeaturedImage = (item: OrderItem) => {
+  const variantImg = item.variant?.images?.[0]?.image;
+  if (variantImg) {
+    return variantImg.startsWith('http') ? variantImg : `${API_BASE_URL}${variantImg.startsWith('/') ? '' : '/'}${variantImg}`;
+  }
+  const thumb = item.variant?.product?.images?.find((img) => img.is_thumbnail)?.image_url;
+  if (thumb) {
+    return thumb.startsWith('http') ? thumb : `${API_BASE_URL}${thumb.startsWith('/') ? '' : '/'}${thumb}`;
+  }
+  const first = item.variant?.product?.images?.[0]?.image_url;
+  if (first) {
+    return first.startsWith('http') ? first : `${API_BASE_URL}${first.startsWith('/') ? '' : '/'}${first}`;
+  }
+  return '';
 };
 
 export default function OrdersAdminPage() {
@@ -131,6 +164,7 @@ export default function OrdersAdminPage() {
                 <tr className="bg-background text-muted-foreground uppercase tracking-wider font-semibold border-b border-border text-[10px]">
                   <th className="px-5 py-3">Order #</th>
                   <th className="px-5 py-3">Customer</th>
+                  <th className="px-5 py-3">Items</th>
                   <th className="px-5 py-3">Date</th>
                   <th className="px-5 py-3">Total</th>
                   <th className="px-5 py-3">Payment</th>
@@ -146,6 +180,41 @@ export default function OrdersAdminPage() {
                     <td className="px-5 py-3">
                       <p className="font-medium">{ord.customer.first_name} {ord.customer.last_name}</p>
                       <p className="text-muted-foreground text-[10px]">{ord.customer.email}</p>
+                    </td>
+                    <td className="px-5 py-3">
+                      <div className="flex items-center gap-1.5 flex-wrap max-w-[200px]">
+                        {(ord.items || []).slice(0, 3).map((item, idx) => {
+                          const img = getItemFeaturedImage(item);
+                          return (
+                            <div
+                              key={item.id || idx}
+                              className="relative w-9 h-9 rounded-md overflow-hidden bg-muted border border-border shrink-0 shadow-xs"
+                              title={`${item.product_name} (${item.quantity}x)`}
+                            >
+                              {img ? (
+                                <img src={img} alt={item.product_name} className="w-full h-full object-cover" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-[8px] text-muted-foreground font-semibold bg-muted/50">
+                                  Item
+                                </div>
+                              )}
+                              {item.quantity > 1 && (
+                                <span className="absolute bottom-0 right-0 bg-black/80 text-white text-[8px] font-bold px-1 rounded-tl">
+                                  {item.quantity}
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })}
+                        {(ord.items?.length || 0) > 3 && (
+                          <span className="text-[10px] text-muted-foreground font-semibold">
+                            +{ord.items!.length - 3}
+                          </span>
+                        )}
+                        {(!ord.items || ord.items.length === 0) && (
+                          <span className="text-muted-foreground text-[10px]">—</span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-5 py-3 text-muted-foreground">
                       {new Date(ord.created_at).toLocaleDateString('en-AE', { day: 'numeric', month: 'short', year: 'numeric' })}
