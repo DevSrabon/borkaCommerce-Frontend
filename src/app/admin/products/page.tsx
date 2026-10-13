@@ -2,7 +2,7 @@
 
 import { API_BASE_URL } from '@/config/api';
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useSelector } from 'react-redux';
@@ -93,7 +93,9 @@ export default function AdminProductsPage() {
   // Active admin tab
   const [adminTab, setAdminTab] = useState<'products' | 'attributes' | 'categories'>('products');
 
-  // Form states
+  // Form states and refs
+  const createFormRef = useRef<HTMLFormElement>(null);
+  const editFormRef = useRef<HTMLFormElement>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any | null>(null);
@@ -566,6 +568,9 @@ export default function AdminProductsPage() {
         })) || []);
         setShowEditForm(true);
         setShowCreateForm(false);
+        setTimeout(() => {
+          editFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 60);
       } else {
         const body = await res.json().catch(() => null);
         const message = Array.isArray(body?.message) ? body.message.join(', ') : body?.message;
@@ -786,7 +791,7 @@ export default function AdminProductsPage() {
 
   // ─── Image Panel ──────────────────────────────────────────────────────────
 
-  const ImagePanel = ({ radioName }: { radioName: string }) => (
+  const renderImagePanel = (radioName: string) => (
     <div className="space-y-2 col-span-2">
       <div className="flex items-center gap-2">
         <label className="text-[10px] font-semibold text-muted-foreground uppercase">
@@ -850,7 +855,7 @@ export default function AdminProductsPage() {
 
   // ─── SEO Fields Panel ─────────────────────────────────────────────────────
 
-  const SeoPanel = () => (
+  const renderSeoPanel = () => (
     <div className="col-span-2 border border-border rounded-md p-4 space-y-4 bg-background">
       <h4 className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
         <Tag size={12} /> SEO / Search Engine Optimization
@@ -891,7 +896,7 @@ export default function AdminProductsPage() {
 
   // ─── Variants Section ─────────────────────────────────────────────────────
 
-  const VariantsSection = () => (
+  const renderVariantsSection = () => (
     <div className="space-y-6 pt-6 border-t border-border">
       {/* Product Attributes Schema Selector */}
       <div className="bg-card border border-border p-4 rounded-xl space-y-3 shadow-xs">
@@ -1287,7 +1292,9 @@ export default function AdminProductsPage() {
 
   // ─── Product Form Body (shared) ───────────────────────────────────────────
 
-  const ProductFormFields = ({ radioName }: { radioName: string }) => (
+  // ─── Product Form Body (shared) ───────────────────────────────────────────
+
+  const renderProductFormFields = (radioName: string) => (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
       <div className="space-y-1">
         <label className="text-[10px] font-semibold text-muted-foreground uppercase">Product Name</label>
@@ -1416,8 +1423,8 @@ export default function AdminProductsPage() {
           ))}
         </div>
       </div>
-      <ImagePanel radioName={radioName} />
-      <SeoPanel />
+      {renderImagePanel(radioName)}
+      {renderSeoPanel()}
     </div>
   );
 
@@ -1434,11 +1441,18 @@ export default function AdminProductsPage() {
         {adminTab === 'products' && (
           <button
             id="btn-new-product"
+            type="button"
             onClick={() => {
-              setShowCreateForm(!showCreateForm);
+              const nextState = !showCreateForm;
+              setShowCreateForm(nextState);
               setShowEditForm(false);
               setEditingProduct(null);
               resetForm();
+              if (nextState) {
+                setTimeout(() => {
+                  createFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 60);
+              }
             }}
             className="px-4 py-2 btn-luxury rounded text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer"
           >
@@ -1473,13 +1487,13 @@ export default function AdminProductsPage() {
         <>
           {/* Create Form */}
           {showCreateForm && (
-            <form onSubmit={handleSubmitProduct} className="bg-card border border-border p-6 rounded-md shadow-sm space-y-6 animate-fade-in text-foreground">
+            <form ref={createFormRef} onSubmit={handleSubmitProduct} className="bg-card border border-border p-6 rounded-md shadow-sm space-y-6 animate-fade-in text-foreground">
               <div className="border-b border-border pb-3">
                 <h2 className="font-serif text-lg font-bold">Register New Masterpiece</h2>
                 <p className="text-xs text-zinc-400">Products are grouped templates. Pricing and stock belong to Variants.</p>
               </div>
-              <ProductFormFields radioName="is_thumbnail_create" />
-              <VariantsSection />
+              {renderProductFormFields('is_thumbnail_create')}
+              {renderVariantsSection()}
               <div className="pt-4 border-t border-border flex justify-end gap-3">
                 <button type="button" onClick={() => setShowCreateForm(false)}
                   className="px-4 py-2 border border-border rounded text-xs hover:bg-accent cursor-pointer">Cancel</button>
@@ -1492,13 +1506,13 @@ export default function AdminProductsPage() {
 
           {/* Edit Form */}
           {showEditForm && editingProduct && (
-            <form onSubmit={handleEditProductSubmit} className="bg-card border border-border p-6 rounded-md shadow-sm space-y-6 text-foreground">
+            <form ref={editFormRef} onSubmit={handleEditProductSubmit} className="bg-card border border-border p-6 rounded-md shadow-sm space-y-6 text-foreground">
               <div className="border-b border-border pb-3">
                 <h2 className="font-serif text-lg font-bold">Edit Masterpiece Details</h2>
                 <p className="text-xs text-zinc-400">Modifying: <span className="font-bold text-primary">{editingProduct.name}</span></p>
               </div>
-              <ProductFormFields radioName="is_thumbnail_edit" />
-              <VariantsSection />
+              {renderProductFormFields('is_thumbnail_edit')}
+              {renderVariantsSection()}
               <div className="pt-4 border-t border-border flex justify-end gap-3">
                 <button type="button" onClick={() => { setShowEditForm(false); setEditingProduct(null); }}
                   className="px-4 py-2 border border-border rounded text-xs hover:bg-accent cursor-pointer">Cancel</button>
@@ -1666,7 +1680,9 @@ export default function AdminProductsPage() {
                             >
                               <ExternalLink size={14} />
                             </Link>
-                            <button onClick={() => handleTogglePublish(p.id, p.status)}
+                            <button
+                              type="button"
+                              onClick={() => handleTogglePublish(p.id, p.status)}
                               className={`p-1.5 border rounded transition cursor-pointer ${
                                 p.status === 'PUBLISHED'
                                   ? 'border-border text-yellow-500 hover:bg-yellow-500/10'
@@ -1675,12 +1691,16 @@ export default function AdminProductsPage() {
                               title={p.status === 'PUBLISHED' ? 'Unpublish' : 'Publish'}>
                               {p.status === 'PUBLISHED' ? <EyeOff size={14} /> : <Eye size={14} />}
                             </button>
-                            <button onClick={() => handleEditClick(p)}
+                            <button
+                              type="button"
+                              onClick={() => handleEditClick(p)}
                               className="p-1.5 border border-border rounded text-primary hover:bg-primary/10 transition cursor-pointer"
                               title="Edit Product">
                               <Edit2 size={14} />
                             </button>
-                            <button onClick={() => handleArchiveProduct(p.id)}
+                            <button
+                              type="button"
+                              onClick={() => handleArchiveProduct(p.id)}
                               className="p-1.5 border border-border rounded text-red-500 hover:bg-red-500/10 transition cursor-pointer"
                               title="Archive Product">
                               <Trash size={14} />
