@@ -151,13 +151,21 @@ export default function AdminOrderDetailPage() {
   const [loadingCatalog, setLoadingCatalog] = useState(false);
 
   // Delivery Partner & Tracking state
-  const [deliveryPartners, setDeliveryPartners] = useState<{ id: string; name: string; tracking_url_template?: string }[]>([]);
+  const [deliveryPartners, setDeliveryPartners] = useState<{ id: string; name: string; tracking_url_template?: string; contact_phone?: string }[]>([]);
   const [isEditingDelivery, setIsEditingDelivery] = useState(false);
   const [courierName, setCourierName] = useState('');
+  const [customCourierName, setCustomCourierName] = useState('');
   const [trackingNumber, setTrackingNumber] = useState('');
   const [trackingUrl, setTrackingUrl] = useState('');
   const [deliveryNotes, setDeliveryNotes] = useState('');
   const [savingDelivery, setSavingDelivery] = useState(false);
+
+  // Dynamic Courier Management
+  const [showManageCouriers, setShowManageCouriers] = useState(false);
+  const [newPartnerName, setNewPartnerName] = useState('');
+  const [newPartnerTemplate, setNewPartnerTemplate] = useState('');
+  const [addingPartner, setAddingPartner] = useState(false);
+  const [partnerMsg, setPartnerMsg] = useState('');
 
   // Load delivery partners list
   useEffect(() => {
@@ -210,19 +218,91 @@ export default function AdminOrderDetailPage() {
     fetchOrder();
   }, [orderId, token, router]);
 
+  const generateLiveTrackingUrl = (partner: string, num: string) => {
+    if (!num.trim()) return '';
+    const cleanNum = encodeURIComponent(num.trim());
+    const found = deliveryPartners.find((p) => p.name.toLowerCase() === partner.toLowerCase());
+    if (found?.tracking_url_template) {
+      return found.tracking_url_template.replace('{tracking_number}', cleanNum);
+    }
+    const lower = partner.toLowerCase();
+    if (lower.includes('steadfast')) return `https://steadfast.com.bd/t/${cleanNum}`;
+    if (lower.includes('aramex')) return `https://www.aramex.com/track/results?shipmentNumber=${cleanNum}`;
+    if (lower.includes('dhl')) return `https://www.dhl.com/en/express/tracking.html?AWB=${cleanNum}`;
+    if (lower.includes('fedex')) return `https://www.fedex.com/fedextrack/?trknbr=${cleanNum}`;
+    if (lower.includes('redx')) return `https://redx.com.bd/track/${cleanNum}`;
+    if (lower.includes('pathao')) return `https://pathao.com/courier/tracking/?consignment_id=${cleanNum}`;
+    if (lower.includes('paperfly')) return `https://paperfly.com.bd/tracking.php?tracking_id=${cleanNum}`;
+    return '';
+  };
+
   const handleSelectCourier = (name: string) => {
     setCourierName(name);
-    const found = deliveryPartners.find((p) => p.name === name);
-    if (found?.tracking_url_template && trackingNumber) {
-      setTrackingUrl(found.tracking_url_template.replace('{tracking_number}', trackingNumber.trim()));
+    const targetName = name === 'Custom Courier' ? customCourierName : name;
+    if (trackingNumber.trim()) {
+      const generated = generateLiveTrackingUrl(targetName, trackingNumber);
+      if (generated) setTrackingUrl(generated);
     }
   };
 
   const handleTrackingNumberChange = (num: string) => {
     setTrackingNumber(num);
-    const found = deliveryPartners.find((p) => p.name === courierName);
-    if (found?.tracking_url_template && num.trim()) {
-      setTrackingUrl(found.tracking_url_template.replace('{tracking_number}', num.trim()));
+    const targetName = courierName === 'Custom Courier' ? customCourierName : courierName;
+    if (targetName && num.trim()) {
+      const generated = generateLiveTrackingUrl(targetName, num);
+      if (generated) setTrackingUrl(generated);
+    }
+  };
+
+  const handleAddDeliveryPartner = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPartnerName.trim() || !token) return;
+    setAddingPartner(true);
+    setPartnerMsg('');
+    try {
+      const res = await fetch(`${API_BASE_URL}/admin/delivery-partners`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          name: newPartnerName.trim(),
+          tracking_url_template: newPartnerTemplate.trim() || null,
+        }),
+      });
+      if (res.ok) {
+        const created = await res.json();
+        setDeliveryPartners((prev) => [...prev.filter((p) => p.id !== created.id), created]);
+        setCourierName(created.name);
+        if (trackingNumber.trim() && created.tracking_url_template) {
+          setTrackingUrl(created.tracking_url_template.replace('{tracking_number}', encodeURIComponent(trackingNumber.trim())));
+        }
+        setNewPartnerName('');
+        setNewPartnerTemplate('');
+        setShowManageCouriers(false);
+        setPartnerMsg('New courier partner registered and selected!');
+        setTimeout(() => setPartnerMsg(''), 4000);
+      }
+    } catch (err) {
+      console.error('Failed to add delivery partner:', err);
+    } finally {
+      setAddingPartner(false);
+    }
+  };
+
+  const handleDeleteDeliveryPartner = async (partnerId: string) => {
+    if (!token || !confirm('Are you sure you want to delete this courier partner?')) return;
+    try {
+      const res = await fetch(`${API_BASE_URL}/admin/delivery-partners/${partnerId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        setDeliveryPartners((prev) => prev.filter((p) => p.id !== partnerId));
+      }
+    } catch (err) {
+      console.error('Failed to delete delivery partner:', err);
     }
   };
 
@@ -230,6 +310,7 @@ export default function AdminOrderDetailPage() {
     if (!order || !token) return;
     setSavingDelivery(true);
     try {
+      const finalCourier = courierName === 'Custom Courier' ? customCourierName.trim() : courierName.trim();
       const res = await fetch(`${API_BASE_URL}/admin/orders/${order.id}`, {
         method: 'PATCH',
         headers: {
@@ -237,7 +318,7 @@ export default function AdminOrderDetailPage() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          delivery_partner: courierName.trim() || null,
+          delivery_partner: finalCourier || null,
           tracking_number: trackingNumber.trim() || null,
           tracking_url: trackingUrl.trim() || null,
           delivery_notes: deliveryNotes.trim() || null,
@@ -1089,23 +1170,131 @@ export default function AdminOrderDetailPage() {
               ) : (
                 <div className="space-y-3 pt-1">
                   <div>
-                    <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">
-                      Select Delivery Partner / Courier
-                    </label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-[10px] font-semibold text-muted-foreground uppercase">
+                        Select Delivery Partner / Courier
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setShowManageCouriers(!showManageCouriers)}
+                        className="text-[11px] text-primary hover:underline font-semibold flex items-center gap-1 cursor-pointer"
+                      >
+                        <Plus size={11} /> {showManageCouriers ? 'Close Management' : '+ Add / Manage Couriers'}
+                      </button>
+                    </div>
+
+                    {/* Manage / Add Courier inline panel */}
+                    {showManageCouriers && (
+                      <div className="mb-3 p-3 bg-background/90 border border-primary/30 rounded-lg space-y-2.5 animate-in fade-in shadow-inner">
+                        <span className="text-[11px] font-bold text-foreground block">
+                          ➕ Register New Courier Partner
+                        </span>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                          <div>
+                            <label className="text-[9px] text-muted-foreground uppercase block mb-0.5">Courier Name *</label>
+                            <input
+                              type="text"
+                              placeholder="e.g. Steadfast, Aramex, Sundarban"
+                              value={newPartnerName}
+                              onChange={(e) => setNewPartnerName(e.target.value)}
+                              className="w-full px-2 py-1.5 bg-background border border-border rounded text-xs text-foreground focus:ring-1 focus:ring-primary"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[9px] text-muted-foreground uppercase block mb-0.5">Tracking URL Template</label>
+                            <input
+                              type="text"
+                              placeholder="https://.../t/{tracking_number}"
+                              value={newPartnerTemplate}
+                              onChange={(e) => setNewPartnerTemplate(e.target.value)}
+                              className="w-full px-2 py-1.5 bg-background border border-border rounded text-xs text-foreground font-mono focus:ring-1 focus:ring-primary"
+                            />
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between pt-1">
+                          <p className="text-[10px] text-muted-foreground italic">
+                            Use <code className="text-primary font-bold">{'{tracking_number}'}</code> as placeholder in URL.
+                          </p>
+                          <button
+                            type="button"
+                            onClick={handleAddDeliveryPartner}
+                            disabled={addingPartner || !newPartnerName.trim()}
+                            className="px-3 py-1 bg-primary text-primary-foreground font-semibold rounded text-xs hover:bg-primary/90 transition cursor-pointer disabled:opacity-50"
+                          >
+                            {addingPartner ? 'Saving...' : 'Save Partner'}
+                          </button>
+                        </div>
+
+                        {/* Existing Couriers List for quick deletion */}
+                        {deliveryPartners.length > 0 && (
+                          <div className="pt-2 border-t border-border/60">
+                            <span className="text-[10px] text-muted-foreground font-semibold uppercase block mb-1">
+                              Active Registered Couriers:
+                            </span>
+                            <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
+                              {deliveryPartners.map((dp) => (
+                                <span
+                                  key={dp.id}
+                                  className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-muted/40 border border-border rounded text-[11px] text-foreground"
+                                >
+                                  <span className="font-medium">{dp.name}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteDeliveryPartner(dp.id)}
+                                    className="text-muted-foreground hover:text-red-500 transition cursor-pointer"
+                                    title={`Delete ${dp.name}`}
+                                  >
+                                    <Trash2 size={10} />
+                                  </button>
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {partnerMsg && (
+                      <div className="mb-2 p-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 rounded text-xs font-semibold">
+                        {partnerMsg}
+                      </div>
+                    )}
+
                     <select
                       value={courierName}
                       onChange={(e) => handleSelectCourier(e.target.value)}
-                      className="w-full text-xs bg-background border border-border rounded px-2.5 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                      className="w-full text-xs bg-background border border-border rounded px-2.5 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
                     >
                       <option value="">-- Choose Courier Partner --</option>
                       {deliveryPartners.map((dp) => (
                         <option key={dp.id} value={dp.name}>
-                          {dp.name}
+                          {dp.name} {dp.tracking_url_template ? '⚡ (Live Auto-Tracking)' : ''}
                         </option>
                       ))}
                       <option value="Custom Courier">Custom Courier / Other</option>
                     </select>
                   </div>
+
+                  {courierName === 'Custom Courier' && (
+                    <div>
+                      <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">
+                        Custom Courier Name *
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Local Delivery Service, Speed Courier"
+                        value={customCourierName}
+                        onChange={(e) => {
+                          setCustomCourierName(e.target.value);
+                          if (trackingNumber.trim()) {
+                            const gen = generateLiveTrackingUrl(e.target.value, trackingNumber);
+                            if (gen) setTrackingUrl(gen);
+                          }
+                        }}
+                        className="w-full text-xs bg-background border border-border rounded px-2.5 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                      />
+                    </div>
+                  )}
 
                   <div>
                     <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">
@@ -1113,7 +1302,7 @@ export default function AdminOrderDetailPage() {
                     </label>
                     <input
                       type="text"
-                      placeholder="e.g. ARX-982348123"
+                      placeholder="e.g. ARX-982348123 or waybill code"
                       value={trackingNumber}
                       onChange={(e) => handleTrackingNumberChange(e.target.value)}
                       className="w-full text-xs bg-background border border-border rounded px-2.5 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-mono"
@@ -1121,12 +1310,24 @@ export default function AdminOrderDetailPage() {
                   </div>
 
                   <div>
-                    <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">
-                      Live Tracking URL (Optional)
-                    </label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-[10px] font-semibold text-muted-foreground uppercase">
+                        Live Tracking URL (Optional)
+                      </label>
+                      {trackingUrl && (
+                        <a
+                          href={trackingUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-[11px] text-sky-400 hover:text-sky-300 font-semibold flex items-center gap-1 underline"
+                        >
+                          <ExternalLink size={11} /> Test Live Link ↗
+                        </a>
+                      )}
+                    </div>
                     <input
                       type="url"
-                      placeholder="https://..."
+                      placeholder="https://... (auto-filled from courier template or manual)"
                       value={trackingUrl}
                       onChange={(e) => setTrackingUrl(e.target.value)}
                       className="w-full text-xs bg-background border border-border rounded px-2.5 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-mono"
