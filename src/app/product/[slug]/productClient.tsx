@@ -3,8 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { addToCart } from '../../../store/cartSlice';
-import { Check, Info, ShoppingBag } from 'lucide-react';
+import { Check, Info, ShoppingBag, Truck, ShieldCheck, Clock, Star, Share2, Ruler, X } from 'lucide-react';
 import { DiscountedPrice } from '../../../components/PriceDisplay';
+import { API_BASE_URL } from '@/config/api';
 
 interface Variant {
   id: string;
@@ -72,6 +73,7 @@ interface ProductDetails {
   variants: Variant[];
   rating: { average: number; count: number };
   reviews: { id: string; rating: number; review: string; created_at: string; customer_name: string }[];
+  is_cod_allowed?: boolean;
 }
 
 export default function ProductClient({ product }: { product: ProductDetails }) {
@@ -90,11 +92,72 @@ export default function ProductClient({ product }: { product: ProductDetails }) 
     });
   });
 
-  // State to hold selected attributes
   const [selections, setSelections] = useState<Record<string, string>>({});
   const [selectedVariant, setSelectedVariant] = useState<Variant | null>(null);
   const [activeImage, setActiveImage] = useState<string>(product.images[0] || '');
   const [addedAlert, setAddedAlert] = useState(false);
+  const [shippingInfo, setShippingInfo] = useState<{
+    base_fee: number;
+    final_fee: number;
+    discount_amount: number;
+    is_free: boolean;
+    display_text: string;
+    applied_rule: string | null;
+    threshold_rule: string | null;
+  } | null>(null);
+
+  const [showSizeModal, setShowSizeModal] = useState(false);
+  const [siteSettings, setSiteSettings] = useState<Record<string, string> | null>(null);
+  const [shareSuccess, setShareSuccess] = useState(false);
+
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/ecommerce/site-settings`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data) setSiteSettings(data);
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleShare = async () => {
+    const url = typeof window !== 'undefined' ? window.location.href : '';
+    const shareData = {
+      title: product.name,
+      text: `Check out ${product.name} on Saba Al Wadi!`,
+      url,
+    };
+
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share(shareData);
+      } catch (err: any) {
+        if (err.name !== 'AbortError') {
+          await navigator.clipboard.writeText(url);
+          setShareSuccess(true);
+          setTimeout(() => setShareSuccess(false), 3000);
+        }
+      }
+    } else if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      await navigator.clipboard.writeText(url);
+      setShareSuccess(true);
+      setTimeout(() => setShareSuccess(false), 3000);
+    }
+  };
+
+  // Fetch dynamic delivery calculation for this product / selected variant price
+  useEffect(() => {
+    const priceToCalculate = selectedVariant ? selectedVariant.discounted_price : (product.variants[0]?.discounted_price || 0);
+    if (priceToCalculate <= 0) return;
+
+    fetch(`${API_BASE_URL}/ecommerce/shipping-calculator?subtotal=${priceToCalculate}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && typeof data.final_fee === 'number') {
+          setShippingInfo(data);
+        }
+      })
+      .catch(() => {});
+  }, [selectedVariant, product.variants]);
 
   // Initialize selections with first available options
   useEffect(() => {
@@ -140,6 +203,7 @@ export default function ProductClient({ product }: { product: ProductDetails }) 
         image: selectedVariant.images[0] || product.images[0] || null,
         attributes: selectedVariant.attributes,
         available_stock: selectedVariant.available_stock,
+        is_cod_allowed: product.is_cod_allowed !== false,
       })
     );
 
@@ -190,8 +254,19 @@ export default function ProductClient({ product }: { product: ProductDetails }) 
         <div className="space-y-2">
           <h1 className="font-serif text-3xl font-bold tracking-tight">{product.name}</h1>
           <div className="flex items-center space-x-2">
-            <span className="text-primary font-bold">★ {product.rating.average}</span>
-            <span className="text-xs text-muted">({product.rating.count} Customer Reviews)</span>
+            <div className="flex items-center text-amber-500 text-sm">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <Star
+                  key={star}
+                  size={15}
+                  className={star <= Math.round(product.rating.average) ? 'fill-amber-500 text-amber-500' : 'text-zinc-600'}
+                />
+              ))}
+            </div>
+            <span className="font-bold text-sm text-foreground">{product.rating.average}</span>
+            <a href="#reviews" className="text-xs text-muted hover:text-primary transition underline cursor-pointer">
+              ({product.rating.count} Customer Reviews)
+            </a>
           </div>
         </div>
 
@@ -207,13 +282,17 @@ export default function ProductClient({ product }: { product: ProductDetails }) 
               />
 
               <div className="text-right">
-                {selectedVariant.available_stock > 0 ? (
-                  <span className="text-xs text-green-500 font-semibold px-2 py-1 bg-green-500/10 border border-green-500/20 rounded">
-                    In Stock ({selectedVariant.available_stock} available)
+                {selectedVariant.available_stock <= 0 ? (
+                  <span className="text-xs text-red-500 font-semibold px-2.5 py-1 bg-red-500/10 border border-red-500/20 rounded">
+                    Out of Stock
+                  </span>
+                ) : selectedVariant.available_stock <= 5 ? (
+                  <span className="text-xs text-amber-500 font-semibold px-2.5 py-1 bg-amber-500/10 border border-amber-500/20 rounded flex items-center gap-1">
+                    <span>⚡ Only {selectedVariant.available_stock} left in stock!</span>
                   </span>
                 ) : (
-                  <span className="text-xs text-red-500 font-semibold px-2 py-1 bg-red-500/10 border border-red-500/20 rounded">
-                    Out of Stock
+                  <span className="text-xs text-green-500 font-semibold px-2.5 py-1 bg-green-500/10 border border-green-500/20 rounded">
+                    ✓ In Stock ({selectedVariant.available_stock} available)
                   </span>
                 )}
               </div>
@@ -232,13 +311,24 @@ export default function ProductClient({ product }: { product: ProductDetails }) 
         <div className="space-y-6">
           {Object.keys(attributeOptions).map((attrName) => (
             <div key={attrName} className="space-y-2">
-              <h3 className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">{attrName}</h3>
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">{attrName}</h3>
+                {attrName.toLowerCase().includes('size') && (
+                  <button
+                    type="button"
+                    onClick={() => setShowSizeModal(true)}
+                    className="text-xs text-primary hover:underline font-medium inline-flex items-center gap-1 cursor-pointer"
+                  >
+                    <Ruler size={13} /> Size Chart &amp; Guide
+                  </button>
+                )}
+              </div>
               <div className="flex flex-wrap gap-3">
                 {attributeOptions[attrName].map((val) => (
                   <button
                     key={val}
                     onClick={() => handleSelectOption(attrName, val)}
-                    className={`px-4 py-2 text-sm rounded border transition ${
+                    className={`px-4 py-2 text-sm rounded border transition cursor-pointer ${
                       selections[attrName] === val
                         ? 'border-primary bg-primary/5 text-foreground ring-1 ring-primary font-medium'
                         : 'border-border bg-card hover:bg-accent text-foreground/80'
@@ -252,24 +342,44 @@ export default function ProductClient({ product }: { product: ProductDetails }) 
           ))}
         </div>
 
-        {/* Add to Cart Actions */}
+        {/* Add to Cart & Share Actions */}
         <div className="pt-6 space-y-4">
-          <button
-            onClick={handleAddToCart}
-            disabled={!selectedVariant || selectedVariant.available_stock <= 0}
-            className={`w-full py-4 rounded-md uppercase font-semibold text-sm flex items-center justify-center gap-2 transition ${
-              selectedVariant && selectedVariant.available_stock > 0
-                ? 'btn-luxury cursor-pointer'
-                : 'bg-zinc-800 text-zinc-500 border border-zinc-700 cursor-not-allowed'
-            }`}
-          >
-            <ShoppingBag size={18} />
-            {selectedVariant
-              ? selectedVariant.available_stock > 0
-                ? 'Add to Shopping Bag'
-                : 'Sold Out'
-              : 'Select Variant Options'}
-          </button>
+          <div className="flex items-stretch gap-3">
+            <button
+              onClick={handleAddToCart}
+              disabled={!selectedVariant || selectedVariant.available_stock <= 0}
+              className={`flex-1 py-4 rounded-md uppercase font-semibold text-sm flex items-center justify-center gap-2 transition ${
+                selectedVariant && selectedVariant.available_stock > 0
+                  ? 'btn-luxury cursor-pointer'
+                  : 'bg-zinc-800 text-zinc-500 border border-zinc-700 cursor-not-allowed'
+              }`}
+            >
+              <ShoppingBag size={18} />
+              {selectedVariant
+                ? selectedVariant.available_stock > 0
+                  ? 'Add to Shopping Bag'
+                  : 'Sold Out'
+                : 'Select Variant Options'}
+            </button>
+            <button
+              type="button"
+              onClick={handleShare}
+              className="px-4 py-4 rounded-md border border-border bg-card hover:bg-accent text-foreground hover:text-primary flex items-center justify-center gap-2 transition cursor-pointer shadow-xs shrink-0"
+              title="Share this product"
+            >
+              <Share2 size={18} />
+              <span className="text-xs font-semibold uppercase hidden sm:inline">
+                {shareSuccess ? 'Copied!' : 'Share'}
+              </span>
+            </button>
+          </div>
+
+          {shareSuccess && (
+            <div className="flex items-center gap-2 text-xs bg-primary/10 border border-primary/30 text-primary p-2.5 rounded-md">
+              <Check size={14} />
+              <span>Product link copied to clipboard!</span>
+            </div>
+          )}
 
           {addedAlert && (
             <div className="flex items-center gap-2 text-xs bg-green-500/10 border border-green-500/30 text-green-500 p-3 rounded-md transition duration-300">
@@ -277,6 +387,67 @@ export default function ProductClient({ product }: { product: ProductDetails }) 
               <span>Variant added to your Shopping Bag successfully! <a href="/cart" className="underline font-bold">View Bag</a></span>
             </div>
           )}
+
+          {/* Dynamic Delivery Perks & Trust Card */}
+          <div className="p-4 rounded-lg bg-card/70 border border-border space-y-3 shadow-xs">
+            {/* Dynamic Delivery status */}
+            <div className="flex items-start gap-3">
+              <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 mt-0.5">
+                <Truck size={16} />
+              </div>
+              <div className="flex-1 text-xs space-y-0.5">
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-foreground">Express UAE &amp; GCC Delivery</span>
+                  {shippingInfo && (
+                    <span className={`font-bold px-2 py-0.5 rounded text-[10px] ${
+                      shippingInfo.is_free
+                        ? 'bg-green-500/10 text-green-500 border border-green-500/20'
+                        : 'bg-zinc-800 text-zinc-300'
+                    }`}>
+                      {shippingInfo.is_free ? 'FREE EXPRESS SHIPPING' : shippingInfo.display_text}
+                    </span>
+                  )}
+                </div>
+                {shippingInfo?.threshold_rule && (
+                  <p className="text-[11px] text-amber-500 font-medium">
+                    ✈ {shippingInfo.threshold_rule}
+                  </p>
+                )}
+                {shippingInfo?.applied_rule && (
+                  <p className="text-[11px] text-green-500 font-medium">
+                    ✓ {shippingInfo.applied_rule}
+                  </p>
+                )}
+                <p className="text-muted-foreground text-[11px]">
+                  Estimated delivery within 24 to 48 business hours with live tracking.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-2 border-t border-border/60 text-[11px] text-muted-foreground">
+              <div className="flex items-center gap-1.5">
+                <ShieldCheck size={13} className="text-emerald-500 shrink-0" />
+                <span>100% Genuine Fabric</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Clock size={13} className="text-amber-500 shrink-0" />
+                <span>7-Day Easy Exchange</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                {product.is_cod_allowed !== false ? (
+                  <>
+                    <Check size={13} className="text-emerald-500 shrink-0" />
+                    <span className="text-emerald-500 font-semibold">COD Available</span>
+                  </>
+                ) : (
+                  <>
+                    <Info size={13} className="text-amber-500 shrink-0" />
+                    <span className="text-amber-500 font-semibold">Prepaid Only</span>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Product Details description */}
@@ -288,6 +459,93 @@ export default function ProductClient({ product }: { product: ProductDetails }) 
           />
         </div>
       </div>
+
+      {/* Sizing Guide & Chart Modal */}
+      {showSizeModal && (() => {
+        const defaultSizes = [
+          { size: '50', height: "5'0\" - 5'1\"", length: '50 in', bust: '40 in', sleeve: '26 in' },
+          { size: '52', height: "5'2\" - 5'3\"", length: '52 in', bust: '42 in', sleeve: '27 in' },
+          { size: '54', height: "5'4\" - 5'5\"", length: '54 in', bust: '44 in', sleeve: '28 in' },
+          { size: '56', height: "5'6\" - 5'7\"", length: '56 in', bust: '46 in', sleeve: '29 in' },
+          { size: '58', height: "5'8\" - 5'9\"", length: '58 in', bust: '48 in', sleeve: '30 in' },
+          { size: '60', height: "5'10\"+", length: '60 in', bust: '50 in', sleeve: '31 in' },
+        ];
+        let sizeRows = defaultSizes;
+        if (siteSettings?.size_chart_table) {
+          try {
+            const parsed = JSON.parse(siteSettings.size_chart_table);
+            if (Array.isArray(parsed) && parsed.length > 0) sizeRows = parsed;
+          } catch (_) {}
+        }
+
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 animate-in fade-in">
+            <div className="bg-card border border-border w-full max-w-lg max-h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden text-foreground">
+              <div className="p-4 sm:p-5 border-b border-border flex items-center justify-between bg-background">
+                <div className="flex items-center gap-2">
+                  <Ruler size={18} className="text-primary" />
+                  <h2 className="font-serif text-lg font-bold">Abaya Sizing Guide &amp; Chart</h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowSizeModal(false)}
+                  className="p-1.5 rounded-md text-muted-foreground hover:text-foreground cursor-pointer transition"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="p-4 sm:p-5 overflow-y-auto space-y-4 text-xs">
+                <p className="text-muted-foreground leading-relaxed bg-accent/30 p-3 rounded-lg border border-border">
+                  {siteSettings?.size_chart_guide_text ||
+                    'Abaya sizes represent length from shoulder to floor in inches. Please select based on your total height for a perfect floor-length drape.'}
+                </p>
+
+                {siteSettings?.size_chart_image && (
+                  <div className="rounded-lg overflow-hidden border border-border my-2">
+                    <img src={siteSettings.size_chart_image} alt="Size Guide Diagram" className="w-full object-contain max-h-60" />
+                  </div>
+                )}
+
+                <div className="border border-border rounded-lg overflow-hidden shadow-xs">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-muted/40 font-semibold border-b border-border">
+                      <tr>
+                        <th className="p-2.5">Size</th>
+                        <th className="p-2.5">Height</th>
+                        <th className="p-2.5">Length</th>
+                        <th className="p-2.5">Bust</th>
+                        <th className="p-2.5">Sleeve</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {sizeRows.map((row: any, idx: number) => (
+                        <tr key={idx} className="hover:bg-accent/20 transition">
+                          <td className="p-2.5 font-bold text-primary">{row.size}</td>
+                          <td className="p-2.5">{row.height}</td>
+                          <td className="p-2.5">{row.length}</td>
+                          <td className="p-2.5">{row.bust}</td>
+                          <td className="p-2.5">{row.sleeve}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div className="p-4 border-t border-border flex justify-end bg-background">
+                <button
+                  type="button"
+                  onClick={() => setShowSizeModal(false)}
+                  className="px-5 py-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg text-xs transition cursor-pointer"
+                >
+                  Got It
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

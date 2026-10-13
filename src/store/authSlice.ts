@@ -6,6 +6,8 @@ export interface CustomerUser {
   last_name: string;
   email: string;
   phone: string | null;
+  role?: string;
+  is_blocked?: boolean;
   email_verified: boolean;
 }
 

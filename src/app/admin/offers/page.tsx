@@ -1,5 +1,7 @@
 'use client';
 
+import { API_BASE_URL } from '@/config/api';
+
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSelector } from 'react-redux';
@@ -86,20 +88,24 @@ export default function AdminOffersPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const offRes = await fetch('http://localhost:8080/admin/offers', {
+      const offRes = await fetch(`${API_BASE_URL}/admin/offers`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+      if (offRes.status === 401) {
+        router.push('/admin/login?reason=expired');
+        return;
+      }
       if (offRes.ok) setOffers(await offRes.json());
-      else loadMockOffers();
 
-      const coupRes = await fetch('http://localhost:8080/admin/coupons', {
+      const coupRes = await fetch(`${API_BASE_URL}/admin/coupons`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+      if (coupRes.status === 401) {
+        router.push('/admin/login?reason=expired');
+        return;
+      }
       if (coupRes.ok) setCoupons(await coupRes.json());
-      else loadMockCoupons();
     } catch (err) {
-      loadMockOffers();
-      loadMockCoupons();
     } finally {
       setLoading(false);
     }
@@ -108,20 +114,6 @@ export default function AdminOffersPage() {
   useEffect(() => {
     if (token) fetchData();
   }, [token]);
-
-  const loadMockOffers = () => {
-    setOffers([
-      { id: 'off-1', name: 'Eid Sale 2026', type: 'EID_SALE', priority: 10, discount_type: 'PERCENTAGE', discount_value: 15, start_date: '2026-06-01T00:00:00Z', end_date: '2026-08-30T23:59:59Z', status: 'ACTIVE' },
-      { id: 'off-2', name: 'Flash Friday', type: 'FLASH_SALE', priority: 5, discount_type: 'FIXED_AMOUNT', discount_value: 50, start_date: '2026-07-01T00:00:00Z', end_date: '2026-07-31T23:59:59Z', status: 'ACTIVE' },
-    ]);
-  };
-
-  const loadMockCoupons = () => {
-    setCoupons([
-      { id: 'coup-1', code: 'WELCOME10', discount_type: 'PERCENTAGE', discount_value: 10, minimum_amount: 100, usage_limit: 1000, start_date: '2026-01-01T00:00:00Z', end_date: '2026-12-31T23:59:59Z', status: true },
-      { id: 'coup-2', code: 'SABA50', discount_type: 'FIXED_AMOUNT', discount_value: 50, minimum_amount: 500, usage_limit: 100, start_date: '2026-05-01T00:00:00Z', end_date: '2026-10-31T23:59:59Z', status: true },
-    ]);
-  };
 
   const handleOfferSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -137,7 +129,7 @@ export default function AdminOffersPage() {
     };
 
     try {
-      const res = await fetch('http://localhost:8080/admin/offers', {
+      const res = await fetch(`${API_BASE_URL}/admin/offers`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -187,7 +179,7 @@ export default function AdminOffersPage() {
     };
 
     try {
-      const res = await fetch('http://localhost:8080/admin/coupons', {
+      const res = await fetch(`${API_BASE_URL}/admin/coupons`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

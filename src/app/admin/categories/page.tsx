@@ -1,5 +1,7 @@
 'use client';
 
+import { API_BASE_URL } from '@/config/api';
+
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSelector } from 'react-redux';
@@ -65,7 +67,7 @@ export default function AdminCategoriesPage() {
   const fetchCategories = async () => {
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:8080/admin/categories', {
+      const res = await fetch(`${API_BASE_URL}/admin/categories`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
@@ -109,7 +111,7 @@ export default function AdminCategoriesPage() {
     };
 
     try {
-      const res = await fetch('http://localhost:8080/admin/categories', {
+      const res = await fetch(`${API_BASE_URL}/admin/categories`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -153,7 +155,7 @@ export default function AdminCategoriesPage() {
     const formData = new FormData();
     formData.append('image', file);
     try {
-      const res = await fetch('http://localhost:8080/admin/uploads/category', {
+      const res = await fetch(`${API_BASE_URL}/admin/uploads/category`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
@@ -194,7 +196,7 @@ export default function AdminCategoriesPage() {
     setError('');
     setSuccess('');
     try {
-      const res = await fetch(`http://localhost:8080/admin/categories/${editingCategory.id}`, {
+      const res = await fetch(`${API_BASE_URL}/admin/categories/${editingCategory.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -225,7 +227,7 @@ export default function AdminCategoriesPage() {
 
   const handleDelete = async (id: string) => {
     try {
-      const res = await fetch(`http://localhost:8080/admin/categories/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/admin/categories/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });

@@ -33,7 +33,7 @@ export default function LanguageSelector() {
           {/* Click-away backdrop */}
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
 
-          <div className="absolute right-0 top-full mt-1 w-40 bg-card border border-border rounded-md shadow-lg z-50 overflow-hidden">
+          <div className="absolute right-0 top-full mt-1 w-40 bg-card dark:bg-zinc-950 border border-border rounded-xl shadow-2xl z-50 overflow-hidden text-card-foreground">
             {LANGUAGES.map((lang) => (
               <button
                 key={lang.value}
@@ -57,6 +57,11 @@ export default function LanguageSelector() {
                 )}
               </button>
             ))}
+
+            <div className="border-t border-border/60 px-3 py-1.5 bg-muted/20 flex items-center justify-between text-[9px] text-muted-foreground">
+              <span>Google Translate API</span>
+              <span className="text-primary font-mono font-semibold">AR / EN</span>
+            </div>
           </div>
         </>
       )}

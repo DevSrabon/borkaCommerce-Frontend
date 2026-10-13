@@ -1,12 +1,15 @@
 'use client';
 
+import { API_BASE_URL } from '@/config/api';
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../../store';
 import {
   Plus, Trash, Tag, PlusCircle, Check, Edit2, Upload,
-  Eye, EyeOff, X, Pencil, Save,
+  Eye, EyeOff, X, Pencil, Save, ExternalLink,
 } from 'lucide-react';
 import RichTextEditor from '../../../components/RichTextEditor';
 
@@ -95,6 +98,7 @@ export default function AdminProductsPage() {
     category_ids: [] as string[],
     related_category_ids: [] as string[],
     status: 'DRAFT',
+    is_cod_allowed: true,
   };
 
   const [form, setForm] = useState(emptyForm);
@@ -145,9 +149,9 @@ export default function AdminProductsPage() {
     setLoading(true);
     try {
       const [prodRes, catRes, attrRes] = await Promise.all([
-        fetch('http://localhost:8080/admin/products', { headers: { Authorization: `Bearer ${token}` } }),
-        fetch('http://localhost:8080/ecommerce/categories/tree'),
-        fetch('http://localhost:8080/admin/attributes', { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API_BASE_URL}/admin/products`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API_BASE_URL}/ecommerce/categories/tree`),
+        fetch(`${API_BASE_URL}/admin/attributes`, { headers: { Authorization: `Bearer ${token}` } }),
       ]);
 
       if (prodRes.ok) setProducts(await prodRes.json()); else loadMockCatalog();
@@ -269,7 +273,7 @@ export default function AdminProductsPage() {
       for (let i = 0; i < files.length; i++) {
         const formData = new FormData();
         formData.append('image', files[i]);
-        const res = await fetch('http://localhost:8080/admin/products/upload', {
+        const res = await fetch(`${API_BASE_URL}/admin/products/upload`, {
           method: 'POST',
           headers: { Authorization: `Bearer ${token}` },
           body: formData,
@@ -308,7 +312,7 @@ export default function AdminProductsPage() {
       for (let i = 0; i < files.length; i++) {
         const fd = new FormData();
         fd.append('image', files[i]);
-        const res = await fetch('http://localhost:8080/admin/uploads/product', {
+        const res = await fetch(`${API_BASE_URL}/admin/uploads/product`, {
           method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: fd,
         });
         if (res.ok) {
@@ -347,7 +351,7 @@ export default function AdminProductsPage() {
     };
 
     try {
-      const res = await fetch('http://localhost:8080/admin/products', {
+      const res = await fetch(`${API_BASE_URL}/admin/products`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(payload),
@@ -377,7 +381,7 @@ export default function AdminProductsPage() {
   const handleEditClick = async (p: any) => {
     setError(''); setSuccess('');
     try {
-      const res = await fetch(`http://localhost:8080/admin/products/${p.id}`, {
+      const res = await fetch(`${API_BASE_URL}/admin/products/${p.id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
@@ -398,6 +402,7 @@ export default function AdminProductsPage() {
           category_ids: fullProd.product_categories?.map((pc: any) => pc.category_id) || [],
           related_category_ids: fullProd.related_categories?.map((rc: any) => rc.category_id) || [],
           status: fullProd.status,
+          is_cod_allowed: fullProd.is_cod_allowed !== false,
         });
         setImages(fullProd.images?.map((img: any) => ({ id: img.id, image_url: img.image_url, alt_text: img.alt_text || '', is_thumbnail: img.is_thumbnail })) || []);
         setVariants(fullProd.variants?.map((v: any) => ({
@@ -430,8 +435,17 @@ export default function AdminProductsPage() {
     if (!editingProduct) return;
     if (images.length === 0) { setError('At least one product image is required.'); return; }
 
+    // Prompt for email notification if status is changing
+    let shouldSendEmail = false;
+    if (form.status && form.status !== editingProduct.status) {
+      shouldSendEmail = window.confirm(
+        `Product status is changing from ${editingProduct.status} to ${form.status}.\n\nDo you want to send an email notification about this status update?`,
+      );
+    }
+
     const payload = {
       ...form,
+      notify_customers: shouldSendEmail,
       images,
       variants: variants.map(v => ({
         ...v, price: Number(v.price),
@@ -441,13 +455,13 @@ export default function AdminProductsPage() {
     };
 
     try {
-      const res = await fetch(`http://localhost:8080/admin/products/${editingProduct.id}`, {
+      const res = await fetch(`${API_BASE_URL}/admin/products/${editingProduct.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(payload),
       });
       if (res.ok) {
-        setSuccess('Product updated successfully!');
+        setSuccess(`Product updated successfully!${shouldSendEmail ? ' Email notification sent.' : ''}`);
         setShowEditForm(false);
         setEditingProduct(null);
         fetchCatalog();
@@ -471,14 +485,23 @@ export default function AdminProductsPage() {
   const handleTogglePublish = async (pId: string, currentStatus: string) => {
     setError(''); setSuccess('');
     const newStatus = currentStatus === 'PUBLISHED' ? 'DRAFT' : 'PUBLISHED';
+    const shouldSendEmail = window.confirm(
+      `Product status will change to ${newStatus}.\n\nDo you want to send an email notification about this status update?`,
+    );
+
     try {
-      const res = await fetch(`http://localhost:8080/admin/products/${pId}`, {
+      const res = await fetch(`${API_BASE_URL}/admin/products/${pId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify({ status: newStatus, notify_customers: shouldSendEmail }),
       });
-      if (res.ok) { setSuccess(`Product ${newStatus === 'PUBLISHED' ? 'published' : 'unpublished'}.`); fetchCatalog(); }
-      else { const err = await res.json(); setError(err.message || 'Action failed'); }
+      if (res.ok) {
+        setSuccess(`Product ${newStatus === 'PUBLISHED' ? 'published' : 'unpublished'}${shouldSendEmail ? ' and notification email sent' : ''}.`);
+        fetchCatalog();
+      } else {
+        const err = await res.json();
+        setError(err.message || 'Action failed');
+      }
     } catch {
       setProducts(prev => prev.map(item => item.id === pId ? { ...item, status: newStatus } : item));
     }
@@ -486,7 +509,7 @@ export default function AdminProductsPage() {
 
   const handleArchiveProduct = async (id: string) => {
     try {
-      const res = await fetch(`http://localhost:8080/admin/products/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/admin/products/${id}`, {
         method: 'DELETE', headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) fetchCatalog();
@@ -520,7 +543,7 @@ export default function AdminProductsPage() {
   const handleRemoveImage = (img: ProductImage, index: number) => {
     if (img.id) {
       if (confirm('Are you sure you want to delete this image? This action will save immediately.')) {
-        fetch(`http://localhost:8080/admin/products/${editingProduct.id}/images/${img.id}`, {
+        fetch(`${API_BASE_URL}/admin/products/${editingProduct.id}/images/${img.id}`, {
           method: 'DELETE',
           headers: { Authorization: `Bearer ${token}` },
         })
@@ -542,7 +565,7 @@ export default function AdminProductsPage() {
   const handleCreateAttribute = async () => {
     if (!newAttrName.trim()) return;
     try {
-      const res = await fetch('http://localhost:8080/admin/attributes', {
+      const res = await fetch(`${API_BASE_URL}/admin/attributes`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ name: newAttrName.trim() }),
@@ -555,7 +578,7 @@ export default function AdminProductsPage() {
   const handleUpdateAttribute = async () => {
     if (!editingAttr) return;
     try {
-      const res = await fetch(`http://localhost:8080/admin/attributes/${editingAttr.id}`, {
+      const res = await fetch(`${API_BASE_URL}/admin/attributes/${editingAttr.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ name: editingAttr.name }),
@@ -568,7 +591,7 @@ export default function AdminProductsPage() {
   const handleDeleteAttribute = async (id: string) => {
     if (!confirm('Delete this attribute and all its values?')) return;
     try {
-      const res = await fetch(`http://localhost:8080/admin/attributes/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/admin/attributes/${id}`, {
         method: 'DELETE', headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) fetchCatalog();
@@ -579,7 +602,7 @@ export default function AdminProductsPage() {
     const val = newAttrValueMap[attrId]?.trim();
     if (!val) return;
     try {
-      const res = await fetch(`http://localhost:8080/admin/attributes/${attrId}/values`, {
+      const res = await fetch(`${API_BASE_URL}/admin/attributes/${attrId}/values`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ value: val }),
@@ -592,7 +615,7 @@ export default function AdminProductsPage() {
   const handleUpdateAttributeValue = async () => {
     if (!editingAttrValue) return;
     try {
-      const res = await fetch(`http://localhost:8080/admin/attributes/values/${editingAttrValue.id}`, {
+      const res = await fetch(`${API_BASE_URL}/admin/attributes/values/${editingAttrValue.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ value: editingAttrValue.value }),
@@ -604,7 +627,7 @@ export default function AdminProductsPage() {
 
   const handleDeleteAttributeValue = async (valueId: string) => {
     try {
-      const res = await fetch(`http://localhost:8080/admin/attributes/values/${valueId}`, {
+      const res = await fetch(`${API_BASE_URL}/admin/attributes/values/${valueId}`, {
         method: 'DELETE', headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) fetchCatalog();
@@ -943,7 +966,7 @@ export default function AdminProductsPage() {
                   onClick={async () => {
                     if (!editingCategory) return;
                     try {
-                      const res = await fetch(`http://localhost:8080/admin/categories/${editingCategory.id}`, {
+                      const res = await fetch(`${API_BASE_URL}/admin/categories/${editingCategory.id}`, {
                         method: 'PATCH',
                         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                         body: JSON.stringify({
@@ -1021,6 +1044,26 @@ export default function AdminProductsPage() {
         <input type="text" name="tags" placeholder="e.g. modest, classic, abaya, ramadan"
           className="w-full text-xs bg-background border border-border rounded px-3 py-2.5 focus:outline-none"
           value={form.tags} onChange={handleInputChange} />
+      </div>
+      <div className="space-y-1 sm:col-span-2 p-3 bg-muted/40 rounded-lg border border-border flex items-center justify-between">
+        <div>
+          <label className="text-xs font-semibold text-foreground block">
+            Cash on Delivery (COD) Option
+          </label>
+          <p className="text-[11px] text-muted-foreground">
+            Allow customers to pay cash on delivery for this product. If turned off, customers must pay online before placing order.
+          </p>
+        </div>
+        <label className="relative inline-flex items-center cursor-pointer">
+          <input
+            type="checkbox"
+            name="is_cod_allowed"
+            checked={(form as any).is_cod_allowed !== false}
+            onChange={(e) => setForm((prev: any) => ({ ...prev, is_cod_allowed: e.target.checked }))}
+            className="sr-only peer"
+          />
+          <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+        </label>
       </div>
       <div className="space-y-2 col-span-2">
         <label className="text-[10px] font-semibold text-muted-foreground uppercase block">Categories</label>
@@ -1168,7 +1211,9 @@ export default function AdminProductsPage() {
                       <th className="p-4">Product Name</th>
                       <th className="p-4">Slug</th>
                       <th className="p-4">Starting Price</th>
-                      <th className="p-4">Stock</th>
+                      <th className="p-4">Rating</th>
+                      <th className="p-4">Stock Config</th>
+                      <th className="p-4">COD</th>
                       <th className="p-4">Status</th>
                       <th className="p-4 text-right">Actions</th>
                     </tr>
@@ -1176,13 +1221,49 @@ export default function AdminProductsPage() {
                   <tbody className="divide-y divide-border font-light">
                     {products.map(p => {
                       const startingPrice = p.variants[0]?.price || 0;
-                      const totalStock = p.variants.reduce((acc, v) => acc + (v.inventories[0]?.quantity || 0), 0);
+                      const totalStock = p.variants.reduce((acc, v) => acc + (v.inventories?.reduce((sum: number, inv: any) => sum + (inv.quantity || 0), 0) || (v.inventories?.[0]?.quantity || 0)), 0);
+                      const rating = (p as any).rating || { average: 0, count: 0 };
                       return (
                         <tr key={p.id} className="hover:bg-accent/40 text-foreground">
                           <td className="p-4 font-medium">{p.name}</td>
                           <td className="p-4 font-mono text-muted">{p.slug}</td>
                           <td className="p-4 font-semibold">AED {startingPrice}</td>
-                          <td className="p-4">{totalStock} units</td>
+                          <td className="p-4">
+                            {rating.count > 0 ? (
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-amber-500 font-bold text-xs">★ {rating.average}</span>
+                                <span className="text-[10px] text-muted-foreground">({rating.count})</span>
+                              </div>
+                            ) : (
+                              <span className="text-[10px] text-muted-foreground italic">No reviews</span>
+                            )}
+                          </td>
+                          <td className="p-4">
+                            {totalStock <= 0 ? (
+                              <span className="px-2 py-0.5 rounded font-semibold text-[10px] bg-red-500/10 text-red-500 border border-red-500/20">
+                                Out of Stock (0)
+                              </span>
+                            ) : totalStock <= 5 ? (
+                              <span className="px-2 py-0.5 rounded font-semibold text-[10px] bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                                Low Stock ({totalStock})
+                              </span>
+                            ) : (
+                              <span className="px-2 py-0.5 rounded font-semibold text-[10px] bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                                In Stock ({totalStock})
+                              </span>
+                            )}
+                          </td>
+                          <td className="p-4">
+                            {(p as any).is_cod_allowed !== false ? (
+                              <span className="px-2 py-0.5 rounded font-semibold text-[10px] bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                                Available
+                              </span>
+                            ) : (
+                              <span className="px-2 py-0.5 rounded font-semibold text-[10px] bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                                Prepaid Only
+                              </span>
+                            )}
+                          </td>
                           <td className="p-4">
                             <span className={`px-2 py-0.5 rounded font-semibold text-[10px] border ${
                               p.status === 'PUBLISHED'
@@ -1193,6 +1274,15 @@ export default function AdminProductsPage() {
                             </span>
                           </td>
                           <td className="p-4 text-right flex items-center justify-end gap-2">
+                            <Link
+                              href={`/product/${p.slug}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="p-1.5 border border-border rounded text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 transition cursor-pointer flex items-center justify-center"
+                              title="Go to / View Product on Storefront"
+                            >
+                              <ExternalLink size={14} />
+                            </Link>
                             <button onClick={() => handleTogglePublish(p.id, p.status)}
                               className={`p-1.5 border rounded transition cursor-pointer ${
                                 p.status === 'PUBLISHED'

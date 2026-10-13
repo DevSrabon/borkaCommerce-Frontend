@@ -1,39 +1,50 @@
 'use client';
 
+import { API_BASE_URL } from '@/config/api';
+
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../../store';
-import { Package, MapPin, Calendar, Clock, ChevronRight } from 'lucide-react';
+import { setSession } from '../../store/authSlice';
+import { Package, MapPin, Calendar, Clock, ChevronRight, Camera, Check, AlertCircle, Truck, ExternalLink } from 'lucide-react';
 
 interface OrderItem {
   id: string;
   product_name: string;
   variant_name: string;
   sku: string;
-  price: number;
+  price: number | string;
   quantity: number;
-  subtotal: number;
+  subtotal: number | string;
 }
 
 interface Order {
   id: string;
   order_number: string;
   status: 'PENDING' | 'CONFIRMED' | 'PACKED' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | 'REFUNDED';
-  total: number;
+  total: number | string;
   payment_status: 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED';
+  currency?: string | null;
+  delivery_partner?: string | null;
+  tracking_number?: string | null;
+  tracking_url?: string | null;
+  delivery_notes?: string | null;
   created_at: string;
   items: OrderItem[];
 }
 
 export default function ProfilePage() {
   const router = useRouter();
+  const dispatch = useDispatch();
   const token = useSelector((state: RootState) => state.auth.token);
   const user = useSelector((state: RootState) => state.auth.user);
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [avatarMsg, setAvatarMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -47,19 +58,19 @@ export default function ProfilePage() {
 
     const fetchMyOrders = async () => {
       try {
-        const res = await fetch('http://localhost:8080/ecommerce/orders/my-orders', {
+        const res = await fetch(`${API_BASE_URL}/ecommerce/orders/my-orders`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
         if (res.ok) {
           const data = await res.json();
-          setOrders(data);
+          setOrders(Array.isArray(data) ? data : []);
         } else {
-          loadMockOrders();
+          setOrders([]);
         }
       } catch (err) {
-        loadMockOrders();
+        setOrders([]);
       } finally {
         setLoading(false);
       }
@@ -68,28 +79,53 @@ export default function ProfilePage() {
     fetchMyOrders();
   }, [token]);
 
-  const loadMockOrders = () => {
-    setOrders([
-      {
-        id: 'mock-ord-1',
-        order_number: 'BC-1721469032-4829',
-        status: 'SHIPPED',
-        total: 232.50, // classic black abaya + shipping
-        payment_status: 'PAID',
-        created_at: new Date(Date.now() - 24 * 3600 * 1000).toISOString(), // 1 day ago
-        items: [
-          {
-            id: 'mock-item-1',
-            product_name: 'Classic Black Nidha Abaya',
-            variant_name: 'ABA-BLK-54-NID',
-            sku: 'ABA-BLK-54-NID',
-            price: 212.50,
-            quantity: 1,
-            subtotal: 212.50,
-          },
-        ],
-      },
-    ]);
+  const handleAvatarFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !token) return;
+
+    if (!file.type.match(/^image\/(jpeg|png|webp|avif|gif)$/i)) {
+      setAvatarMsg({ type: 'error', text: 'Please select an image file (JPG, PNG, WEBP, AVIF)' });
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setAvatarMsg({ type: 'error', text: 'Image file size must be under 5MB' });
+      return;
+    }
+
+    setUploadingAvatar(true);
+    setAvatarMsg(null);
+
+    const formData = new FormData();
+    formData.append('avatar', file);
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/ecommerce/auth/avatar`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        dispatch(
+          setSession({
+            user: data.user,
+            token,
+          })
+        );
+        setAvatarMsg({ type: 'success', text: 'Avatar uploaded and updated!' });
+        setTimeout(() => setAvatarMsg(null), 3500);
+      } else {
+        setAvatarMsg({ type: 'error', text: data.message || 'Avatar upload failed' });
+      }
+    } catch (err: any) {
+      setAvatarMsg({ type: 'error', text: 'Network error while uploading avatar' });
+    } finally {
+      setUploadingAvatar(false);
+    }
   };
 
   if (!mounted || !user) return null;
@@ -114,20 +150,68 @@ export default function ProfilePage() {
   return (
     <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8 w-full space-y-12">
       {/* Welcome Banner */}
-      <div className="border border-border bg-card p-8 rounded-md shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-        <div className="space-y-1">
-          <span className="text-[10px] font-semibold text-primary uppercase tracking-widest">My Account Dashboard</span>
-          <h1 className="font-serif text-3xl font-bold">Welcome, {user.first_name}!</h1>
-          <p className="text-xs text-muted-foreground font-light">{user.email} &bull; {user.phone || 'No phone registered'}</p>
+      <div className="border border-border bg-card p-6 sm:p-8 rounded-lg shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div className="flex items-center gap-5">
+          {/* Avatar Upload Container (Device File ONLY) */}
+          <div className="relative group shrink-0">
+            <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-primary/50 bg-background shadow-inner flex items-center justify-center text-primary font-serif font-bold text-2xl">
+              {(user as any)?.avatar_url ? (
+                <img
+                  src={
+                    (user as any).avatar_url.startsWith('http')
+                      ? (user as any).avatar_url
+                      : `${API_BASE_URL}${(user as any).avatar_url}`
+                  }
+                  alt={user.first_name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span>{user.first_name?.[0]?.toUpperCase() || 'U'}</span>
+              )}
+            </div>
+
+            {/* Hidden file input (Device upload ONLY) */}
+            <label className="absolute inset-0 bg-black/60 rounded-full opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white text-[10px] cursor-pointer transition">
+              <Camera size={18} className="text-primary mb-0.5" />
+              <span>Upload</span>
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/avif"
+                onChange={handleAvatarFileChange}
+                disabled={uploadingAvatar}
+                className="hidden"
+              />
+            </label>
+
+            {uploadingAvatar && (
+              <div className="absolute inset-0 bg-black/80 rounded-full flex items-center justify-center">
+                <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-1">
+            <span className="text-[10px] font-semibold text-primary uppercase tracking-widest block">My Account Dashboard</span>
+            <h1 className="font-serif text-2xl sm:text-3xl font-bold text-foreground">
+              Welcome, {user.first_name}!
+            </h1>
+            <p className="text-xs text-muted-foreground font-light">{user.email} &bull; {user.phone || 'No phone registered'}</p>
+            {avatarMsg && (
+              <p className={`text-[11px] font-medium flex items-center gap-1 ${avatarMsg.type === 'success' ? 'text-green-500' : 'text-red-500'}`}>
+                {avatarMsg.type === 'success' ? <Check size={13} /> : <AlertCircle size={13} />}
+                <span>{avatarMsg.text}</span>
+              </p>
+            )}
+          </div>
         </div>
 
-        <div className="flex gap-4">
-          <div className="px-4 py-2 border border-border rounded text-center">
-            <span className="block text-xl font-serif font-bold text-primary">{orders.length}</span>
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="px-5 py-3 border border-border rounded-lg text-center bg-background/50">
+            <span className="block text-2xl font-serif font-bold text-primary">{orders.length}</span>
             <span className="text-[10px] text-muted-foreground uppercase font-semibold">Total Orders</span>
           </div>
-          {user.email === 'srabon@example.com' || user.email === 'admin@example.com' ? (
-            <Link href="/admin" className="px-4 py-2 border border-primary text-primary hover:bg-primary hover:text-primary-foreground font-medium rounded text-xs tracking-wider flex items-center justify-center uppercase transition">
+          {user.email === 'srabon@example.com' || user.email === 'admin@example.com' || (user as any).role === 'ADMIN' ? (
+            <Link href="/admin" className="px-4 py-3 border border-primary text-primary hover:bg-primary hover:text-primary-foreground font-medium rounded text-xs tracking-wider flex items-center justify-center uppercase transition">
               Open Admin Panel
             </Link>
           ) : null}
@@ -181,19 +265,50 @@ export default function ProfilePage() {
 
                   {/* Order Items */}
                   <div className="p-6 space-y-4">
-                    {order.items.map((item) => (
+                    {(order.items || []).map((item) => (
                       <div key={item.id} className="flex justify-between items-center text-sm">
                         <div className="space-y-0.5">
                           <h4 className="font-medium text-xs text-foreground">{item.product_name}</h4>
                           <p className="text-[10px] text-muted-foreground font-mono">SKU: {item.sku} &bull; Qty: {item.quantity}</p>
                         </div>
-                        <span className="font-semibold text-xs">AED {item.subtotal}</span>
+                        <span className="font-semibold text-xs">{order.currency || 'AED'} {Number(item.subtotal ?? 0).toFixed(2)}</span>
                       </div>
                     ))}
 
+                    {(order.delivery_partner || order.tracking_number) && (
+                      <div className="bg-primary/5 border border-primary/20 rounded-md p-3.5 flex flex-wrap items-center justify-between gap-3 text-xs">
+                        <div className="flex items-center gap-2.5">
+                          <div className="p-2 bg-primary/10 rounded-full text-primary">
+                            <Truck size={16} />
+                          </div>
+                          <div>
+                            <p className="font-semibold text-foreground">
+                              {order.delivery_partner || 'Courier Delivery'}
+                            </p>
+                            {order.tracking_number && (
+                              <p className="text-[11px] text-muted-foreground font-mono">
+                                Tracking #: <span className="font-semibold text-foreground">{order.tracking_number}</span>
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        {order.tracking_url && (
+                          <a
+                            href={order.tracking_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground text-[11px] font-semibold rounded hover:bg-primary/90 transition shadow-xs"
+                          >
+                            <span>Track Package</span>
+                            <ExternalLink size={12} />
+                          </a>
+                        )}
+                      </div>
+                    )}
+
                     <div className="border-t border-border pt-4 flex justify-between items-center text-sm font-semibold">
                       <span className="text-muted text-xs font-light">Total Paid</span>
-                      <span className="text-primary font-serif">AED {order.total.toFixed(2)}</span>
+                      <span className="text-primary font-serif">{order.currency || 'AED'} {Number(order.total ?? 0).toFixed(2)}</span>
                     </div>
                   </div>
                 </div>

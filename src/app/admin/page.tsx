@@ -1,5 +1,7 @@
 'use client';
 
+import { API_BASE_URL } from '@/config/api';
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
@@ -42,7 +44,7 @@ export default function AdminDashboard() {
   const fetchOrders = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:8080/admin/orders', {
+      const res = await fetch(`${API_BASE_URL}/admin/orders`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) setOrders(await res.json());
@@ -55,7 +57,7 @@ export default function AdminDashboard() {
   const handleUpdateStatus = async (orderId: string, status: string) => {
     setUpdatingId(orderId);
     try {
-      await fetch(`http://localhost:8080/admin/orders/${orderId}`, {
+      await fetch(`${API_BASE_URL}/admin/orders/${orderId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ status }),
@@ -68,7 +70,7 @@ export default function AdminDashboard() {
   const handleDeleteOrder = async (orderId: string) => {
     if (!confirm('Delete this order permanently?')) return;
     try {
-      const res = await fetch(`http://localhost:8080/admin/orders/${orderId}`, {
+      const res = await fetch(`${API_BASE_URL}/admin/orders/${orderId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });

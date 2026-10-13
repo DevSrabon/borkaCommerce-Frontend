@@ -51,7 +51,7 @@ export default function BannerSlider({ serverBanners }: Props) {
 
   return (
     <section
-      className="relative w-full h-[85vh] bg-neutral-900 overflow-hidden flex items-center"
+      className="relative w-full h-[62vh] sm:h-[75vh] md:h-[85vh] bg-neutral-900 overflow-hidden flex items-center"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
@@ -74,13 +74,13 @@ export default function BannerSlider({ serverBanners }: Props) {
 
       {/* Content */}
       <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 w-full">
-        <div className="max-w-2xl space-y-5">
-          <span className="text-primary font-medium tracking-widest text-xs uppercase block animate-fade-in">
+        <div className="max-w-2xl space-y-3 sm:space-y-5">
+          <span className="text-primary font-medium tracking-widest text-[10px] sm:text-xs uppercase block animate-fade-in">
             {current === 0 && serverBanners.length === 0 ? 'Eid Collection 2026' : `Slide ${current + 1} of ${banners.length}`}
           </span>
           <h1
             key={slide.id + '-title'}
-            className="font-serif text-4xl sm:text-6xl font-bold tracking-tight text-white leading-tight"
+            className="font-serif text-2xl sm:text-4xl md:text-6xl font-bold tracking-tight text-white leading-tight"
             style={{ animation: 'slideUp 0.6s ease-out' }}
           >
             {slide.title.split(' ').slice(0, -1).join(' ')}{' '}
@@ -89,21 +89,21 @@ export default function BannerSlider({ serverBanners }: Props) {
           {slide.subtitle && (
             <p
               key={slide.id + '-sub'}
-              className="text-zinc-300 text-lg leading-relaxed max-w-lg font-light"
+              className="text-zinc-300 text-xs sm:text-base md:text-lg leading-relaxed max-w-lg font-light line-clamp-3 sm:line-clamp-none"
               style={{ animation: 'slideUp 0.7s ease-out' }}
             >
               {slide.subtitle}
             </p>
           )}
-          <div className="flex flex-wrap gap-4 pt-2">
+          <div className="flex flex-wrap gap-2.5 sm:gap-4 pt-1 sm:pt-2">
             {slide.cta_text && slide.cta_link && (
-              <Link href={slide.cta_link} className="px-8 py-3.5 btn-luxury rounded-sm tracking-wider uppercase text-sm font-semibold">
+              <Link href={slide.cta_link} className="px-5 py-2.5 sm:px-8 sm:py-3.5 btn-luxury rounded-sm tracking-wider uppercase text-xs sm:text-sm font-semibold">
                 {slide.cta_text}
               </Link>
             )}
             <Link
               href="/catalog"
-              className="px-8 py-3.5 border border-white text-white hover:bg-white hover:text-black rounded-sm tracking-wider uppercase text-sm font-medium transition duration-300"
+              className="px-5 py-2.5 sm:px-8 sm:py-3.5 border border-white text-white hover:bg-white hover:text-black rounded-sm tracking-wider uppercase text-xs sm:text-sm font-medium transition duration-300"
             >
               Browse All
             </Link>
@@ -111,19 +111,19 @@ export default function BannerSlider({ serverBanners }: Props) {
         </div>
       </div>
 
-      {/* Prev / Next arrows — only show if >1 banner */}
+      {/* Prev / Next arrows — hide on small screens to avoid covering text */}
       {banners.length > 1 && (
         <>
           <button
             onClick={prev}
-            className="absolute left-4 top-1/2 -translate-y-1/2 z-20 h-10 w-10 rounded-full bg-black/40 hover:bg-black/70 border border-white/20 text-white flex items-center justify-center transition cursor-pointer backdrop-blur-sm"
+            className="hidden sm:flex absolute left-4 top-1/2 -translate-y-1/2 z-20 h-10 w-10 rounded-full bg-black/40 hover:bg-black/70 border border-white/20 text-white items-center justify-center transition cursor-pointer backdrop-blur-sm"
             aria-label="Previous banner"
           >
             <ChevronLeft size={20} />
           </button>
           <button
             onClick={next}
-            className="absolute right-4 top-1/2 -translate-y-1/2 z-20 h-10 w-10 rounded-full bg-black/40 hover:bg-black/70 border border-white/20 text-white flex items-center justify-center transition cursor-pointer backdrop-blur-sm"
+            className="hidden sm:flex absolute right-4 top-1/2 -translate-y-1/2 z-20 h-10 w-10 rounded-full bg-black/40 hover:bg-black/70 border border-white/20 text-white items-center justify-center transition cursor-pointer backdrop-blur-sm"
             aria-label="Next banner"
           >
             <ChevronRight size={20} />

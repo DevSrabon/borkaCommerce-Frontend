@@ -7,6 +7,8 @@
   --foreground: #111111;
   --card: #ffffff;
   --card-foreground: #111111;
+  --popover: #ffffff;
+  --popover-foreground: #111111;
   --primary: #b89047; /* Luxury Gold */
   --primary-foreground: #ffffff;
   --secondary: #1f2937;
@@ -27,6 +29,8 @@
     --foreground: #fafafa;
     --card: #18181b;
     --card-foreground: #fafafa;
+    --popover: #18181b;
+    --popover-foreground: #fafafa;
     --primary: #cda254;
     --primary-foreground: #09090b;
     --secondary: #27272a;
@@ -46,6 +50,8 @@
   --color-foreground: var(--foreground);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
@@ -165,4 +171,51 @@ html[dir="rtl"] .absolute.right-0 {
 html[lang="ar"] .prose-editor {
   direction: rtl;
   text-align: right;
+}
+
+/* =============================================
+   Google Translate Seamless Integration & Complete Branding Suppression
+   ============================================= */
+.goog-te-banner-frame,
+.goog-te-banner-frame.skiptranslate,
+iframe.goog-te-banner-frame,
+iframe.skiptranslate,
+body > .skiptranslate,
+#goog-gt-tt,
+.goog-te-balloon-frame,
+.goog-tooltip,
+.goog-tooltip:hover,
+.goog-text-highlight,
+.goog-te-gadget,
+.goog-logo-link,
+[id*=":google_translate"],
+div[style*="te_bk.gif"],
+*[style*="te_bk.gif"],
+.VIpgJd-ZVi9I-OR9Mb-sMiClc,
+.VIpgJd-yAWNEb-hvhGLb-V67Soe,
+.VIpgJd-yAWNEb-L7lbkb {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  height: 0 !important;
+  width: 0 !important;
+  max-height: 0 !important;
+  max-width: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  overflow: hidden !important;
+  background-image: none !important;
+}
+
+body {
+  top: 0px !important;
+  position: static !important;
+  background-image: none !important;
+}
+
+#google_translate_element {
+  display: none !important;
+  visibility: hidden !important;
 }

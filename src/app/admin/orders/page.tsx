@@ -1,10 +1,13 @@
 'use client';
 
+import { API_BASE_URL } from '@/config/api';
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../../store';
-import { RefreshCw, Eye, Trash2, Search } from 'lucide-react';
+import { RefreshCw, Eye, Trash2, Search, PlusCircle, Truck, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
+import CreateManualOrderModal from '@/components/admin/CreateManualOrderModal';
 
 interface Order {
   id: string;
@@ -13,6 +16,9 @@ interface Order {
   total: number;
   status: 'PENDING' | 'CONFIRMED' | 'PACKED' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | 'REFUNDED';
   payment_status: 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED';
+  delivery_partner?: string | null;
+  tracking_number?: string | null;
+  tracking_url?: string | null;
   created_at: string;
 }
 
@@ -32,11 +38,12 @@ export default function OrdersAdminPage() {
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [showManualModal, setShowManualModal] = useState(false);
 
   const fetchOrders = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:8080/admin/orders', {
+      const res = await fetch(`${API_BASE_URL}/admin/orders`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) setOrders(await res.json());
@@ -49,7 +56,7 @@ export default function OrdersAdminPage() {
   const handleUpdateStatus = async (orderId: string, status: string) => {
     setUpdatingId(orderId);
     try {
-      await fetch(`http://localhost:8080/admin/orders/${orderId}`, {
+      await fetch(`${API_BASE_URL}/admin/orders/${orderId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ status }),
@@ -62,7 +69,7 @@ export default function OrdersAdminPage() {
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this order permanently?')) return;
     try {
-      const res = await fetch(`http://localhost:8080/admin/orders/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/admin/orders/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -86,9 +93,18 @@ export default function OrdersAdminPage() {
           <h1 className="font-serif text-2xl font-bold">Orders</h1>
           <p className="text-xs text-muted-foreground mt-0.5">{orders.length} total orders in the system.</p>
         </div>
-        <button onClick={fetchOrders} className="flex items-center gap-2 text-xs border border-border px-3 py-2 rounded-md hover:bg-accent transition cursor-pointer">
-          <RefreshCw size={13} /> Refresh
-        </button>
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={() => setShowManualModal(true)}
+            className="flex items-center gap-2 text-xs bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-3.5 py-2 rounded-md transition shadow-xs cursor-pointer"
+          >
+            <PlusCircle size={14} />
+            <span>Create Manual Order</span>
+          </button>
+          <button onClick={fetchOrders} className="flex items-center gap-2 text-xs border border-border px-3 py-2 rounded-md hover:bg-accent transition cursor-pointer">
+            <RefreshCw size={13} /> Refresh
+          </button>
+        </div>
       </div>
 
       {/* Search */}
@@ -119,6 +135,7 @@ export default function OrdersAdminPage() {
                   <th className="px-5 py-3">Total</th>
                   <th className="px-5 py-3">Payment</th>
                   <th className="px-5 py-3">Status</th>
+                  <th className="px-5 py-3">Courier / Tracking</th>
                   <th className="px-5 py-3 text-right">Actions</th>
                 </tr>
               </thead>
@@ -143,6 +160,34 @@ export default function OrdersAdminPage() {
                       <span className={`px-2 py-0.5 rounded text-[10px] font-semibold border ${STATUS_COLORS[ord.status] || ''}`}>
                         {ord.status}
                       </span>
+                    </td>
+                    <td className="px-5 py-3">
+                      {ord.delivery_partner ? (
+                        <div className="flex flex-col gap-0.5">
+                          <span className="inline-flex items-center gap-1 font-medium text-foreground">
+                            <Truck size={12} className="text-primary" />
+                            {ord.delivery_partner}
+                          </span>
+                          {ord.tracking_number && (
+                            <div className="flex items-center gap-1 text-[10px] text-muted-foreground font-mono">
+                              <span>#{ord.tracking_number}</span>
+                              {ord.tracking_url && (
+                                <a
+                                  href={ord.tracking_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-primary hover:underline inline-flex items-center"
+                                  title="Track package"
+                                >
+                                  <ExternalLink size={10} />
+                                </a>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground text-[11px]">—</span>
+                      )}
                     </td>
                     <td className="px-5 py-3">
                       <div className="flex items-center justify-end gap-2">
@@ -177,6 +222,13 @@ export default function OrdersAdminPage() {
           </div>
         )}
       </div>
+
+      <CreateManualOrderModal
+        isOpen={showManualModal}
+        onClose={() => setShowManualModal(false)}
+        onOrderCreated={() => fetchOrders()}
+        token={token}
+      />
     </div>
   );
 }

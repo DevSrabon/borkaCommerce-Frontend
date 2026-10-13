@@ -1,9 +1,12 @@
 'use client';
 
+import { API_BASE_URL } from '@/config/api';
+
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../../../store';
+import { clearSession } from '../../../store/authSlice';
 import { Box, HelpCircle, Archive, ClipboardList, Check } from 'lucide-react';
 
 interface Warehouse {
@@ -32,6 +35,7 @@ interface TransactionRecord {
 
 export default function AdminInventoryPage() {
   const router = useRouter();
+  const dispatch = useDispatch();
   const token = useSelector((state: RootState) => state.auth.token);
   const user = useSelector((state: RootState) => state.auth.user);
 
@@ -55,22 +59,28 @@ export default function AdminInventoryPage() {
   // Validate admin
   useEffect(() => {
     if (!token || !user) {
-      router.push('/login?redirect=admin/inventory');
+      router.push('/admin/login?redirect=admin/inventory');
       return;
     }
     const adminEmails = ['srabon@example.com', 'admin@example.com'];
-    if (!adminEmails.includes(user.email.toLowerCase())) {
+    const isAdmin = user.role === 'ADMIN' || adminEmails.includes(user.email.toLowerCase());
+    if (!isAdmin) {
       router.push('/');
     }
-  }, [token, user]);
+  }, [token, user, router]);
 
   const fetchInventoryData = async () => {
     setLoading(true);
     try {
       // 1. Fetch Warehouses
-      const whRes = await fetch('http://localhost:8080/admin/warehouses', {
+      const whRes = await fetch(`${API_BASE_URL}/admin/warehouses`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+      if (whRes.status === 401) {
+        dispatch(clearSession());
+        router.push('/admin/login?reason=expired');
+        return;
+      }
       if (whRes.ok) {
         setWarehouses(await whRes.json());
       } else {
@@ -78,9 +88,14 @@ export default function AdminInventoryPage() {
       }
 
       // 2. Fetch Stock status
-      const invRes = await fetch('http://localhost:8080/admin/inventory', {
+      const invRes = await fetch(`${API_BASE_URL}/admin/inventory`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+      if (invRes.status === 401) {
+        dispatch(clearSession());
+        router.push('/admin/login?reason=expired');
+        return;
+      }
       if (invRes.ok) {
         const invData = await invRes.json();
         setInventory(invData);
@@ -93,21 +108,20 @@ export default function AdminInventoryPage() {
           }));
         }
       } else {
-        loadMockInventory();
+        setInventory([]);
       }
 
       // 3. Fetch Transactions log
-      const txRes = await fetch('http://localhost:8080/admin/inventory/transactions', {
+      const txRes = await fetch(`${API_BASE_URL}/admin/inventory/transactions`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (txRes.ok) {
         setTransactions(await txRes.json());
       } else {
-        loadMockTransactions();
+        setTransactions([]);
       }
     } catch (err) {
-      loadMockInventory();
-      loadMockTransactions();
+      setError('Could not connect to inventory database.');
     } finally {
       setLoading(false);
     }
@@ -116,33 +130,6 @@ export default function AdminInventoryPage() {
   useEffect(() => {
     if (token) fetchInventoryData();
   }, [token]);
-
-  const loadMockInventory = () => {
-    setInventory([
-      {
-        id: 'inv-1',
-        quantity: 85,
-        reserved_quantity: 0,
-        available_quantity: 85,
-        warehouse: { name: 'Dubai Main Warehouse' },
-        variant: { sku: 'ABA-BLK-54-NID', product: { name: 'Classic Black Nidha Abaya' } },
-      },
-    ]);
-  };
-
-  const loadMockTransactions = () => {
-    setTransactions([
-      {
-        id: 'tx-1',
-        type: 'PURCHASE',
-        quantity: 85,
-        reference_type: 'PRODUCT_CREATE',
-        created_at: new Date().toISOString(),
-        warehouse: { name: 'Dubai Main Warehouse' },
-        variant: { sku: 'ABA-BLK-54-NID', product: { name: 'Classic Black Nidha Abaya' } },
-      },
-    ]);
-  };
 
   const handleAdjustStock = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -155,7 +142,7 @@ export default function AdminInventoryPage() {
     }
 
     try {
-      const res = await fetch('http://localhost:8080/admin/inventory/adjust', {
+      const res = await fetch(`${API_BASE_URL}/admin/inventory/adjust`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

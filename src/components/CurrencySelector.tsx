@@ -8,6 +8,8 @@ const CURRENCIES: { value: Currency; label: string; flag: string }[] = [
   { value: 'AED', label: 'AED د.إ', flag: '🇦🇪' },
   { value: 'USD', label: 'USD $', flag: '🇺🇸' },
   { value: 'GBP', label: 'GBP £', flag: '🇬🇧' },
+  { value: 'EUR', label: 'EUR €', flag: '🇪🇺' },
+  { value: 'SAR', label: 'SAR ر.س', flag: '🇸🇦' },
 ];
 
 export default function CurrencySelector() {
@@ -33,7 +35,7 @@ export default function CurrencySelector() {
           {/* Click-away backdrop */}
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
 
-          <div className="absolute right-0 top-full mt-1 w-36 bg-card border border-border rounded-md shadow-lg z-50 overflow-hidden">
+          <div className="absolute right-0 top-full mt-1 w-36 bg-card dark:bg-zinc-950 border border-border rounded-xl shadow-2xl z-50 overflow-hidden text-card-foreground">
             {CURRENCIES.map((c) => (
               <button
                 key={c.value}

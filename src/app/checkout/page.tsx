@@ -1,5 +1,7 @@
 'use client';
 
+import { API_BASE_URL } from '@/config/api';
+
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -36,15 +38,16 @@ export default function CheckoutPage() {
   const [isSuccess, setIsSuccess] = useState(false);
   const [orderNum, setOrderNum] = useState('');
 
+  const isCodAvailable = cartItems.length > 0 && cartItems.every((item) => (item as any).is_cod_allowed !== false);
+  const [paymentMethod, setPaymentMethod] = useState<'CASH_ON_DELIVERY' | 'STRIPE'>('CASH_ON_DELIVERY');
+
   useEffect(() => {
-    setMounted(true);
-    if (mounted && cartItems.length === 0 && !isSuccess) {
-      router.push('/cart');
+    if (!isCodAvailable && paymentMethod === 'CASH_ON_DELIVERY') {
+      setPaymentMethod('STRIPE');
     }
-  }, [mounted, cartItems]);
+  }, [isCodAvailable, paymentMethod]);
 
-  if (!mounted) return null;
-
+  // Calculate Subtotal & Discount
   const subtotal = cartItems.reduce((acc, item) => acc + item.discounted_price * item.quantity, 0);
 
   let discount = 0;
@@ -57,7 +60,44 @@ export default function CheckoutPage() {
     discount = Math.min(discount, subtotal);
   }
 
-  const shipping = subtotal > 500 ? 0 : 20.00;
+  const [shippingInfo, setShippingInfo] = useState<{
+    base_fee: number;
+    final_fee: number;
+    discount_amount: number;
+    is_free: boolean;
+    display_text: string;
+    applied_rule: string | null;
+    threshold_rule: string | null;
+  } | null>(null);
+
+  useEffect(() => {
+    setMounted(true);
+    if (mounted && cartItems.length === 0 && !isSuccess) {
+      router.push('/cart');
+    }
+  }, [mounted, cartItems]);
+
+  // Fetch dynamic delivery calculation
+  useEffect(() => {
+    if (subtotal <= 0) {
+      setShippingInfo(null);
+      return;
+    }
+    fetch(`${API_BASE_URL}/ecommerce/shipping-calculator?subtotal=${subtotal}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && typeof data.final_fee === 'number') {
+          setShippingInfo(data);
+        }
+      })
+      .catch(() => {
+        // Fallback silently if offline
+      });
+  }, [subtotal]);
+
+  if (!mounted) return null;
+
+  const shipping = shippingInfo !== null ? shippingInfo.final_fee : (subtotal > 500 ? 0 : 30.00);
   const tax = Number(((subtotal - discount) * 0.05).toFixed(2));
   const total = Number((subtotal - discount + shipping + tax).toFixed(2));
 
@@ -78,10 +118,10 @@ export default function CheckoutPage() {
     }
 
     // Check coupon minimum amount before submitting
-    if (coupon && coupon.minimum_amount && subtotal < coupon.minimum_amount) {
+    if (coupon && coupon.minimum_amount && subtotal < Number(coupon.minimum_amount)) {
       setCheckoutError(
-        `Your coupon "${coupon.code}" requires a minimum subtotal of AED ${coupon.minimum_amount.toFixed(2)}. ` +
-        `Your current subtotal is AED ${subtotal.toFixed(2)}. Please add more items or remove the coupon.`
+        `Your coupon "${coupon.code}" requires a minimum subtotal of AED ${Number(coupon.minimum_amount).toFixed(2)}. ` +
+        `Your current subtotal is AED ${Number(subtotal).toFixed(2)}. Please add more items or remove the coupon.`
       );
       setLoading(false);
       return;
@@ -95,7 +135,7 @@ export default function CheckoutPage() {
       // Let's perform a POST /ecommerce/addresses and then pass address ID to checkout.
       // Wait, we can implement a transaction in the backend, or write a quick address endpoint.
       // Let's first register the address.
-      const addressRes = await fetch('http://localhost:8080/ecommerce/addresses', {
+      const addressRes = await fetch(`${API_BASE_URL}/ecommerce/addresses`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -115,7 +155,7 @@ export default function CheckoutPage() {
       const addressId = addressData.id;
 
       // 2. Perform Checkout
-      const checkoutRes = await fetch('http://localhost:8080/ecommerce/orders/checkout', {
+      const checkoutRes = await fetch(`${API_BASE_URL}/ecommerce/orders/checkout`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -125,6 +165,7 @@ export default function CheckoutPage() {
           address_id: addressId,
           coupon_code: coupon?.code,
           currency: currency,
+          payment_method: paymentMethod,
           items: cartItems.map((item) => ({
             variant_id: item.id,
             quantity: item.quantity,
@@ -139,10 +180,20 @@ export default function CheckoutPage() {
         return;
       }
 
+      // If Cash on Delivery, order is confirmed immediately without Stripe intent!
+      if (paymentMethod === 'CASH_ON_DELIVERY') {
+        setOrderNum(checkoutData.order_number);
+        setIsSuccess(true);
+        dispatch(clearCart());
+        dispatch(removeCoupon());
+        setLoading(false);
+        return;
+      }
+
       // 3. Confirm Stripe Payment (Mock succeed or actual)
       // Since we are running in dev/local and might not have Stripe keys configured,
       // we can call a mock confirmation endpoint on our backend or directly call confirmation webhook
-      const confirmRes = await fetch(`http://localhost:8080/admin/orders/${checkoutData.order_id}`, {
+      const confirmRes = await fetch(`${API_BASE_URL}/admin/orders/${checkoutData.order_id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -155,7 +206,7 @@ export default function CheckoutPage() {
 
       if (confirmRes.ok) {
         // Also simulate database webhook inventory decrease
-        await fetch('http://localhost:8080/ecommerce/orders/stripe-webhook', {
+        await fetch(`${API_BASE_URL}/ecommerce/orders/stripe-webhook`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -290,37 +341,98 @@ export default function CheckoutPage() {
 
             {/* Payment Details Section */}
             <div className="space-y-4 pt-6 border-t border-border">
-              <h2 className="font-serif text-lg font-bold flex items-center gap-2">
-                <CreditCard size={20} className="text-primary" /> Payment Method
-              </h2>
+              <div className="flex items-center justify-between">
+                <h2 className="font-serif text-lg font-bold flex items-center gap-2">
+                  <CreditCard size={20} className="text-primary" /> Payment Method
+                </h2>
+                {!isCodAvailable && (
+                  <span className="text-[11px] text-amber-500 font-semibold px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20">
+                    COD Restricted
+                  </span>
+                )}
+              </div>
 
-              {/* Card mock inputs */}
-              <div className="bg-background border border-border p-4 rounded space-y-3">
-                <div className="flex items-center justify-between text-xs text-muted mb-2">
-                  <span>Credit/Debit Card (Stripe Secured)</span>
-                  <span className="text-primary font-bold">TEST MODE ACTIVE</span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Cash on Delivery option */}
+                <div
+                  onClick={() => {
+                    if (isCodAvailable) setPaymentMethod('CASH_ON_DELIVERY');
+                  }}
+                  className={`p-4 rounded-lg border transition cursor-pointer flex flex-col justify-between ${
+                    paymentMethod === 'CASH_ON_DELIVERY'
+                      ? 'border-emerald-500 bg-emerald-500/10 ring-1 ring-emerald-500'
+                      : isCodAvailable
+                      ? 'border-border bg-card hover:border-primary/50'
+                      : 'border-border bg-muted/30 opacity-60 cursor-not-allowed'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-sm text-foreground flex items-center gap-2">
+                      <Truck size={16} className="text-emerald-500" /> Cash on Delivery (COD)
+                    </span>
+                    {paymentMethod === 'CASH_ON_DELIVERY' && (
+                      <CheckCircle2 size={16} className="text-emerald-500" />
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    {isCodAvailable
+                      ? 'Pay in cash upon doorstep delivery in UAE.'
+                      : '⚠️ Unavailable: One or more abayas require prepayment.'}
+                  </p>
                 </div>
-                <input
-                  type="text"
-                  placeholder="Card Number: 4242 4242 4242 4242"
-                  className="w-full text-sm bg-card border border-border rounded px-3 py-2.5 focus:outline-none"
-                  disabled
-                />
-                <div className="grid grid-cols-2 gap-4">
-                  <input
-                    type="text"
-                    placeholder="MM/YY"
-                    className="w-full text-sm bg-card border border-border rounded px-3 py-2.5 focus:outline-none"
-                    disabled
-                  />
-                  <input
-                    type="text"
-                    placeholder="CVC"
-                    className="w-full text-sm bg-card border border-border rounded px-3 py-2.5 focus:outline-none"
-                    disabled
-                  />
+
+                {/* Card payment option */}
+                <div
+                  onClick={() => setPaymentMethod('STRIPE')}
+                  className={`p-4 rounded-lg border transition cursor-pointer flex flex-col justify-between ${
+                    paymentMethod === 'STRIPE'
+                      ? 'border-primary bg-primary/10 ring-1 ring-primary'
+                      : 'border-border bg-card hover:border-primary/50'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-sm text-foreground flex items-center gap-2">
+                      <CreditCard size={16} className="text-primary" /> Credit / Debit Card
+                    </span>
+                    {paymentMethod === 'STRIPE' && (
+                      <CheckCircle2 size={16} className="text-primary" />
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Instant secure card payment via Stripe.
+                  </p>
                 </div>
               </div>
+
+              {/* Card mock inputs if Card is selected */}
+              {paymentMethod === 'STRIPE' && (
+                <div className="bg-background border border-border p-4 rounded space-y-3 mt-3 animate-in fade-in">
+                  <div className="flex items-center justify-between text-xs text-muted mb-2">
+                    <span>Credit/Debit Card (Stripe Secured)</span>
+                    <span className="text-primary font-bold">TEST MODE ACTIVE</span>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Card Number: 4242 4242 4242 4242"
+                    className="w-full text-sm bg-card border border-border rounded px-3 py-2.5 focus:outline-none"
+                    disabled
+                  />
+                  <div className="grid grid-cols-2 gap-4">
+                    <input
+                      type="text"
+                      placeholder="MM/YY"
+                      className="w-full text-sm bg-card border border-border rounded px-3 py-2.5 focus:outline-none"
+                      disabled
+                    />
+                    <input
+                      type="text"
+                      placeholder="CVC"
+                      className="w-full text-sm bg-card border border-border rounded px-3 py-2.5 focus:outline-none"
+                      disabled
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             {checkoutError && (
@@ -379,10 +491,38 @@ export default function CheckoutPage() {
                 <span>- {formatPrice(discount)}</span>
               </div>
             )}
-            <div className="flex justify-between">
-              <span className="text-muted">Shipping</span>
-              <span>{shipping === 0 ? 'Free' : formatPrice(shipping)}</span>
+            <div className="flex justify-between items-start">
+              <div>
+                <span className="text-muted block">Shipping</span>
+                {shippingInfo?.applied_rule && (
+                  <span className="text-[10px] text-green-500 block font-normal">
+                    ✓ {shippingInfo.applied_rule}
+                  </span>
+                )}
+              </div>
+              <div className="text-right">
+                {shipping === 0 ? (
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-green-500/10 text-green-500 border border-green-500/20">
+                    FREE
+                  </span>
+                ) : (
+                  <div className="flex flex-col items-end">
+                    <span className="text-foreground font-medium">{formatPrice(shipping)}</span>
+                    {shippingInfo && shippingInfo.discount_amount > 0 && (
+                      <span className="text-[9px] text-muted line-through">
+                        {formatPrice(shippingInfo.base_fee)}
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
+
+            {shippingInfo?.threshold_rule && (
+              <div className="p-2 rounded bg-amber-500/10 border border-amber-500/20 text-amber-500 text-[11px] font-medium flex items-center gap-1.5">
+                <span>✈ {shippingInfo.threshold_rule}</span>
+              </div>
+            )}
             <div className="flex justify-between">
               <span className="text-muted">VAT (5%)</span>
               <span>{formatPrice(tax)}</span>

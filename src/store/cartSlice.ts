@@ -12,6 +12,7 @@ export interface CartItem {
   attributes: { name: string; value: string }[];
   quantity: number;
   available_stock: number;
+  is_cod_allowed?: boolean;
 }
 
 export interface AppliedCoupon {

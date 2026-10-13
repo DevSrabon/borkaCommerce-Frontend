@@ -1,5 +1,7 @@
 'use client';
 
+import { API_BASE_URL } from '@/config/api';
+
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSelector } from 'react-redux';
@@ -46,7 +48,7 @@ export default function AdminAttributesPage() {
   const fetchAttributes = async () => {
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:8080/admin/attributes', {
+      const res = await fetch(`${API_BASE_URL}/admin/attributes`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
@@ -81,7 +83,7 @@ export default function AdminAttributesPage() {
     if (!newAttrName.trim()) return;
 
     try {
-      const res = await fetch('http://localhost:8080/admin/attributes', {
+      const res = await fetch(`${API_BASE_URL}/admin/attributes`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -119,7 +121,7 @@ export default function AdminAttributesPage() {
     if (!valText || !valText.trim()) return;
 
     try {
-      const res = await fetch(`http://localhost:8080/admin/attributes/${attrId}/values`, {
+      const res = await fetch(`${API_BASE_URL}/admin/attributes/${attrId}/values`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -153,7 +155,7 @@ export default function AdminAttributesPage() {
 
   const handleDeleteAttribute = async (id: string) => {
     try {
-      const res = await fetch(`http://localhost:8080/admin/attributes/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/admin/attributes/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -169,7 +171,7 @@ export default function AdminAttributesPage() {
 
   const handleDeleteValue = async (valId: string, attrId: string) => {
     try {
-      const res = await fetch(`http://localhost:8080/admin/attributes/values/${valId}`, {
+      const res = await fetch(`${API_BASE_URL}/admin/attributes/values/${valId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });

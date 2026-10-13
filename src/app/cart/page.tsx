@@ -1,5 +1,7 @@
 'use client';
 
+import { API_BASE_URL } from '@/config/api';
+
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -21,12 +23,15 @@ export default function CartPage() {
   const [couponError, setCouponError] = useState('');
   const [couponSuccess, setCouponSuccess] = useState(false);
   const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) return null;
+  const [shippingInfo, setShippingInfo] = useState<{
+    base_fee: number;
+    final_fee: number;
+    discount_amount: number;
+    is_free: boolean;
+    display_text: string;
+    applied_rule: string | null;
+    threshold_rule: string | null;
+  } | null>(null);
 
   // Calculate Subtotal
   const subtotal = cartItems.reduce((acc, item) => acc + item.discounted_price * item.quantity, 0);
@@ -43,7 +48,31 @@ export default function CartPage() {
     discount = Math.min(discount, subtotal);
   }
 
-  const shipping = subtotal > 500 || subtotal === 0 ? 0 : 20.00;
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Fetch dynamic delivery calculation
+  useEffect(() => {
+    if (subtotal <= 0) {
+      setShippingInfo(null);
+      return;
+    }
+    fetch(`${API_BASE_URL}/ecommerce/shipping-calculator?subtotal=${subtotal}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && typeof data.final_fee === 'number') {
+          setShippingInfo(data);
+        }
+      })
+      .catch(() => {
+        // Fallback silently if offline
+      });
+  }, [subtotal]);
+
+  if (!mounted) return null;
+
+  const shipping = shippingInfo !== null ? shippingInfo.final_fee : (subtotal > 500 || subtotal === 0 ? 0 : 30.00);
   const tax = Number(((subtotal - discount) * 0.05).toFixed(2));
   const total = Number((subtotal - discount + shipping + tax).toFixed(2));
 
@@ -60,7 +89,7 @@ export default function CartPage() {
     }
 
     try {
-      const res = await fetch('http://localhost:8080/ecommerce/promotions/validate-coupon', {
+      const res = await fetch(`${API_BASE_URL}/ecommerce/promotions/validate-coupon`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -216,12 +245,38 @@ export default function CartPage() {
                 </div>
               )}
 
-              <div className="flex justify-between">
-                <span className="text-muted">Shipping</span>
-                <span className="text-foreground font-medium">
-                  {shipping === 0 ? 'Free' : formatPrice(shipping)}
-                </span>
+              <div className="flex justify-between items-start">
+                <div>
+                  <span className="text-muted block">Shipping</span>
+                  {shippingInfo?.applied_rule && (
+                    <span className="text-[10px] text-green-500 block font-normal">
+                      ✓ {shippingInfo.applied_rule}
+                    </span>
+                  )}
+                </div>
+                <div className="text-right">
+                  {shipping === 0 ? (
+                    <span className="px-2 py-0.5 rounded text-xs font-bold bg-green-500/10 text-green-500 border border-green-500/20">
+                      FREE
+                    </span>
+                  ) : (
+                    <div className="flex flex-col items-end">
+                      <span className="text-foreground font-medium">{formatPrice(shipping)}</span>
+                      {shippingInfo && shippingInfo.discount_amount > 0 && (
+                        <span className="text-[10px] text-muted line-through">
+                          {formatPrice(shippingInfo.base_fee)}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
+
+              {shippingInfo?.threshold_rule && (
+                <div className="p-2.5 rounded bg-amber-500/10 border border-amber-500/20 text-amber-500 text-xs font-medium flex items-center gap-1.5">
+                  <span>✈ {shippingInfo.threshold_rule}</span>
+                </div>
+              )}
 
               <div className="flex justify-between">
                 <span className="text-muted">VAT (5%)</span>

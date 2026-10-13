@@ -1,9 +1,11 @@
 'use client';
 
+import { API_BASE_URL } from '@/config/api';
+
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../../store';
-import { Plus, Pencil, Trash2, Eye, EyeOff, GripVertical, ExternalLink, X, Save, Image, Upload } from 'lucide-react';
+import { Plus, Pencil, Trash2, Eye, EyeOff, GripVertical, ExternalLink, X, Save, Image, Upload, Layers } from 'lucide-react';
 
 interface Banner {
   id: string;
@@ -13,6 +15,8 @@ interface Banner {
   cta_link: string | null;
   image_url: string;
   alt_text: string | null;
+  size_type: string;
+  size_description: string | null;
   is_active: boolean;
   sort_order: number;
 }
@@ -24,8 +28,23 @@ const EMPTY_FORM = {
   cta_link: '',
   image_url: '',
   alt_text: '',
+  size_type: 'HERO',
+  size_description: 'Desktop Hero: 1920x800px (Full Width)',
   is_active: true,
   sort_order: 0,
+};
+
+const SIZE_PRESETS = {
+  HERO: {
+    label: 'Hero Main Slider',
+    desc: 'Desktop Hero: 1920x800px (Full Width)',
+    guide: 'Recommended: 1920 × 800 px (Landscape 2.4:1 ratio, Max 2MB). Ideal for top homepage promotional slider.',
+  },
+  SMALL: {
+    label: 'Small Promotional Card',
+    desc: 'Promo Card: 600x400px (Small Banner)',
+    guide: 'Recommended: 600 × 400 px (Landscape 3:2 ratio, Max 1MB). Displayed in homepage middle promo spotlight grid.',
+  },
 };
 
 export default function BannersAdminPage() {
@@ -38,11 +57,12 @@ export default function BannersAdminPage() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
+  const [activeTab, setActiveTab] = useState<'ALL' | 'HERO' | 'SMALL'>('ALL');
 
   const fetchBanners = async () => {
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:8080/admin/banners', {
+      const res = await fetch(`${API_BASE_URL}/admin/banners`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) setBanners(await res.json());
@@ -68,6 +88,8 @@ export default function BannersAdminPage() {
       cta_link: b.cta_link || '',
       image_url: b.image_url,
       alt_text: b.alt_text || '',
+      size_type: b.size_type || 'HERO',
+      size_description: b.size_description || (b.size_type === 'SMALL' ? SIZE_PRESETS.SMALL.desc : SIZE_PRESETS.HERO.desc),
       is_active: b.is_active,
       sort_order: b.sort_order,
     });
@@ -86,7 +108,7 @@ export default function BannersAdminPage() {
     formData.append('image', file);
 
     try {
-      const res = await fetch('http://localhost:8080/admin/uploads/banner', {
+      const res = await fetch(`${API_BASE_URL}/admin/uploads/banner`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
@@ -115,8 +137,8 @@ export default function BannersAdminPage() {
     setSaving(true);
     try {
       const url = editId
-        ? `http://localhost:8080/admin/banners/${editId}`
-        : `http://localhost:8080/admin/banners`;
+        ? `${API_BASE_URL}/admin/banners/${editId}`
+        : `${API_BASE_URL}/admin/banners`;
       const method = editId ? 'PATCH' : 'POST';
       const res = await fetch(url, {
         method,
@@ -143,7 +165,7 @@ export default function BannersAdminPage() {
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this banner permanently?')) return;
     try {
-      const res = await fetch(`http://localhost:8080/admin/banners/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/admin/banners/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -153,7 +175,7 @@ export default function BannersAdminPage() {
 
   const handleToggleActive = async (b: Banner) => {
     try {
-      const res = await fetch(`http://localhost:8080/admin/banners/${b.id}`, {
+      const res = await fetch(`${API_BASE_URL}/admin/banners/${b.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ is_active: !b.is_active }),
@@ -164,43 +186,144 @@ export default function BannersAdminPage() {
     } catch (_) {}
   };
 
+  const filteredBanners = banners.filter((b) => {
+    if (activeTab === 'ALL') return true;
+    return (b.size_type || 'HERO') === activeTab;
+  });
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="font-serif text-2xl font-bold text-foreground">Homepage Banners</h1>
-          <p className="text-xs text-muted-foreground mt-0.5">Manage hero slides displayed on the storefront homepage.</p>
+          <h1 className="font-serif text-2xl font-bold text-foreground">Banners & Spotlights</h1>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Manage top hero sliders and small promotional grid banners with dimension specs.
+          </p>
         </div>
         <button
           onClick={openCreate}
-          className="flex items-center gap-2 px-4 py-2.5 btn-luxury rounded-md text-xs font-semibold uppercase tracking-wider cursor-pointer"
+          className="flex items-center gap-2 px-4 py-2.5 btn-luxury rounded-md text-xs font-semibold uppercase tracking-wider cursor-pointer shadow-sm"
         >
           <Plus size={14} /> New Banner
         </button>
       </div>
 
+      {/* Filter Tabs */}
+      <div className="flex items-center gap-2 border-b border-border pb-3">
+        {(['ALL', 'HERO', 'SMALL'] as const).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition cursor-pointer ${
+              activeTab === tab
+                ? 'bg-primary text-primary-foreground'
+                : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+            }`}
+          >
+            {tab === 'ALL' && `All Banners (${banners.length})`}
+            {tab === 'HERO' && `Hero Sliders (${banners.filter((b) => (b.size_type || 'HERO') === 'HERO').length})`}
+            {tab === 'SMALL' && `Small Banners (${banners.filter((b) => b.size_type === 'SMALL').length})`}
+          </button>
+        ))}
+      </div>
+
       {/* Slide-in Form Overlay */}
       {showForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-card border border-border rounded-xl shadow-2xl w-full max-w-lg">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="bg-card border border-border rounded-xl shadow-2xl w-full max-w-lg my-8">
             <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-              <h2 className="font-serif text-base font-bold text-foreground">{editId ? 'Edit Banner' : 'Create Banner'}</h2>
+              <h2 className="font-serif text-base font-bold text-foreground">
+                {editId ? 'Edit Banner' : 'Create Banner'}
+              </h2>
               <button onClick={() => setShowForm(false)} className="text-muted-foreground hover:text-foreground transition cursor-pointer">
                 <X size={18} />
               </button>
             </div>
 
-            <form onSubmit={handleSave} className="p-6 space-y-4">
+            <form onSubmit={handleSave} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+              {/* Banner Size Selection */}
+              <div className="space-y-2 bg-accent/30 p-3 rounded-lg border border-border">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+                  Banner Placement & Size Type *
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setForm((prev) => ({
+                        ...prev,
+                        size_type: 'HERO',
+                        size_description: SIZE_PRESETS.HERO.desc,
+                      }))
+                    }
+                    className={`p-2.5 rounded border text-left cursor-pointer transition ${
+                      form.size_type === 'HERO'
+                        ? 'border-primary bg-primary/10 text-primary font-bold'
+                        : 'border-border text-foreground hover:bg-accent'
+                    }`}
+                  >
+                    <div className="text-xs font-semibold">🌟 Hero Slider</div>
+                    <div className="text-[10px] text-muted-foreground mt-0.5">1920 × 800 px</div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setForm((prev) => ({
+                        ...prev,
+                        size_type: 'SMALL',
+                        size_description: SIZE_PRESETS.SMALL.desc,
+                      }))
+                    }
+                    className={`p-2.5 rounded border text-left cursor-pointer transition ${
+                      form.size_type === 'SMALL'
+                        ? 'border-primary bg-primary/10 text-primary font-bold'
+                        : 'border-border text-foreground hover:bg-accent'
+                    }`}
+                  >
+                    <div className="text-xs font-semibold">🏷️ Small Banner</div>
+                    <div className="text-[10px] text-muted-foreground mt-0.5">600 × 400 px</div>
+                  </button>
+                </div>
+                <p className="text-[10px] text-muted-foreground italic">
+                  {form.size_type === 'SMALL' ? SIZE_PRESETS.SMALL.guide : SIZE_PRESETS.HERO.guide}
+                </p>
+              </div>
+
+              {/* Size description input */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Size Description / Dimension Badge
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Desktop: 1920x800px | Mobile: 800x800px"
+                  className="w-full text-xs bg-background border border-border rounded px-3 py-2 focus:outline-none"
+                  value={form.size_description || ''}
+                  onChange={(e) => setForm({ ...form, size_description: e.target.value })}
+                />
+              </div>
+
               {/* Image preview */}
               {form.image_url && (
-                <div className="h-32 w-full rounded-lg overflow-hidden border border-border bg-zinc-900">
-                  <img src={form.image_url} alt={form.alt_text || form.title || 'Preview'} className="h-full w-full object-cover" onError={(e) => (e.currentTarget.style.display = 'none')} />
+                <div
+                  className={`w-full rounded-lg overflow-hidden border border-border bg-zinc-900 ${
+                    form.size_type === 'SMALL' ? 'h-40 max-w-xs mx-auto' : 'h-32'
+                  }`}
+                >
+                  <img
+                    src={form.image_url}
+                    alt={form.alt_text || form.title || 'Preview'}
+                    className="h-full w-full object-cover"
+                    onError={(e) => (e.currentTarget.style.display = 'none')}
+                  />
                 </div>
               )}
 
               <div className="space-y-1">
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Banner Image *</label>
+                <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Banner Image *
+                </label>
                 <div className="flex flex-col gap-2 border border-dashed border-border p-3 rounded bg-zinc-50/5">
                   <div className="relative">
                     <input
@@ -296,7 +419,7 @@ export default function BannersAdminPage() {
                     onChange={(e) => setForm({ ...form, is_active: e.target.checked })}
                     className="accent-primary h-4 w-4"
                   />
-                  Active (show on homepage)
+                  Active (show on storefront)
                 </label>
               </div>
 
@@ -326,14 +449,14 @@ export default function BannersAdminPage() {
       {/* Banner List */}
       {loading ? (
         <div className="text-center py-16 text-muted-foreground text-sm animate-pulse">Loading banners…</div>
-      ) : banners.length === 0 ? (
+      ) : filteredBanners.length === 0 ? (
         <div className="border-2 border-dashed border-border rounded-xl py-20 flex flex-col items-center gap-4 text-center">
           <div className="h-16 w-16 bg-card rounded-full border border-border flex items-center justify-center text-muted-foreground">
             <Image size={28} />
           </div>
           <div>
-            <p className="text-sm font-semibold text-foreground">No banners yet</p>
-            <p className="text-xs text-muted-foreground">Click "New Banner" to create your first homepage hero slide.</p>
+            <p className="text-sm font-semibold text-foreground">No banners found</p>
+            <p className="text-xs text-muted-foreground">Click "New Banner" to create hero sliders or small promo cards.</p>
           </div>
           <button onClick={openCreate} className="px-5 py-2 btn-luxury rounded-md text-xs font-semibold uppercase tracking-wider cursor-pointer">
             <Plus size={12} className="inline mr-1.5" />Create First Banner
@@ -341,31 +464,51 @@ export default function BannersAdminPage() {
         </div>
       ) : (
         <div className="space-y-3">
-          {banners.map((b) => (
+          {filteredBanners.map((b) => (
             <div
               key={b.id}
-              className={`flex items-center gap-4 bg-card border rounded-xl p-4 shadow-sm transition ${
+              className={`flex flex-col sm:flex-row sm:items-center gap-4 bg-card border rounded-xl p-4 shadow-sm transition ${
                 b.is_active ? 'border-border' : 'border-border opacity-60'
               }`}
             >
               {/* Drag handle visual */}
-              <GripVertical size={16} className="text-muted-foreground shrink-0 cursor-grab" />
+              <GripVertical size={16} className="text-muted-foreground shrink-0 cursor-grab hidden sm:block" />
 
               {/* Thumbnail */}
-              <div className="h-16 w-28 rounded-md overflow-hidden border border-border bg-zinc-900 shrink-0">
+              <div
+                className={`rounded-md overflow-hidden border border-border bg-zinc-900 shrink-0 ${
+                  b.size_type === 'SMALL' ? 'h-20 w-28 sm:w-32' : 'h-16 w-28 sm:w-36'
+                }`}
+              >
                 <img src={b.image_url} alt={b.alt_text || b.title} className="h-full w-full object-cover" />
               </div>
 
               {/* Info */}
-              <div className="flex-1 min-w-0 space-y-0.5">
-                <div className="flex items-center gap-2">
+              <div className="flex-1 min-w-0 space-y-1">
+                <div className="flex flex-wrap items-center gap-2">
                   <p className="text-sm font-semibold text-foreground truncate">{b.title}</p>
+                  <span
+                    className={`text-[9px] px-2 py-0.5 rounded font-bold uppercase tracking-wider border ${
+                      b.size_type === 'SMALL'
+                        ? 'bg-purple-500/10 text-purple-400 border-purple-500/20'
+                        : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                    }`}
+                  >
+                    {b.size_type === 'SMALL' ? 'Small Banner (600x400)' : 'Hero Slider (1920x800)'}
+                  </span>
                   {b.is_active ? (
-                    <span className="text-[9px] bg-green-500/10 text-green-500 border border-green-500/20 px-1.5 py-0.5 rounded font-semibold uppercase">Live</span>
+                    <span className="text-[9px] bg-green-500/10 text-green-500 border border-green-500/20 px-1.5 py-0.5 rounded font-semibold uppercase">
+                      Live
+                    </span>
                   ) : (
-                    <span className="text-[9px] bg-zinc-500/10 text-zinc-400 border border-zinc-500/20 px-1.5 py-0.5 rounded font-semibold uppercase">Hidden</span>
+                    <span className="text-[9px] bg-zinc-500/10 text-zinc-400 border border-zinc-500/20 px-1.5 py-0.5 rounded font-semibold uppercase">
+                      Hidden
+                    </span>
                   )}
                 </div>
+                {b.size_description && (
+                  <p className="text-[11px] text-primary/80 font-mono">{b.size_description}</p>
+                )}
                 {b.subtitle && <p className="text-xs text-muted-foreground truncate">{b.subtitle}</p>}
                 <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
                   <span>Order: {b.sort_order}</span>
@@ -378,7 +521,7 @@ export default function BannersAdminPage() {
               </div>
 
               {/* Actions */}
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
                 <button
                   onClick={() => handleToggleActive(b)}
                   title={b.is_active ? 'Hide banner' : 'Show banner'}

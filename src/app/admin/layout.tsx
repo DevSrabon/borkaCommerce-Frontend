@@ -1,5 +1,6 @@
 'use client';
 
+import { API_BASE_URL } from '@/config/api';
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -21,15 +22,25 @@ import {
   Folder,
   Tag,
   Percent,
+  Star,
+  MessageSquare,
+  FileText,
+  BookOpen,
 } from 'lucide-react';
+import { clearSession } from '../../store/authSlice';
+import { useDispatch } from 'react-redux';
 
 const NAV_MODULES = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard, exact: true },
+  { href: '/admin/pages', label: 'Pages Builder', icon: FileText },
+  { href: '/admin/blogs', label: 'Blog & Comments', icon: BookOpen },
+  { href: '/admin/chat', label: 'Support Chat', icon: MessageSquare },
   { href: '/admin/orders', label: 'Orders', icon: ShoppingCart },
   { href: '/admin/products', label: 'Products', icon: Package },
   { href: '/admin/categories', label: 'Categories', icon: Folder },
   { href: '/admin/attributes', label: 'Attributes', icon: Tag },
   { href: '/admin/offers', label: 'Offers/Campaigns', icon: Percent },
+  { href: '/admin/reviews', label: 'Reviews & Ratings', icon: Star },
   { href: '/admin/customers', label: 'Customers', icon: Users },
   { href: '/admin/inventory', label: 'Inventory', icon: Boxes },
   { href: '/admin/banners', label: 'Banners', icon: Image },
@@ -41,27 +52,112 @@ const ADMIN_EMAILS = ['srabon@example.com', 'admin@example.com'];
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const dispatch = useDispatch();
   const token = useSelector((state: RootState) => state.auth.token);
   const user = useSelector((state: RootState) => state.auth.user);
   const [collapsed, setCollapsed] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [validating, setValidating] = useState(true);
+  const [chatUnread, setChatUnread] = useState(0);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
   useEffect(() => {
+    if (!token) return;
+    const fetchUnread = () => {
+      fetch(`${API_BASE_URL}/admin/chat/unread-count`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data && typeof data.unread_total === 'number') {
+            setChatUnread(data.unread_total);
+          }
+        })
+        .catch(() => {});
+    };
+    fetchUnread();
+    const interval = setInterval(fetchUnread, 4000);
+    return () => clearInterval(interval);
+  }, [token]);
+
+  useEffect(() => {
     if (!mounted) return;
-    if (!token || !user) {
-      router.push('/login?redirect=admin');
+
+    // Allow viewing the admin login page without layout protection redirect loops
+    if (pathname === '/admin/login') {
+      setValidating(false);
       return;
     }
-    if (!ADMIN_EMAILS.includes(user.email?.toLowerCase())) {
-      router.push('/');
+
+    if (!token || !user) {
+      router.push('/admin/login');
+      return;
     }
-  }, [mounted, token, user]);
+
+    // Verify session validity against backend
+    const verifySession = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/ecommerce/auth/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (res.status === 401) {
+          // Token is dead or expired
+          dispatch(clearSession());
+          router.push('/admin/login?reason=expired');
+          return;
+        }
+
+        if (res.ok) {
+          const profile = await res.json();
+          const isAdmin =
+            profile.role === 'ADMIN' || ADMIN_EMAILS.includes(profile.email?.toLowerCase());
+
+          if (!isAdmin) {
+            router.push('/');
+            return;
+          }
+        }
+      } catch (err) {
+        // If network issue, allow local dev mock admin
+        const isAdmin = user.role === 'ADMIN' || ADMIN_EMAILS.includes(user.email?.toLowerCase());
+        if (!isAdmin) {
+          router.push('/');
+          return;
+        }
+      } finally {
+        setValidating(false);
+      }
+    };
+
+    verifySession();
+  }, [mounted, token, user, pathname, router, dispatch]);
 
   if (!mounted) return null;
+
+  // Don't wrap admin login page with sidebar
+  if (pathname === '/admin/login') {
+    return <>{children}</>;
+  }
+
+  if (validating) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center space-y-3">
+        <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+        <p className="text-xs text-muted-foreground uppercase tracking-widest font-mono">
+          Verifying Administrator Session...
+        </p>
+      </div>
+    );
+  }
+
+  const handleLogout = () => {
+    dispatch(clearSession());
+    router.push('/admin/login');
+  };
 
   const isActive = (href: string, exact?: boolean) => {
     if (exact) return pathname === href;
@@ -107,7 +203,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               >
                 <Icon size={16} className="shrink-0" />
                 {!collapsed && <span className="truncate">{mod.label}</span>}
-                {!collapsed && active && (
+                {!collapsed && mod.href === '/admin/chat' && chatUnread > 0 && (
+                  <span className="ml-auto flex items-center justify-center px-1.5 py-0.5 text-[9px] font-bold rounded-full bg-red-600 text-white animate-pulse">
+                    {chatUnread}
+                  </span>
+                )}
+                {!collapsed && active && mod.href !== '/admin/chat' && (
                   <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary-foreground opacity-80" />
                 )}
               </Link>
@@ -128,10 +229,28 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </Link>
 
           {!collapsed && user && (
-            <div className="px-3 py-2 text-[10px] text-muted-foreground border-t border-border mt-1 pt-2">
-              <p className="font-semibold text-foreground truncate">{user.email}</p>
-              <p className="uppercase tracking-wider">Administrator</p>
+            <div className="px-3 py-2 text-[10px] text-muted-foreground border-t border-border mt-1 pt-2 flex items-center justify-between">
+              <div className="min-w-0">
+                <p className="font-semibold text-foreground truncate">{user.email}</p>
+                <p className="uppercase tracking-wider text-amber-500 font-bold">{user.role || 'Administrator'}</p>
+              </div>
+              <button
+                onClick={handleLogout}
+                title="Sign Out"
+                className="p-1 rounded hover:bg-accent text-zinc-400 hover:text-red-400 transition cursor-pointer"
+              >
+                <LogOut size={14} />
+              </button>
             </div>
+          )}
+          {collapsed && (
+            <button
+              onClick={handleLogout}
+              title="Sign Out"
+              className="w-full flex items-center justify-center p-2 rounded hover:bg-accent text-zinc-400 hover:text-red-400 transition cursor-pointer"
+            >
+              <LogOut size={14} />
+            </button>
           )}
         </div>
 
