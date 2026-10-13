@@ -91,30 +91,74 @@ export default function RichTextEditor({
   const editorContainerRef = useRef<HTMLDivElement>(null);
   const savedSelectionRef = useRef<any>(null);
   const savedRangeRef = useRef<Range | null>(null);
+  const caretPositionRef = useRef<{
+    blockIndex: number;
+    container: Node | null;
+    offset: number;
+  }>({
+    blockIndex: -1,
+    container: null,
+    offset: 0,
+  });
+
+  const createCursorMarker = () => {
+    const marker = document.createElement('span');
+    marker.className = 'borka-cursor-marker';
+    marker.id = 'borka-cursor-marker';
+    marker.setAttribute('data-cursor-marker', 'true');
+    marker.style.cssText = 'display:inline-block;width:0px;height:0px;line-height:0;overflow:hidden;vertical-align:baseline;';
+    marker.innerHTML = '&#xfeff;';
+    return marker;
+  };
+
+  const updateCaretPosition = useCallback(() => {
+    if (typeof window === 'undefined') return;
+    const wysiwyg = editorContainerRef.current?.querySelector('.jodit-wysiwyg') as HTMLElement | null;
+    if (!wysiwyg) return;
+
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return;
+    const range = sel.getRangeAt(0);
+
+    // Only record if selection is STRICTLY inside .jodit-wysiwyg!
+    if (!wysiwyg.contains(range.commonAncestorContainer)) return;
+
+    try {
+      savedRangeRef.current = range.cloneRange();
+    } catch (_) {}
+
+    // Identify parent block child in wysiwyg
+    let block: HTMLElement | null = null;
+    let curr: Node | null = range.startContainer;
+    while (curr && curr !== wysiwyg) {
+      if (curr.nodeType === Node.ELEMENT_NODE && curr.parentElement === wysiwyg) {
+        block = curr as HTMLElement;
+        break;
+      }
+      curr = curr.parentNode;
+    }
+
+    const children = Array.from(wysiwyg.children);
+    const blockIndex = block ? children.indexOf(block) : -1;
+
+    caretPositionRef.current = {
+      blockIndex,
+      container: range.startContainer,
+      offset: range.startOffset,
+    };
+  }, []);
 
   // Continuously track mouse/keyboard cursor position inside editor
   useEffect(() => {
     const handleSelectionChange = () => {
-      if (typeof window === 'undefined') return;
-      const sel = window.getSelection();
-      if (!sel || sel.rangeCount === 0) return;
-      const range = sel.getRangeAt(0);
-
-      if (
-        editorContainerRef.current &&
-        editorContainerRef.current.contains(range.commonAncestorContainer)
-      ) {
-        try {
-          savedRangeRef.current = range.cloneRange();
-        } catch (_) {}
-      }
+      updateCaretPosition();
     };
 
     document.addEventListener('selectionchange', handleSelectionChange);
     return () => {
       document.removeEventListener('selectionchange', handleSelectionChange);
     };
-  }, []);
+  }, [updateCaretPosition]);
 
   // Safe method to read current HTML content without crashing on destroyed Jodit instance
   const getEditorContent = useCallback((): string => {
@@ -158,15 +202,11 @@ export default function RichTextEditor({
 
   const handleMediaButtonMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
-    if (typeof window !== 'undefined') {
-      const sel = window.getSelection();
-      if (sel && sel.rangeCount > 0) {
-        const range = sel.getRangeAt(0);
-        const wysiwyg = editorContainerRef.current?.querySelector('.jodit-wysiwyg');
-        if (wysiwyg && wysiwyg.contains(range.commonAncestorContainer)) {
-          savedRangeRef.current = range.cloneRange();
-        }
-      }
+    updateCaretPosition();
+    if (editorRef.current && !editorRef.current.isDestructed) {
+      try {
+        editorRef.current.s.save();
+      } catch (_) {}
     }
   };
 
@@ -183,60 +223,66 @@ export default function RichTextEditor({
   };
 
   const openMediaModal = (tab: 'library' | 'upload' | 'url' | 'video' = 'library') => {
+    updateCaretPosition();
+
+    // 1. Tell Jodit to save selection markers in the DOM
+    if (editorRef.current && !editorRef.current.isDestructed) {
+      try {
+        editorRef.current.s.save();
+      } catch (_) {}
+    }
+
     const wysiwyg = editorContainerRef.current?.querySelector('.jodit-wysiwyg') as HTMLElement | null;
 
     if (wysiwyg) {
-      // 1. Remove any previous cursor markers
+      // 2. Remove previous custom markers
       wysiwyg.querySelectorAll('.borka-cursor-marker, #borka-cursor-marker, [data-cursor-marker="true"]').forEach((el) => el.remove());
 
-      // 2. Identify the active caret range inside the editor
-      let targetRange: Range | null = null;
+      let markerInserted = false;
+
+      // 3. Check active window selection
       if (typeof window !== 'undefined') {
         const sel = window.getSelection();
         if (sel && sel.rangeCount > 0) {
           const range = sel.getRangeAt(0);
           if (wysiwyg.contains(range.commonAncestorContainer)) {
-            targetRange = range.cloneRange();
+            try {
+              const marker = createCursorMarker();
+              range.insertNode(marker);
+              savedRangeRef.current = range.cloneRange();
+              markerInserted = true;
+            } catch (_) {}
           }
         }
       }
 
-      // If active selection is blurred, check savedRangeRef
-      if (!targetRange && savedRangeRef.current) {
-        if (wysiwyg.contains(savedRangeRef.current.commonAncestorContainer)) {
-          targetRange = savedRangeRef.current.cloneRange();
-        }
-      }
-
-      // If Jodit internal selection has a range, check that too
-      if (!targetRange && editorRef.current?.selection?.range) {
-        const jRange = editorRef.current.selection.range;
-        if (wysiwyg.contains(jRange.commonAncestorContainer)) {
-          targetRange = jRange.cloneRange();
-        }
-      }
-
-      // 3. Create persistent DOM marker
-      const marker = document.createElement('span');
-      marker.className = 'borka-cursor-marker';
-      marker.id = 'borka-cursor-marker';
-      marker.setAttribute('data-cursor-marker', 'true');
-      marker.style.cssText = 'display:inline-block;width:0px;height:0px;line-height:0;overflow:hidden;vertical-align:baseline;';
-      marker.innerHTML = '&#xfeff;';
-
-      if (targetRange) {
+      // 4. If not inserted, check savedRangeRef
+      if (!markerInserted && savedRangeRef.current) {
         try {
-          targetRange.deleteContents();
-          targetRange.insertNode(marker);
-          savedRangeRef.current = targetRange.cloneRange();
-        } catch (_) {
-          wysiwyg.appendChild(marker);
+          if (wysiwyg.contains(savedRangeRef.current.commonAncestorContainer) && savedRangeRef.current.commonAncestorContainer.isConnected) {
+            const marker = createCursorMarker();
+            savedRangeRef.current.insertNode(marker);
+            markerInserted = true;
+          }
+        } catch (_) {}
+      }
+
+      // 5. If not inserted, check blockIndex
+      if (!markerInserted && caretPositionRef.current && caretPositionRef.current.blockIndex >= 0) {
+        const blocks = Array.from(wysiwyg.children);
+        const targetBlock = blocks[caretPositionRef.current.blockIndex];
+        if (targetBlock) {
+          const marker = createCursorMarker();
+          targetBlock.appendChild(marker);
+          markerInserted = true;
         }
-      } else {
-        // Fallback: append at the end (bottom), NEVER at top!
-        const lastP = wysiwyg.lastElementChild;
-        if (lastP) {
-          lastP.appendChild(marker);
+      }
+
+      // 6. Only if marker was NEVER inserted (fresh editor with no focus history)
+      if (!markerInserted) {
+        const marker = createCursorMarker();
+        if (wysiwyg.lastElementChild) {
+          wysiwyg.lastElementChild.appendChild(marker);
         } else {
           wysiwyg.appendChild(marker);
         }
@@ -287,8 +333,22 @@ export default function RichTextEditor({
     const wysiwyg = editorContainerRef.current?.querySelector('.jodit-wysiwyg') as HTMLElement | null;
     let inserted = false;
 
-    // 1. First priority: Exact DOM cursor marker placed when modal opened
-    if (wysiwyg) {
+    // 1. First priority: Jodit native selection restore & insertHTML
+    const editor = editorRef.current;
+    if (editor && !editor.isDestructed) {
+      try {
+        if (editor.s?.hasMarkers) {
+          editor.s.restore();
+          editor.s.insertHTML(htmlSnippet);
+          inserted = true;
+        }
+      } catch (err) {
+        console.warn('Jodit native selection restore failed, falling back to DOM marker', err);
+      }
+    }
+
+    // 2. Second priority: Exact DOM cursor marker placed when modal opened
+    if (!inserted && wysiwyg) {
       const marker = wysiwyg.querySelector('#borka-cursor-marker, .borka-cursor-marker, [data-cursor-marker="true"]');
       if (marker && marker.parentNode) {
         const parentBlock = marker.closest('p, h1, h2, h3, h4, h5, h6, blockquote, li');
@@ -339,7 +399,23 @@ export default function RichTextEditor({
       }
     }
 
-    // 2. Second priority: Browser native range snapshot
+    // 3. Third priority: Target block index
+    if (!inserted && wysiwyg && caretPositionRef.current && caretPositionRef.current.blockIndex >= 0) {
+      const blocks = Array.from(wysiwyg.children);
+      const targetBlock = blocks[caretPositionRef.current.blockIndex];
+      if (targetBlock && targetBlock.parentNode) {
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = htmlSnippet;
+        const frag = document.createDocumentFragment();
+        while (tempDiv.firstChild) {
+          frag.appendChild(tempDiv.firstChild);
+        }
+        targetBlock.parentNode.insertBefore(frag, targetBlock.nextSibling);
+        inserted = true;
+      }
+    }
+
+    // 4. Fourth priority: Browser native range snapshot
     if (!inserted && savedRangeRef.current && wysiwyg) {
       try {
         const range = savedRangeRef.current;
@@ -359,7 +435,7 @@ export default function RichTextEditor({
       }
     }
 
-    // 3. Fallback: Append to the END (bottom) of the document, NEVER at top!
+    // 5. Fallback: Append to the END (bottom) of the document if empty
     if (!inserted) {
       if (wysiwyg) {
         const tempDiv = document.createElement('div');
@@ -505,10 +581,26 @@ export default function RichTextEditor({
   const config = useMemo(() => {
     return {
       readonly: false,
+      theme: 'dark',
       placeholder,
       minHeight,
       toolbarAdaptive: false,
       toolbarSticky: false,
+      // Comprehensive image properties dialog settings
+      image: {
+        openOnDblClick: true,
+        editSrc: true,
+        editTitle: true,
+        editAlt: true,
+        editLink: true,
+        editSize: true,
+        editMargins: true,
+        editBorderRadius: true,
+        editStyle: true,
+        editAlign: true,
+        showPreview: true,
+        selectImageAfterClose: true,
+      },
       // Robust copy-paste configuration
       askBeforePasteHTML: false,
       askBeforePasteFromWord: false,
@@ -568,6 +660,10 @@ export default function RichTextEditor({
           tooltip: 'Insert Media (Library / Upload / URL)',
           exec: (editorInstance: any) => {
             editorRef.current = editorInstance;
+            updateCaretPosition();
+            try {
+              editorInstance.s?.save();
+            } catch (_) {}
             openMediaModal('library');
           },
         },
@@ -576,6 +672,10 @@ export default function RichTextEditor({
           tooltip: 'Embed Video (YouTube / Vimeo / MP4)',
           exec: (editorInstance: any) => {
             editorRef.current = editorInstance;
+            updateCaretPosition();
+            try {
+              editorInstance.s?.save();
+            } catch (_) {}
             openMediaModal('video');
           },
         },
@@ -587,6 +687,10 @@ export default function RichTextEditor({
           tooltip: 'Insert Media (Library / Upload / URL)',
           exec: (editorInstance: any) => {
             editorRef.current = editorInstance;
+            updateCaretPosition();
+            try {
+              editorInstance.s?.save();
+            } catch (_) {}
             openMediaModal('library');
           },
         },
@@ -596,6 +700,10 @@ export default function RichTextEditor({
           tooltip: 'Embed Video (YouTube / Vimeo / MP4)',
           exec: (editorInstance: any) => {
             editorRef.current = editorInstance;
+            updateCaretPosition();
+            try {
+              editorInstance.s?.save();
+            } catch (_) {}
             openMediaModal('video');
           },
         },
@@ -604,9 +712,21 @@ export default function RichTextEditor({
         afterPaste: () => {
           onChangeRef.current(getEditorContent());
         },
+        changeSelection: () => {
+          updateCaretPosition();
+        },
+        click: () => {
+          updateCaretPosition();
+        },
+        keyup: () => {
+          updateCaretPosition();
+        },
+        focus: () => {
+          updateCaretPosition();
+        },
       },
     };
-  }, [placeholder, minHeight, getEditorContent]);
+  }, [placeholder, minHeight, getEditorContent, updateCaretPosition]);
 
   return (
     <div className="relative w-full space-y-2 text-foreground">

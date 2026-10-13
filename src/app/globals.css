@@ -219,3 +219,263 @@ body {
   display: none !important;
   visibility: hidden !important;
 }
+
+/* =============================================
+   Jodit Editor - Premium Dark Theme & Image Properties Modal Fix
+   ============================================= */
+.jodit-dialog,
+.jodit-dialog__panel {
+  background-color: #18181b !important;
+  color: #fafafa !important;
+  border: 1px solid #27272a !important;
+  border-radius: 12px !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7) !important;
+  overflow: hidden !important;
+}
+
+.jodit-dialog__overlay {
+  background: rgba(0, 0, 0, 0.75) !important;
+  backdrop-filter: blur(4px) !important;
+}
+
+.jodit-dialog__header {
+  background-color: #09090b !important;
+  border-bottom: 1px solid #27272a !important;
+  color: #ffffff !important;
+  padding: 10px 16px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+}
+
+.jodit-dialog__header-title {
+  color: #ffffff !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.01em !important;
+}
+
+.jodit-dialog__header-button,
+.jodit-dialog__header-button svg,
+.jodit-dialog__header-buttons .jodit-ui-button,
+.jodit-dialog__header-buttons .jodit-ui-button svg {
+  color: #a1a1aa !important;
+  fill: #a1a1aa !important;
+  transition: color 0.15s ease, fill 0.15s ease;
+}
+
+.jodit-dialog__header-button:hover,
+.jodit-dialog__header-buttons .jodit-ui-button:hover svg {
+  color: #ffffff !important;
+  fill: #ffffff !important;
+}
+
+.jodit-dialog__content {
+  background-color: #18181b !important;
+  color: #fafafa !important;
+  padding: 16px !important;
+}
+
+/* Tabs */
+.jodit-dialog .jodit-tabs,
+.jodit-dialog .jodit-tabs__buttons {
+  background-color: #09090b !important;
+  border-bottom: 1px solid #27272a !important;
+}
+
+.jodit-dialog .jodit-tabs__button,
+.jodit-dialog .jodit-ui-button {
+  color: #a1a1aa !important;
+  background: transparent !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+}
+
+.jodit-dialog .jodit-tabs__button:hover,
+.jodit-dialog .jodit-ui-button:hover {
+  color: #ffffff !important;
+}
+
+.jodit-dialog .jodit-tabs__button[aria-pressed="true"],
+.jodit-dialog .jodit-tabs__button.jodit_active,
+.jodit-dialog .jodit-ui-button[aria-pressed="true"] {
+  color: #cda254 !important;
+  border-bottom: 2px solid #cda254 !important;
+  font-weight: 600 !important;
+}
+
+.jodit-dialog .jodit-tabs__button[aria-pressed="true"] .jodit-ui-button__text,
+.jodit-dialog .jodit-ui-button[aria-pressed="true"] .jodit-ui-button__text {
+  color: #cda254 !important;
+}
+
+/* Form Labels */
+.jodit-dialog label,
+.jodit-dialog .jodit-ui-form__label,
+.jodit-dialog .jodit-form__group label,
+.jodit-ui-image-properties-form label,
+.jodit-ui-image-properties-form .jodit-ui-form__label {
+  color: #e4e4e7 !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.02em !important;
+  margin-bottom: 4px !important;
+  display: block !important;
+}
+
+/* Form Inputs */
+.jodit-dialog input[type="text"],
+.jodit-dialog input[type="number"],
+.jodit-dialog .jodit-ui-input input,
+.jodit-dialog .jodit-input,
+.jodit-ui-image-properties-form input {
+  background-color: #09090b !important;
+  color: #ffffff !important;
+  border: 1px solid #3f3f46 !important;
+  border-radius: 6px !important;
+  padding: 8px 12px !important;
+  font-size: 13px !important;
+  line-height: 1.4 !important;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.jodit-dialog input[type="text"]:focus,
+.jodit-dialog input[type="number"]:focus,
+.jodit-dialog .jodit-ui-input input:focus,
+.jodit-dialog .jodit-input:focus,
+.jodit-ui-image-properties-form input:focus {
+  border-color: #cda254 !important;
+  outline: none !important;
+  box-shadow: 0 0 0 1px #cda254 !important;
+}
+
+.jodit-dialog input::placeholder {
+  color: #71717a !important;
+}
+
+/* Image preview box in Image Properties */
+.jodit-dialog .jodit-properties_image_view,
+.jodit-dialog .jodit-ui-image-properties-form__imageView {
+  background-color: #09090b !important;
+  border: 1px solid #27272a !important;
+  border-radius: 8px !important;
+  padding: 12px !important;
+}
+
+/* Aspect ratio lock & other icons */
+.jodit-dialog .jodit-ui-image-properties-form svg,
+.jodit-dialog .jodit-ui-button svg {
+  fill: #a1a1aa !important;
+  color: #a1a1aa !important;
+}
+
+/* Checkbox & radio labels */
+.jodit-dialog .jodit-ui-checkbox,
+.jodit-dialog .jodit-ui-checkbox label {
+  color: #e4e4e7 !important;
+  font-size: 13px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  cursor: pointer !important;
+}
+
+.jodit-dialog input[type="checkbox"] {
+  accent-color: #cda254 !important;
+  cursor: pointer !important;
+}
+
+/* Dialog Footer */
+.jodit-dialog__footer {
+  background-color: #09090b !important;
+  border-top: 1px solid #27272a !important;
+  padding: 12px 16px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+}
+
+/* Footer Buttons */
+.jodit-dialog__footer .jodit-ui-button {
+  padding: 8px 16px !important;
+  border-radius: 6px !important;
+  font-size: 13px !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+}
+
+.jodit-dialog__footer .jodit-ui-button[data-ref="cancel"],
+.jodit-dialog__footer .jodit-ui-button:has([data-ref="cancel"]) {
+  background-color: #27272a !important;
+  color: #e4e4e7 !important;
+  border: 1px solid #3f3f46 !important;
+}
+
+.jodit-dialog__footer .jodit-ui-button[data-ref="bin"],
+.jodit-dialog__footer .jodit-ui-button:has([data-ref="bin"]) {
+  background-color: rgba(239, 68, 68, 0.15) !important;
+  color: #f87171 !important;
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+}
+
+.jodit-dialog__footer .jodit-ui-button_status_primary,
+.jodit-dialog__footer .jodit-ui-button_variant_primary,
+.jodit-dialog__footer .jodit-ui-button[data-ref="ok"],
+.jodit-dialog__footer .jodit-ui-button:has([data-ref="ok"]) {
+  background-color: #b89047 !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  border: none !important;
+}
+
+.jodit-dialog__footer .jodit-ui-button_status_primary:hover,
+.jodit-dialog__footer .jodit-ui-button[data-ref="ok"]:hover {
+  background-color: #cda254 !important;
+  box-shadow: 0 4px 12px rgba(184, 144, 71, 0.3) !important;
+}
+
+/* Floating Image Toolbar Popup on click */
+.jodit-popup,
+.jodit-popup__content,
+.jodit-toolbar-editor-collection {
+  background-color: #18181b !important;
+  border: 1px solid #27272a !important;
+  color: #fafafa !important;
+  border-radius: 8px !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5) !important;
+}
+
+.jodit-popup .jodit-ui-button svg,
+.jodit-toolbar-editor-collection .jodit-ui-button svg {
+  fill: #fafafa !important;
+  color: #fafafa !important;
+}
+
+/* Editor Main Container */
+.jodit-container:not(.jodit_inline) {
+  background-color: #18181b !important;
+  border: 1px solid #27272a !important;
+  color: #fafafa !important;
+}
+
+.jodit-toolbar__box {
+  background-color: #09090b !important;
+  border-bottom: 1px solid #27272a !important;
+}
+
+.jodit-toolbar-button__text,
+.jodit-toolbar-button svg {
+  color: #e4e4e7 !important;
+  fill: #e4e4e7 !important;
+}
+
+.jodit-wysiwyg {
+  background-color: #18181b !important;
+  color: #fafafa !important;
+}
+
+.jodit-status-bar {
+  background-color: #09090b !important;
+  border-top: 1px solid #27272a !important;
+  color: #71717a !important;
+}
