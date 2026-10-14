@@ -154,6 +154,11 @@ export default function AdminProductsPage() {
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('ALL');
   const [selectedStatusFilter, setSelectedStatusFilter] = useState('ALL');
 
+  // Pagination states (default limit: 50, skip: 0)
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(50);
+  const [totalProducts, setTotalProducts] = useState(0);
+
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedProductSearch(productSearch.trim().toLowerCase());
@@ -212,17 +217,32 @@ export default function AdminProductsPage() {
   const fetchCatalog = useCallback(async () => {
     setLoading(true);
     try {
+      const skip = (page - 1) * limit;
       const [prodRes, catRes, attrRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/admin/products`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API_BASE_URL}/admin/products?limit=${limit}&skip=${skip}`, { headers: { Authorization: `Bearer ${token}` } }),
         fetch(`${API_BASE_URL}/ecommerce/categories/tree`),
-        fetch(`${API_BASE_URL}/admin/attributes`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API_BASE_URL}/admin/attributes?limit=100&skip=0`, { headers: { Authorization: `Bearer ${token}` } }),
       ]);
 
-      if (prodRes.ok) setProducts(await prodRes.json()); else loadMockCatalog();
+      if (prodRes.ok) {
+        const totalHeader = prodRes.headers.get('x-total-count');
+        const data = await prodRes.json();
+        const items = Array.isArray(data) ? data : (data.items || []);
+        setProducts(items);
+        if (totalHeader) {
+          setTotalProducts(parseInt(totalHeader, 10));
+        } else {
+          setTotalProducts(items.length);
+        }
+      } else {
+        loadMockCatalog();
+      }
       if (catRes.ok) setCategories(flattenCategories(await catRes.json()));
       else setCategories([{ id: 'cat-1', name: 'Abaya', slug: 'abaya' }, { id: 'cat-2', name: 'Shayla', slug: 'shayla' }]);
-      if (attrRes.ok) setDbAttributes(await attrRes.json());
-      else setDbAttributes([
+      if (attrRes.ok) {
+        const attrData = await attrRes.json();
+        setDbAttributes(Array.isArray(attrData) ? attrData : (attrData.items || []));
+      } else setDbAttributes([
         { id: 'a1', name: 'Color', values: [{ id: 'v1', value: 'Black' }, { id: 'v2', value: 'Navy Blue' }] },
         { id: 'a2', name: 'Size', values: [{ id: 'v3', value: '54' }, { id: 'v4', value: '56' }] },
         { id: 'a3', name: 'Fabric', values: [{ id: 'v5', value: 'Nidha' }, { id: 'v6', value: 'Crepe' }] },
@@ -232,7 +252,7 @@ export default function AdminProductsPage() {
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [token, page, limit]);
 
   useEffect(() => { if (token) fetchCatalog(); }, [token, fetchCatalog]);
 
@@ -1628,7 +1648,8 @@ export default function AdminProductsPage() {
                 )}
               </div>
             ) : (
-              <div className="overflow-x-auto">
+              <>
+                <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse text-xs">
                   <thead>
                     <tr className="bg-background text-muted-foreground uppercase tracking-wider font-semibold border-b border-border">
@@ -1773,7 +1794,56 @@ export default function AdminProductsPage() {
                   </tbody>
                 </table>
               </div>
-            )}
+
+              {/* ── Pagination Controls ── */}
+              <div className="flex flex-wrap items-center justify-between gap-4 p-4 border border-t-0 border-border bg-card/60 rounded-b-xl text-xs">
+                <div className="text-muted-foreground">
+                  Showing <span className="font-semibold text-foreground">{products.length === 0 ? 0 : (page - 1) * limit + 1}</span> to{' '}
+                  <span className="font-semibold text-foreground">{Math.min(page * limit, totalProducts || products.length)}</span> of{' '}
+                  <span className="font-semibold text-foreground">{totalProducts || products.length}</span> products
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-muted-foreground">Per page:</span>
+                    <select
+                      value={limit}
+                      onChange={(e) => {
+                        setLimit(Number(e.target.value));
+                        setPage(1);
+                      }}
+                      className="bg-background border border-border rounded px-2 py-1 text-xs focus:outline-none"
+                    >
+                      <option value={25}>25</option>
+                      <option value={50}>50</option>
+                      <option value={100}>100</option>
+                    </select>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                      disabled={page === 1}
+                      className="px-2.5 py-1 border border-border rounded hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition font-medium"
+                    >
+                      Previous
+                    </button>
+                    <span className="px-2 py-1 text-muted-foreground">
+                      Page <span className="font-semibold text-foreground">{page}</span> of{' '}
+                      <span className="font-semibold text-foreground">{Math.max(1, Math.ceil((totalProducts || products.length) / limit))}</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setPage((p) => p + 1)}
+                      disabled={page * limit >= (totalProducts || products.length)}
+                      className="px-2.5 py-1 border border-border rounded hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition font-medium"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
           </section>
         </>
       )}

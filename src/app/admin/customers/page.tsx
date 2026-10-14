@@ -2,7 +2,7 @@
 
 import { API_BASE_URL } from '@/config/api';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../../../store';
@@ -90,11 +90,17 @@ export default function AdminCustomersPage() {
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [activeTab, setActiveTab] = useState<'ORDERS' | 'REVIEWS'>('ORDERS');
 
-  const fetchCustomers = async () => {
+  // Pagination states (default limit: 50, skip: 0)
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(50);
+  const [totalCustomers, setTotalCustomers] = useState(0);
+
+  const fetchCustomers = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch(`${API_BASE_URL}/admin/customers`, {
+      const skip = (page - 1) * limit;
+      const res = await fetch(`${API_BASE_URL}/admin/customers?limit=${limit}&skip=${skip}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -105,7 +111,15 @@ export default function AdminCustomersPage() {
       }
 
       if (res.ok) {
-        setCustomers(await res.json());
+        const totalHeader = res.headers.get('x-total-count');
+        const data = await res.json();
+        const items = Array.isArray(data) ? data : (data.items || []);
+        setCustomers(items);
+        if (totalHeader) {
+          setTotalCustomers(parseInt(totalHeader, 10));
+        } else {
+          setTotalCustomers(items.length);
+        }
       } else {
         setError('Failed to fetch customer accounts.');
       }
@@ -114,11 +128,11 @@ export default function AdminCustomersPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token, page, limit, dispatch, router]);
 
   useEffect(() => {
     if (token) fetchCustomers();
-  }, [token]);
+  }, [token, fetchCustomers]);
 
   // Create Admin
   const handleCreateAdmin = async (e: React.FormEvent) => {
@@ -412,6 +426,54 @@ export default function AdminCustomersPage() {
                 ))}
               </tbody>
             </table>
+
+            {/* ── Pagination Controls ── */}
+            <div className="flex flex-wrap items-center justify-between gap-4 p-4 border-t border-border bg-card/60 text-xs">
+              <div className="text-muted-foreground">
+                Showing <span className="font-semibold text-foreground">{customers.length === 0 ? 0 : (page - 1) * limit + 1}</span> to{' '}
+                <span className="font-semibold text-foreground">{Math.min(page * limit, totalCustomers || customers.length)}</span> of{' '}
+                <span className="font-semibold text-foreground">{totalCustomers || customers.length}</span> customers
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-muted-foreground">Per page:</span>
+                  <select
+                    value={limit}
+                    onChange={(e) => {
+                      setLimit(Number(e.target.value));
+                      setPage(1);
+                    }}
+                    className="bg-background border border-border rounded px-2 py-1 text-xs focus:outline-none"
+                  >
+                    <option value={25}>25</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                  </select>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                    className="px-2.5 py-1 border border-border rounded hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition font-medium"
+                  >
+                    Previous
+                  </button>
+                  <span className="px-2 py-1 text-muted-foreground">
+                    Page <span className="font-semibold text-foreground">{page}</span> of{' '}
+                    <span className="font-semibold text-foreground">{Math.max(1, Math.ceil((totalCustomers || customers.length) / limit))}</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setPage((p) => p + 1)}
+                    disabled={page * limit >= (totalCustomers || customers.length)}
+                    className="px-2.5 py-1 border border-border rounded hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition font-medium"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </section>

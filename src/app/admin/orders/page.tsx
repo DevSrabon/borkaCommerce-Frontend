@@ -103,6 +103,11 @@ export default function OrdersAdminPage() {
   const [endDate, setEndDate] = useState<string>('');
   const [showManualModal, setShowManualModal] = useState(false);
 
+  // Pagination states (default limit: 50, skip: 0)
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(50);
+  const [totalOrders, setTotalOrders] = useState(0);
+
   const fetchOrders = useCallback(async () => {
     setLoading(true);
     try {
@@ -111,19 +116,29 @@ export default function OrdersAdminPage() {
       if (startDate) params.append('start_date', startDate);
       if (endDate) params.append('end_date', endDate);
       if (search.trim()) params.append('search', search.trim());
+      params.append('limit', limit.toString());
+      params.append('skip', ((page - 1) * limit).toString());
 
-      const url = `${API_BASE_URL}/admin/orders${params.toString() ? `?${params.toString()}` : ''}`;
+      const url = `${API_BASE_URL}/admin/orders?${params.toString()}`;
       const res = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
-        setOrders(await res.json());
+        const totalHeader = res.headers.get('x-total-count');
+        const data = await res.json();
+        const items = Array.isArray(data) ? data : (data.items || []);
+        setOrders(items);
+        if (totalHeader) {
+          setTotalOrders(parseInt(totalHeader, 10));
+        } else {
+          setTotalOrders(items.length);
+        }
       }
     } catch (_) {}
     finally {
       setLoading(false);
     }
-  }, [token, selectedStatus, startDate, endDate, search]);
+  }, [token, selectedStatus, startDate, endDate, search, page, limit]);
 
   useEffect(() => {
     fetchOrders();
@@ -707,6 +722,54 @@ export default function OrdersAdminPage() {
                 ))}
               </tbody>
             </table>
+
+            {/* ── Pagination Controls ── */}
+            <div className="flex flex-wrap items-center justify-between gap-4 p-4 border-t border-border bg-card/60 text-xs">
+              <div className="text-muted-foreground">
+                Showing <span className="font-semibold text-foreground">{orders.length === 0 ? 0 : (page - 1) * limit + 1}</span> to{' '}
+                <span className="font-semibold text-foreground">{Math.min(page * limit, totalOrders || orders.length)}</span> of{' '}
+                <span className="font-semibold text-foreground">{totalOrders || orders.length}</span> orders
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-muted-foreground">Per page:</span>
+                  <select
+                    value={limit}
+                    onChange={(e) => {
+                      setLimit(Number(e.target.value));
+                      setPage(1);
+                    }}
+                    className="bg-background border border-border rounded px-2 py-1 text-xs focus:outline-none"
+                  >
+                    <option value={25}>25</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                  </select>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                    className="px-2.5 py-1 border border-border rounded hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition font-medium"
+                  >
+                    Previous
+                  </button>
+                  <span className="px-2 py-1 text-muted-foreground">
+                    Page <span className="font-semibold text-foreground">{page}</span> of{' '}
+                    <span className="font-semibold text-foreground">{Math.max(1, Math.ceil((totalOrders || orders.length) / limit))}</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setPage((p) => p + 1)}
+                    disabled={page * limit >= (totalOrders || orders.length)}
+                    className="px-2.5 py-1 border border-border rounded hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition font-medium"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>

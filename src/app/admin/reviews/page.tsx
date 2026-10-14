@@ -2,7 +2,7 @@
 
 import { API_BASE_URL } from '@/config/api';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../../store';
 import { Star, CheckCircle, XCircle, Trash2, ShieldCheck, Filter, RefreshCw, MessageSquare } from 'lucide-react';
@@ -35,28 +35,44 @@ export default function AdminReviewsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
-  const fetchReviews = async () => {
+  // Pagination states (default limit: 50, skip: 0)
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(50);
+  const [totalReviews, setTotalReviews] = useState(0);
+
+  const fetchReviews = useCallback(async () => {
     setLoading(true);
     try {
-      const url =
-        filterStatus === 'ALL'
-          ? `${API_BASE_URL}/admin/reviews`
-          : `${API_BASE_URL}/admin/reviews?status=${filterStatus}`;
+      const skip = (page - 1) * limit;
+      const params = new URLSearchParams();
+      if (filterStatus !== 'ALL') params.append('status', filterStatus);
+      params.append('limit', limit.toString());
+      params.append('skip', skip.toString());
+
+      const url = `${API_BASE_URL}/admin/reviews?${params.toString()}`;
       const res = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
-        setReviews(await res.json());
+        const totalHeader = res.headers.get('x-total-count');
+        const data = await res.json();
+        const items = Array.isArray(data) ? data : (data.items || []);
+        setReviews(items);
+        if (totalHeader) {
+          setTotalReviews(parseInt(totalHeader, 10));
+        } else {
+          setTotalReviews(items.length);
+        }
       }
     } catch (_) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token, filterStatus, page, limit]);
 
   useEffect(() => {
     if (token) fetchReviews();
-  }, [token, filterStatus]);
+  }, [token, fetchReviews]);
 
   const handleUpdateStatus = async (id: string, status: 'APPROVED' | 'REJECTED') => {
     setUpdatingId(id);
@@ -270,6 +286,56 @@ export default function AdminReviewsPage() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* ── Pagination Controls ── */}
+      {reviews.length > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-4 p-4 border border-border bg-card/60 rounded-xl text-xs mt-6">
+          <div className="text-muted-foreground">
+            Showing <span className="font-semibold text-foreground">{reviews.length === 0 ? 0 : (page - 1) * limit + 1}</span> to{' '}
+            <span className="font-semibold text-foreground">{Math.min(page * limit, totalReviews || reviews.length)}</span> of{' '}
+            <span className="font-semibold text-foreground">{totalReviews || reviews.length}</span> reviews
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5">
+              <span className="text-muted-foreground">Per page:</span>
+              <select
+                value={limit}
+                onChange={(e) => {
+                  setLimit(Number(e.target.value));
+                  setPage(1);
+                }}
+                className="bg-background border border-border rounded px-2 py-1 text-xs focus:outline-none"
+              >
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+            </div>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="px-2.5 py-1 border border-border rounded hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition font-medium"
+              >
+                Previous
+              </button>
+              <span className="px-2 py-1 text-muted-foreground">
+                Page <span className="font-semibold text-foreground">{page}</span> of{' '}
+                <span className="font-semibold text-foreground">{Math.max(1, Math.ceil((totalReviews || reviews.length) / limit))}</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setPage((p) => p + 1)}
+                disabled={page * limit >= (totalReviews || reviews.length)}
+                className="px-2.5 py-1 border border-border rounded hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition font-medium"
+              >
+                Next
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
