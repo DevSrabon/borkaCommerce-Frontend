@@ -151,7 +151,7 @@ export default async function OffersPage() {
                       </span>
                     )}
                     {prod.active_offer_name && (
-                      <span className="absolute right-3 top-3 bg-black/75 backdrop-blur-sm text-primary font-bold text-[10px] px-2 py-0.5 rounded border border-primary/30">
+                      <span className="absolute right-3 top-3 bg-black/75 backdrop-blur-sm text-primary font-bold text-xs px-2 py-0.5 rounded border border-primary/30">
                         {prod.active_offer_name}
                       </span>
                     )}

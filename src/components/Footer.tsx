@@ -98,14 +98,14 @@ export default function Footer() {
                   <span className="font-serif font-black text-amber-500 text-base tracking-widest">
                     SW
                   </span>
-                  <span className="text-[6.5px] uppercase tracking-tighter text-amber-600 dark:text-amber-400 font-semibold text-center leading-[8px] mt-0.5">
+                  <span className="text-xs uppercase tracking-tighter text-amber-600 dark:text-amber-400 font-semibold text-center leading-[8px] mt-0.5">
                     Saba Al Wadi
                   </span>
                 </div>
               )}
             </Link>
 
-            <p className="text-muted-foreground text-[11px] leading-relaxed">
+            <p className="text-muted-foreground text-xs leading-relaxed">
               {settings.footer_about_text ||
                 'Saba Al Wadi is an online business specializing in selling high-quality Abayas, offering a variety of stylish and modest designs for women.'}
             </p>
@@ -245,7 +245,7 @@ export default function Footer() {
             <h4 className="font-semibold text-foreground text-sm tracking-wide">
               Our Branches
             </h4>
-            <div className="space-y-3 text-muted-foreground text-[11px] leading-relaxed">
+            <div className="space-y-3 text-muted-foreground text-xs leading-relaxed">
               {(() => {
                 let branches: {
                   id?: string;
@@ -282,7 +282,7 @@ export default function Footer() {
                     {b.phone && (
                       <a
                         href={`tel:${b.phone.replace(/[^\d+]/g, '')}`}
-                        className="text-primary hover:underline block text-[10px] font-medium"
+                        className="text-primary hover:underline block text-xs font-medium"
                       >
                         {b.phone}
                       </a>
@@ -290,13 +290,13 @@ export default function Footer() {
                     {b.email && (
                       <a
                         href={`mailto:${b.email}`}
-                        className="text-muted-foreground hover:text-primary block text-[10px]"
+                        className="text-muted-foreground hover:text-primary block text-xs"
                       >
                         {b.email}
                       </a>
                     )}
                     {b.hours && (
-                      <p className="text-[10px] text-muted-foreground/80 italic">{b.hours}</p>
+                      <p className="text-xs text-muted-foreground/80 italic">{b.hours}</p>
                     )}
                   </div>
                 ));
@@ -311,9 +311,9 @@ export default function Footer() {
             &copy; {new Date().getFullYear()} {settings.site_name || 'Saba Al Wadi'} Haute Couture. All rights reserved.
           </p>
 
-          <div className="flex items-center gap-3 text-[11px]">
+          <div className="flex items-center gap-3 text-xs">
             <span>Secure 256-Bit SSL Encrypted Checkout</span>
-            <div className="flex items-center gap-1 font-mono font-bold text-[9px]">
+            <div className="flex items-center gap-1 font-mono font-bold text-xs">
               <span className="px-1.5 py-0.5 rounded border border-border bg-accent text-foreground">
                 VISA
               </span>

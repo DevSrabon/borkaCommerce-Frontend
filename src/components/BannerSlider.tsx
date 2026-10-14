@@ -93,7 +93,7 @@ export default function BannerSlider({ serverBanners }: Props) {
       {/* Content */}
       <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 w-full">
         <div className="max-w-2xl space-y-3 sm:space-y-5">
-          <span className="text-primary font-medium tracking-widest text-[10px] sm:text-xs uppercase block animate-fade-in">
+          <span className="text-primary font-medium tracking-widest text-xs sm:text-xs uppercase block animate-fade-in">
             {current === 0 && serverBanners.length === 0 ? 'Eid Collection 2026' : `Slide ${current + 1} of ${banners.length}`}
           </span>
           <h1

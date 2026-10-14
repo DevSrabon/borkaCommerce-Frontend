@@ -458,7 +458,7 @@ export default function SiteSettingsPage() {
         >
           <Cloud size={15} />
           <span>Media &amp; Cloud Storage</span>
-          <span className="text-[10px] px-1.5 py-0.2 rounded-full uppercase font-mono bg-background/20 font-bold">
+          <span className="text-xs px-1.5 py-0.2 rounded-full uppercase font-mono bg-background/20 font-bold">
             {activeDriver}
           </span>
         </button>
@@ -515,13 +515,13 @@ export default function SiteSettingsPage() {
                   </div>
                   <div>
                     <h2 className="text-sm font-semibold text-foreground">Branding &amp; Identity</h2>
-                    <p className="text-[11px] text-muted-foreground">Store name, taglines, and brand logos</p>
+                    <p className="text-xs text-muted-foreground">Store name, taglines, and brand logos</p>
                   </div>
                 </div>
                 <div className="p-5 space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                      <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                         Site Name
                       </label>
                       <input
@@ -533,7 +533,7 @@ export default function SiteSettingsPage() {
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                         Site Tagline
                       </label>
                       <input
@@ -547,7 +547,7 @@ export default function SiteSettingsPage() {
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                       Brand Logo Image URL
                     </label>
                     <div className="flex flex-col gap-2">
@@ -567,7 +567,7 @@ export default function SiteSettingsPage() {
                         />
                         <button
                           type="button"
-                          className="px-3 py-1.5 border border-border rounded text-[10px] uppercase font-semibold tracking-wider hover:bg-accent flex items-center gap-1.5 text-foreground cursor-pointer"
+                          className="px-3 py-1.5 border border-border rounded text-xs uppercase font-semibold tracking-wider hover:bg-accent flex items-center gap-1.5 text-foreground cursor-pointer"
                         >
                           <Upload size={12} /> Upload Logo File
                         </button>
@@ -602,12 +602,12 @@ export default function SiteSettingsPage() {
                   </div>
                   <div>
                     <h2 className="text-sm font-semibold text-foreground">SEO &amp; Meta Descriptions</h2>
-                    <p className="text-[11px] text-muted-foreground">Search engine previews, keywords, and title tags</p>
+                    <p className="text-xs text-muted-foreground">Search engine previews, keywords, and title tags</p>
                   </div>
                 </div>
                 <div className="p-5 space-y-4">
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                       Default Page Title
                     </label>
                     <input
@@ -619,7 +619,7 @@ export default function SiteSettingsPage() {
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                       Meta Description
                     </label>
                     <textarea
@@ -631,7 +631,7 @@ export default function SiteSettingsPage() {
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                       Meta Keywords (comma-separated)
                     </label>
                     <input
@@ -653,12 +653,12 @@ export default function SiteSettingsPage() {
                   </div>
                   <div>
                     <h2 className="text-sm font-semibold text-foreground">Icons &amp; Social Share Media</h2>
-                    <p className="text-[11px] text-muted-foreground">Favicon and OpenGraph image preview</p>
+                    <p className="text-xs text-muted-foreground">Favicon and OpenGraph image preview</p>
                   </div>
                 </div>
                 <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                       Favicon URL (.ico / .png)
                     </label>
                     <input
@@ -677,7 +677,7 @@ export default function SiteSettingsPage() {
                       />
                       <button
                         type="button"
-                        className="px-3 py-1.5 border border-border rounded text-[10px] uppercase font-semibold tracking-wider hover:bg-accent flex items-center gap-1.5 text-foreground cursor-pointer"
+                        className="px-3 py-1.5 border border-border rounded text-xs uppercase font-semibold tracking-wider hover:bg-accent flex items-center gap-1.5 text-foreground cursor-pointer"
                       >
                         <Upload size={12} /> Upload Favicon
                       </button>
@@ -685,7 +685,7 @@ export default function SiteSettingsPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                       OG Share Image URL
                     </label>
                     <input
@@ -704,7 +704,7 @@ export default function SiteSettingsPage() {
                       />
                       <button
                         type="button"
-                        className="px-3 py-1.5 border border-border rounded text-[10px] uppercase font-semibold tracking-wider hover:bg-accent flex items-center gap-1.5 text-foreground cursor-pointer"
+                        className="px-3 py-1.5 border border-border rounded text-xs uppercase font-semibold tracking-wider hover:bg-accent flex items-center gap-1.5 text-foreground cursor-pointer"
                       >
                         <Upload size={12} /> Upload OG Image
                       </button>
@@ -721,14 +721,14 @@ export default function SiteSettingsPage() {
                   </div>
                   <div>
                     <h2 className="text-sm font-semibold text-foreground">Flash Sale &amp; Campaigns</h2>
-                    <p className="text-[11px] text-muted-foreground">Toggle real-time countdown banner on the homepage</p>
+                    <p className="text-xs text-muted-foreground">Toggle real-time countdown banner on the homepage</p>
                   </div>
                 </div>
                 <div className="p-5">
                   <div className="flex items-center justify-between gap-4 p-4 rounded-xl border border-border bg-background">
                     <div>
                       <h4 className="text-xs font-bold text-foreground">Display Flash Sale Section on Storefront</h4>
-                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                      <p className="text-xs text-muted-foreground mt-0.5">
                         Controls visibility of active campaign cards and countdown timers on the landing page.
                       </p>
                     </div>
@@ -762,12 +762,12 @@ export default function SiteSettingsPage() {
                   </div>
                   <div>
                     <h2 className="text-sm font-semibold text-foreground">Size Chart Configuration</h2>
-                    <p className="text-[11px] text-muted-foreground">Global size guide graphic displayed across all product sheets</p>
+                    <p className="text-xs text-muted-foreground">Global size guide graphic displayed across all product sheets</p>
                   </div>
                 </div>
                 <div className="p-5 space-y-3">
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                       Size Chart Image URL
                     </label>
                     <input
@@ -786,7 +786,7 @@ export default function SiteSettingsPage() {
                       />
                       <button
                         type="button"
-                        className="px-3 py-1.5 border border-border rounded text-[10px] uppercase font-semibold tracking-wider hover:bg-accent flex items-center gap-1.5 text-foreground cursor-pointer"
+                        className="px-3 py-1.5 border border-border rounded text-xs uppercase font-semibold tracking-wider hover:bg-accent flex items-center gap-1.5 text-foreground cursor-pointer"
                       >
                         <Upload size={12} /> Upload Size Chart Graphic
                       </button>
@@ -820,12 +820,12 @@ export default function SiteSettingsPage() {
                   </div>
                   <div>
                     <h2 className="text-sm font-semibold text-foreground">Footer, Helplines &amp; Boutiques</h2>
-                    <p className="text-[11px] text-muted-foreground">Store contacts and interactive physical branches</p>
+                    <p className="text-xs text-muted-foreground">Store contacts and interactive physical branches</p>
                   </div>
                 </div>
                 <div className="p-5 space-y-5">
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                       Brand Description (Footer Column 1)
                     </label>
                     <textarea
@@ -839,7 +839,7 @@ export default function SiteSettingsPage() {
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div className="space-y-1">
-                      <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                         Help Line 1 (Tel)
                       </label>
                       <input
@@ -851,7 +851,7 @@ export default function SiteSettingsPage() {
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                         Help Line 2 (Mob)
                       </label>
                       <input
@@ -863,7 +863,7 @@ export default function SiteSettingsPage() {
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                         Public Email
                       </label>
                       <input
@@ -884,7 +884,7 @@ export default function SiteSettingsPage() {
                           <MapPin size={15} className="text-primary" />
                           Multiple Store Branches &amp; Boutiques ({branches.length})
                         </h3>
-                        <p className="text-[11px] text-muted-foreground">
+                        <p className="text-xs text-muted-foreground">
                           Physical boutiques displayed in footer columns and contact sheets.
                         </p>
                       </div>
@@ -924,8 +924,8 @@ export default function SiteSettingsPage() {
                               </button>
                             </div>
                           </div>
-                          <p className="text-[11px] text-muted-foreground leading-relaxed line-clamp-2">{b.address}</p>
-                          <div className="pt-1 border-t border-border/40 space-y-1 text-[10px]">
+                          <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">{b.address}</p>
+                          <div className="pt-1 border-t border-border/40 space-y-1 text-xs">
                             {b.phone && (
                               <p className="text-primary font-mono flex items-center gap-1">
                                 <Phone size={10} /> {b.phone}
@@ -959,12 +959,12 @@ export default function SiteSettingsPage() {
                     </div>
                     <div>
                       <h2 className="text-sm font-semibold text-foreground">Currency &amp; Exchange Rates</h2>
-                      <p className="text-[11px] text-muted-foreground">Base AED and dynamic conversion ratios</p>
+                      <p className="text-xs text-muted-foreground">Base AED and dynamic conversion ratios</p>
                     </div>
                   </div>
                   <div className="p-5 space-y-3">
                     <div className="space-y-1">
-                      <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                         Default Base Currency
                       </label>
                       <input
@@ -977,7 +977,7 @@ export default function SiteSettingsPage() {
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1">
-                        <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                           USD Rate (AED Base)
                         </label>
                         <input
@@ -989,7 +989,7 @@ export default function SiteSettingsPage() {
                         />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                           GBP Rate (AED Base)
                         </label>
                         <input
@@ -1012,13 +1012,13 @@ export default function SiteSettingsPage() {
                     </div>
                     <div>
                       <h2 className="text-sm font-semibold text-foreground">Delivery &amp; Shipping Charges</h2>
-                      <p className="text-[11px] text-muted-foreground">Base fee and automated free shipping rules</p>
+                      <p className="text-xs text-muted-foreground">Base fee and automated free shipping rules</p>
                     </div>
                   </div>
                   <div className="p-5 space-y-3">
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1">
-                        <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                           Standard Fee (AED)
                         </label>
                         <input
@@ -1030,7 +1030,7 @@ export default function SiteSettingsPage() {
                         />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                           Free Shipping Min (AED)
                         </label>
                         <input
@@ -1044,7 +1044,7 @@ export default function SiteSettingsPage() {
                     </div>
                     <div className="grid grid-cols-3 gap-2">
                       <div className="space-y-1">
-                        <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                           Discount Min (AED)
                         </label>
                         <input
@@ -1056,7 +1056,7 @@ export default function SiteSettingsPage() {
                         />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                           Discount Type
                         </label>
                         <select
@@ -1069,7 +1069,7 @@ export default function SiteSettingsPage() {
                         </select>
                       </div>
                       <div className="space-y-1">
-                        <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                           Discount Value
                         </label>
                         <input
@@ -1119,14 +1119,14 @@ export default function SiteSettingsPage() {
                         <HardDrive size={18} />
                       </div>
                       {activeDriver === 'local' && (
-                        <span className="text-[10px] font-bold px-2 py-0.5 bg-primary text-primary-foreground rounded-full flex items-center gap-1">
+                        <span className="text-xs font-bold px-2 py-0.5 bg-primary text-primary-foreground rounded-full flex items-center gap-1">
                           <Check size={10} /> Active
                         </span>
                       )}
                     </div>
                     <div>
                       <h3 className="text-xs font-bold text-foreground">Local Server Disk</h3>
-                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                      <p className="text-xs text-muted-foreground mt-0.5">
                         Stored inside <code className="text-primary font-mono">/uploads</code>. Zero external cost.
                       </p>
                     </div>
@@ -1146,14 +1146,14 @@ export default function SiteSettingsPage() {
                         <Cloud size={18} />
                       </div>
                       {activeDriver === 'r2' && (
-                        <span className="text-[10px] font-bold px-2 py-0.5 bg-orange-600 text-white rounded-full flex items-center gap-1">
+                        <span className="text-xs font-bold px-2 py-0.5 bg-orange-600 text-white rounded-full flex items-center gap-1">
                           <Check size={10} /> Active
                         </span>
                       )}
                     </div>
                     <div>
                       <h3 className="text-xs font-bold text-foreground">Cloudflare R2</h3>
-                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                      <p className="text-xs text-muted-foreground mt-0.5">
                         S3-compatible, ultra fast, <strong className="text-orange-500">Zero Egress Fees</strong>.
                       </p>
                     </div>
@@ -1173,14 +1173,14 @@ export default function SiteSettingsPage() {
                         <Server size={18} />
                       </div>
                       {activeDriver === 's3' && (
-                        <span className="text-[10px] font-bold px-2 py-0.5 bg-sky-600 text-white rounded-full flex items-center gap-1">
+                        <span className="text-xs font-bold px-2 py-0.5 bg-sky-600 text-white rounded-full flex items-center gap-1">
                           <Check size={10} /> Active
                         </span>
                       )}
                     </div>
                     <div>
                       <h3 className="text-xs font-bold text-foreground">Amazon AWS S3</h3>
-                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                      <p className="text-xs text-muted-foreground mt-0.5">
                         High redundancy enterprise storage (e.g. UAE me-central-1).
                       </p>
                     </div>
@@ -1200,14 +1200,14 @@ export default function SiteSettingsPage() {
                         <Sparkles size={18} />
                       </div>
                       {activeDriver === 'cloudinary' && (
-                        <span className="text-[10px] font-bold px-2 py-0.5 bg-indigo-600 text-white rounded-full flex items-center gap-1">
+                        <span className="text-xs font-bold px-2 py-0.5 bg-indigo-600 text-white rounded-full flex items-center gap-1">
                           <Check size={10} /> Active
                         </span>
                       )}
                     </div>
                     <div>
                       <h3 className="text-xs font-bold text-foreground">Cloudinary CDN</h3>
-                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                      <p className="text-xs text-muted-foreground mt-0.5">
                         Global edge media network with on-the-fly transformations.
                       </p>
                     </div>
@@ -1226,7 +1226,7 @@ export default function SiteSettingsPage() {
                     <button
                       type="button"
                       onClick={fetchStorageStatus}
-                      className="text-[11px] text-muted-foreground hover:text-foreground flex items-center gap-1 cursor-pointer"
+                      className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 cursor-pointer"
                     >
                       <RefreshCw size={11} /> Refresh
                     </button>
@@ -1234,27 +1234,27 @@ export default function SiteSettingsPage() {
 
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 pt-3">
                     <div className="bg-background border border-border p-3 rounded-lg">
-                      <div className="text-[10px] font-semibold text-muted-foreground uppercase">Local Assets</div>
+                      <div className="text-xs font-semibold text-muted-foreground uppercase">Local Assets</div>
                       <div className="text-base font-bold mt-1 text-foreground">{storageStatus.localAssets}</div>
                     </div>
                     <div className="bg-background border border-border p-3 rounded-lg">
-                      <div className="text-[10px] font-semibold text-muted-foreground uppercase text-orange-500">Cloudflare R2</div>
+                      <div className="text-xs font-semibold text-muted-foreground uppercase text-orange-500">Cloudflare R2</div>
                       <div className="text-base font-bold mt-1 text-foreground">{storageStatus.r2Assets || 0}</div>
                     </div>
                     <div className="bg-background border border-border p-3 rounded-lg">
-                      <div className="text-[10px] font-semibold text-muted-foreground uppercase text-sky-500">AWS S3</div>
+                      <div className="text-xs font-semibold text-muted-foreground uppercase text-sky-500">AWS S3</div>
                       <div className="text-base font-bold mt-1 text-foreground">{storageStatus.s3Assets || 0}</div>
                     </div>
                     <div className="bg-background border border-border p-3 rounded-lg">
-                      <div className="text-[10px] font-semibold text-muted-foreground uppercase text-indigo-500">Cloudinary</div>
+                      <div className="text-xs font-semibold text-muted-foreground uppercase text-indigo-500">Cloudinary</div>
                       <div className="text-base font-bold mt-1 text-foreground">{storageStatus.cloudinaryAssets}</div>
                     </div>
                     <div className="bg-background border border-border p-3 rounded-lg">
-                      <div className="text-[10px] font-semibold text-muted-foreground uppercase text-blue-500">External</div>
+                      <div className="text-xs font-semibold text-muted-foreground uppercase text-blue-500">External</div>
                       <div className="text-base font-bold mt-1 text-foreground">{storageStatus.externalAssets}</div>
                     </div>
                     <div className="bg-background border border-border p-3 rounded-lg">
-                      <div className="text-[10px] font-semibold text-muted-foreground uppercase text-emerald-500">Total Media</div>
+                      <div className="text-xs font-semibold text-muted-foreground uppercase text-emerald-500">Total Media</div>
                       <div className="text-base font-bold mt-1 text-foreground">{storageStatus.totalAssets}</div>
                     </div>
                   </div>
@@ -1272,12 +1272,12 @@ export default function SiteSettingsPage() {
                       <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
                         Cloudflare R2 Configuration
                         {activeDriver === 'r2' && (
-                          <span className="text-[10px] px-2 py-0.2 rounded-full font-bold bg-orange-500/10 text-orange-500 border border-orange-500/20">
+                          <span className="text-xs px-2 py-0.2 rounded-full font-bold bg-orange-500/10 text-orange-500 border border-orange-500/20">
                             Selected Driver
                           </span>
                         )}
                       </h2>
-                      <p className="text-[11px] text-muted-foreground">Compatible with S3 client, zero egress fees</p>
+                      <p className="text-xs text-muted-foreground">Compatible with S3 client, zero egress fees</p>
                     </div>
                   </div>
 
@@ -1308,7 +1308,7 @@ export default function SiteSettingsPage() {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1">
-                      <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                         Cloudflare Account ID
                       </label>
                       <input
@@ -1320,7 +1320,7 @@ export default function SiteSettingsPage() {
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                         R2 Bucket Name
                       </label>
                       <input
@@ -1332,7 +1332,7 @@ export default function SiteSettingsPage() {
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                         R2 Access Key ID
                       </label>
                       <input
@@ -1344,7 +1344,7 @@ export default function SiteSettingsPage() {
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                         R2 Secret Access Key
                       </label>
                       <input
@@ -1358,7 +1358,7 @@ export default function SiteSettingsPage() {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                       Public Custom Domain / CDN URL (Optional)
                     </label>
                     <input
@@ -1368,7 +1368,7 @@ export default function SiteSettingsPage() {
                       value={settings.R2_PUBLIC_DOMAIN || ''}
                       onChange={(e) => handleChange('R2_PUBLIC_DOMAIN', e.target.value)}
                     />
-                    <p className="text-[11px] text-muted-foreground">
+                    <p className="text-xs text-muted-foreground">
                       If left blank, will default to direct Cloudflare bucket public URL.
                     </p>
                   </div>
@@ -1386,12 +1386,12 @@ export default function SiteSettingsPage() {
                       <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
                         Amazon AWS S3 Configuration
                         {activeDriver === 's3' && (
-                          <span className="text-[10px] px-2 py-0.2 rounded-full font-bold bg-sky-500/10 text-sky-500 border border-sky-500/20">
+                          <span className="text-xs px-2 py-0.2 rounded-full font-bold bg-sky-500/10 text-sky-500 border border-sky-500/20">
                             Selected Driver
                           </span>
                         )}
                       </h2>
-                      <p className="text-[11px] text-muted-foreground">Standard Amazon Simple Storage Service</p>
+                      <p className="text-xs text-muted-foreground">Standard Amazon Simple Storage Service</p>
                     </div>
                   </div>
 
@@ -1422,7 +1422,7 @@ export default function SiteSettingsPage() {
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div className="space-y-1">
-                      <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                         AWS Region
                       </label>
                       <input
@@ -1434,7 +1434,7 @@ export default function SiteSettingsPage() {
                       />
                     </div>
                     <div className="space-y-1 sm:col-span-2">
-                      <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                         S3 Bucket Name
                       </label>
                       <input
@@ -1449,7 +1449,7 @@ export default function SiteSettingsPage() {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1">
-                      <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                         AWS Access Key ID
                       </label>
                       <input
@@ -1461,7 +1461,7 @@ export default function SiteSettingsPage() {
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                         AWS Secret Access Key
                       </label>
                       <input
@@ -1475,7 +1475,7 @@ export default function SiteSettingsPage() {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                       Public CloudFront / CDN Domain (Optional)
                     </label>
                     <input
@@ -1500,12 +1500,12 @@ export default function SiteSettingsPage() {
                       <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
                         Cloudinary CDN Configuration
                         {activeDriver === 'cloudinary' && (
-                          <span className="text-[10px] px-2 py-0.2 rounded-full font-bold bg-indigo-500/10 text-indigo-500 border border-indigo-500/20">
+                          <span className="text-xs px-2 py-0.2 rounded-full font-bold bg-indigo-500/10 text-indigo-500 border border-indigo-500/20">
                             Selected Driver
                           </span>
                         )}
                       </h2>
-                      <p className="text-[11px] text-muted-foreground">Edge CDN with dynamic compression and webp optimization</p>
+                      <p className="text-xs text-muted-foreground">Edge CDN with dynamic compression and webp optimization</p>
                     </div>
                   </div>
 
@@ -1536,7 +1536,7 @@ export default function SiteSettingsPage() {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1">
-                      <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                         Cloudinary Cloud Name
                       </label>
                       <input
@@ -1548,7 +1548,7 @@ export default function SiteSettingsPage() {
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                         Root Upload Folder
                       </label>
                       <input
@@ -1560,7 +1560,7 @@ export default function SiteSettingsPage() {
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                         Cloudinary API Key
                       </label>
                       <input
@@ -1572,7 +1572,7 @@ export default function SiteSettingsPage() {
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                         Cloudinary API Secret
                       </label>
                       <input
@@ -1594,7 +1594,7 @@ export default function SiteSettingsPage() {
                     <ArrowRightLeft size={14} className="text-primary" />
                     Bi-Directional Asset Migration Tools
                   </h3>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                  <p className="text-xs text-muted-foreground mt-0.5">
                     Move existing media records in bulk between local server disk and remote cloud CDN.
                   </p>
                 </div>
@@ -1648,17 +1648,17 @@ export default function SiteSettingsPage() {
                         <h2 className="text-sm font-bold text-foreground">Dynamic Redis Cache Service</h2>
                         {redisStatus?.enabled ? (
                           redisStatus.connected ? (
-                            <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 flex items-center gap-1">
+                            <span className="text-xs px-2 py-0.5 rounded-full font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 flex items-center gap-1">
                               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                               Connected {redisStatus.pingMs ? `(${redisStatus.pingMs}ms)` : ''}
                             </span>
                           ) : (
-                            <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                            <span className="text-xs px-2 py-0.5 rounded-full font-bold bg-amber-500/10 text-amber-500 border border-amber-500/20">
                               Disconnected
                             </span>
                           )
                         ) : (
-                          <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-muted text-muted-foreground border border-border">
+                          <span className="text-xs px-2 py-0.5 rounded-full font-bold bg-muted text-muted-foreground border border-border">
                             Disabled (In-Memory Fallback)
                           </span>
                         )}
@@ -1710,7 +1710,7 @@ export default function SiteSettingsPage() {
                   <div className="p-4 rounded-xl border border-border bg-background flex items-center justify-between">
                     <div>
                       <h4 className="text-xs font-bold text-foreground">Enable Redis Cache</h4>
-                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                      <p className="text-xs text-muted-foreground mt-0.5">
                         {isRedisEnabled ? 'Redis is active' : 'Disabled (Direct DB/RAM)'}
                       </p>
                     </div>
@@ -1733,9 +1733,9 @@ export default function SiteSettingsPage() {
 
                   {/* Redis Connection URL */}
                   <div className="md:col-span-2 space-y-1">
-                    <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center justify-between">
+                    <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center justify-between">
                       <span>Redis Dynamic Connection String (URI)</span>
-                      <span className="text-[9px] text-primary lowercase">e.g. redis://user:pass@host:6379</span>
+                      <span className="text-xs text-primary lowercase">e.g. redis://user:pass@host:6379</span>
                     </label>
                     <input
                       type="text"
@@ -1744,7 +1744,7 @@ export default function SiteSettingsPage() {
                       value={settings.REDIS_URL || ''}
                       onChange={(e) => handleChange('REDIS_URL', e.target.value)}
                     />
-                    <p className="text-[10px] text-muted-foreground">
+                    <p className="text-xs text-muted-foreground">
                       Supports standalone Redis, Upstash, AWS ElastiCache, or Redis Cloud. Reconnects on the fly upon saving.
                     </p>
                   </div>
@@ -1759,7 +1759,7 @@ export default function SiteSettingsPage() {
                       <Sparkles size={16} className="text-primary" />
                       Unified System Cache Control
                     </span>
-                    <span className="text-[10px] bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 rounded font-bold">
+                    <span className="text-xs bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 rounded font-bold">
                       Storefront + Admin + Server
                     </span>
                   </div>
@@ -1793,12 +1793,12 @@ export default function SiteSettingsPage() {
                   </div>
                   <div>
                     <h2 className="text-sm font-semibold text-foreground">Payment Gateways &amp; Stripe</h2>
-                    <p className="text-[11px] text-muted-foreground">Secure credit card checkout keys and webhooks</p>
+                    <p className="text-xs text-muted-foreground">Secure credit card checkout keys and webhooks</p>
                   </div>
                 </div>
                 <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                       Stripe Secret Key
                     </label>
                     <input
@@ -1810,7 +1810,7 @@ export default function SiteSettingsPage() {
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                       Stripe Webhook Secret
                     </label>
                     <input
@@ -1832,13 +1832,13 @@ export default function SiteSettingsPage() {
                   </div>
                   <div>
                     <h2 className="text-sm font-semibold text-foreground">SMTP Dynamic Email Server</h2>
-                    <p className="text-[11px] text-muted-foreground">Automated customer order receipts and system alerts</p>
+                    <p className="text-xs text-muted-foreground">Automated customer order receipts and system alerts</p>
                   </div>
                 </div>
                 <div className="p-5 space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div className="space-y-1 sm:col-span-2">
-                      <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                         SMTP Host Server
                       </label>
                       <input
@@ -1850,7 +1850,7 @@ export default function SiteSettingsPage() {
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                         SMTP Port
                       </label>
                       <input
@@ -1865,7 +1865,7 @@ export default function SiteSettingsPage() {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1">
-                      <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                         SMTP Username / Email
                       </label>
                       <input
@@ -1877,7 +1877,7 @@ export default function SiteSettingsPage() {
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                         SMTP Password / App Secret
                       </label>
                       <input
@@ -1892,7 +1892,7 @@ export default function SiteSettingsPage() {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1">
-                      <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                         Sender Display Name &amp; Email
                       </label>
                       <input
@@ -1904,7 +1904,7 @@ export default function SiteSettingsPage() {
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                         Use SSL/TLS
                       </label>
                       <select
@@ -1930,12 +1930,12 @@ export default function SiteSettingsPage() {
                     </div>
                     <div>
                       <h2 className="text-sm font-semibold text-foreground">Social OAuth Login</h2>
-                      <p className="text-[11px] text-muted-foreground">Google &amp; Facebook authentication credentials</p>
+                      <p className="text-xs text-muted-foreground">Google &amp; Facebook authentication credentials</p>
                     </div>
                   </div>
                   <div className="p-5 space-y-3">
                     <div className="space-y-1">
-                      <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                         Google OAuth Client ID
                       </label>
                       <input
@@ -1947,7 +1947,7 @@ export default function SiteSettingsPage() {
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                         Google OAuth Secret
                       </label>
                       <input
@@ -1969,12 +1969,12 @@ export default function SiteSettingsPage() {
                     </div>
                     <div>
                       <h2 className="text-sm font-semibold text-foreground">Cloudflare Turnstile Captcha</h2>
-                      <p className="text-[11px] text-muted-foreground">Bot mitigation and checkout protection</p>
+                      <p className="text-xs text-muted-foreground">Bot mitigation and checkout protection</p>
                     </div>
                   </div>
                   <div className="p-5 space-y-3">
                     <div className="space-y-1">
-                      <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                         Turnstile Site Key
                       </label>
                       <input
@@ -1986,7 +1986,7 @@ export default function SiteSettingsPage() {
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                         Turnstile Secret Key
                       </label>
                       <input
@@ -2009,13 +2009,13 @@ export default function SiteSettingsPage() {
                   </div>
                   <div>
                     <h2 className="text-sm font-semibold text-foreground">Admin Access &amp; Stock Alerts</h2>
-                    <p className="text-[11px] text-muted-foreground">Authorized administrative emails and low stock thresholds</p>
+                    <p className="text-xs text-muted-foreground">Authorized administrative emails and low stock thresholds</p>
                   </div>
                 </div>
                 <div className="p-5 space-y-3">
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div className="space-y-1 sm:col-span-2">
-                      <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                         Privileged Admin Emails (comma-separated)
                       </label>
                       <input
@@ -2027,7 +2027,7 @@ export default function SiteSettingsPage() {
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                         Low Stock Alert Limit (units)
                       </label>
                       <input
@@ -2084,7 +2084,7 @@ export default function SiteSettingsPage() {
 
             <form onSubmit={handleSaveBranchForm} className="p-5 space-y-3.5 bg-card text-xs">
               <div>
-                <label className="block font-semibold mb-1 uppercase text-[10px] tracking-wider text-muted-foreground">
+                <label className="block font-semibold mb-1 uppercase text-xs tracking-wider text-muted-foreground">
                   Branch / Boutique Name *
                 </label>
                 <input
@@ -2098,7 +2098,7 @@ export default function SiteSettingsPage() {
               </div>
 
               <div>
-                <label className="block font-semibold mb-1 uppercase text-[10px] tracking-wider text-muted-foreground">
+                <label className="block font-semibold mb-1 uppercase text-xs tracking-wider text-muted-foreground">
                   Full Physical Address *
                 </label>
                 <textarea
@@ -2113,7 +2113,7 @@ export default function SiteSettingsPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-semibold mb-1 uppercase text-[10px] tracking-wider text-muted-foreground">
+                  <label className="block font-semibold mb-1 uppercase text-xs tracking-wider text-muted-foreground">
                     Contact Phone / Mobile
                   </label>
                   <input
@@ -2126,7 +2126,7 @@ export default function SiteSettingsPage() {
                 </div>
 
                 <div>
-                  <label className="block font-semibold mb-1 uppercase text-[10px] tracking-wider text-muted-foreground">
+                  <label className="block font-semibold mb-1 uppercase text-xs tracking-wider text-muted-foreground">
                     Branch Email
                   </label>
                   <input
@@ -2140,7 +2140,7 @@ export default function SiteSettingsPage() {
               </div>
 
               <div>
-                <label className="block font-semibold mb-1 uppercase text-[10px] tracking-wider text-muted-foreground">
+                <label className="block font-semibold mb-1 uppercase text-xs tracking-wider text-muted-foreground">
                   Visiting / Business Hours
                 </label>
                 <input

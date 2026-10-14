@@ -181,7 +181,7 @@ export default function AdminReviewsPage() {
                     >
                       {r.product?.name}
                     </Link>
-                    <span className="text-[10px] text-green-500 bg-green-500/10 border border-green-500/20 px-1.5 py-0.5 rounded font-semibold flex items-center gap-1">
+                    <span className="text-xs text-green-500 bg-green-500/10 border border-green-500/20 px-1.5 py-0.5 rounded font-semibold flex items-center gap-1">
                       <ShieldCheck size={10} /> Verified Purchase
                     </span>
                   </div>
@@ -196,7 +196,7 @@ export default function AdminReviewsPage() {
 
                 <div className="flex items-center gap-3">
                   <span
-                    className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider border ${
+                    className={`text-xs px-2 py-0.5 rounded font-bold uppercase tracking-wider border ${
                       r.status === 'APPROVED'
                         ? 'bg-green-500/10 text-green-500 border-green-500/20'
                         : r.status === 'PENDING'
@@ -206,7 +206,7 @@ export default function AdminReviewsPage() {
                   >
                     {r.status}
                   </span>
-                  <span className="text-[11px] text-muted-foreground font-light">
+                  <span className="text-xs text-muted-foreground font-light">
                     {new Date(r.created_at).toLocaleDateString('en-AE', {
                       year: 'numeric',
                       month: 'short',

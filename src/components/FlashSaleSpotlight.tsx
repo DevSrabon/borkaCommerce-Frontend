@@ -75,7 +75,7 @@ export default function FlashSaleSpotlight({
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400 border border-rose-200 dark:border-rose-500/30 text-xs font-bold uppercase tracking-wider shadow-xs">
               <Flame size={14} className="animate-bounce text-rose-600 dark:text-rose-400" />
               <span>Limited Time Flash Sale</span>
-              <span className="bg-rose-600 text-white text-[10px] px-1.5 py-0.2 rounded-sm font-black shadow-xs">
+              <span className="bg-rose-600 text-white text-xs px-1.5 py-0.2 rounded-sm font-black shadow-xs">
                 {activeOffer?.discount_value ? `${activeOffer.discount_value}% OFF` : 'DEAL'}
               </span>
             </div>
@@ -93,7 +93,7 @@ export default function FlashSaleSpotlight({
               <span className="text-xl sm:text-2xl font-mono font-black text-rose-600 dark:text-rose-400">
                 {mounted ? String(timeLeft.days).padStart(2, '0') : '00'}
               </span>
-              <span className="text-[9px] uppercase tracking-wider text-stone-500 dark:text-zinc-400 font-semibold">Days</span>
+              <span className="text-xs uppercase tracking-wider text-stone-500 dark:text-zinc-400 font-semibold">Days</span>
             </div>
             <span className="text-lg font-bold text-stone-400 dark:text-white/40">:</span>
 
@@ -101,7 +101,7 @@ export default function FlashSaleSpotlight({
               <span className="text-xl sm:text-2xl font-mono font-black text-stone-900 dark:text-white">
                 {mounted ? String(timeLeft.hours).padStart(2, '0') : '00'}
               </span>
-              <span className="text-[9px] uppercase tracking-wider text-stone-500 dark:text-zinc-400 font-semibold">Hours</span>
+              <span className="text-xs uppercase tracking-wider text-stone-500 dark:text-zinc-400 font-semibold">Hours</span>
             </div>
             <span className="text-lg font-bold text-stone-400 dark:text-white/40">:</span>
 
@@ -109,7 +109,7 @@ export default function FlashSaleSpotlight({
               <span className="text-xl sm:text-2xl font-mono font-black text-stone-900 dark:text-white">
                 {mounted ? String(timeLeft.minutes).padStart(2, '0') : '00'}
               </span>
-              <span className="text-[9px] uppercase tracking-wider text-stone-500 dark:text-zinc-400 font-semibold">Mins</span>
+              <span className="text-xs uppercase tracking-wider text-stone-500 dark:text-zinc-400 font-semibold">Mins</span>
             </div>
             <span className="text-lg font-bold text-stone-400 dark:text-white/40">:</span>
 
@@ -117,7 +117,7 @@ export default function FlashSaleSpotlight({
               <span className="text-xl sm:text-2xl font-mono font-black text-rose-600 dark:text-rose-400 animate-pulse">
                 {mounted ? String(timeLeft.seconds).padStart(2, '0') : '00'}
               </span>
-              <span className="text-[9px] uppercase tracking-wider text-rose-600 dark:text-red-300 font-semibold">Secs</span>
+              <span className="text-xs uppercase tracking-wider text-rose-600 dark:text-red-300 font-semibold">Secs</span>
             </div>
           </div>
         </div>
@@ -137,7 +137,7 @@ export default function FlashSaleSpotlight({
                     alt={prod.name}
                     className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
                   />
-                  <div className="absolute top-2 left-2 bg-rose-600 text-white font-black text-[10px] px-2 py-0.5 rounded shadow-md uppercase tracking-wider">
+                  <div className="absolute top-2 left-2 bg-rose-600 text-white font-black text-xs px-2 py-0.5 rounded shadow-md uppercase tracking-wider">
                     Flash Deal
                   </div>
                 </Link>
@@ -148,7 +148,7 @@ export default function FlashSaleSpotlight({
                     <h3 className="font-medium text-xs sm:text-sm text-foreground line-clamp-1 group-hover:text-primary transition">
                       <Link href={`/product/${prod.slug}`}>{prod.name}</Link>
                     </h3>
-                    <p className="text-[10px] sm:text-xs text-muted-foreground line-clamp-1 mt-0.5 font-light">
+                    <p className="text-xs sm:text-xs text-muted-foreground line-clamp-1 mt-0.5 font-light">
                       {prod.short_description}
                     </p>
                   </div>
@@ -160,7 +160,7 @@ export default function FlashSaleSpotlight({
                     />
                     <Link
                       href={`/product/${prod.slug}`}
-                      className="px-2.5 py-1 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded text-[10px] uppercase tracking-wider text-center transition shadow-xs"
+                      className="px-2.5 py-1 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded text-xs uppercase tracking-wider text-center transition shadow-xs"
                     >
                       Shop Now
                     </Link>

@@ -424,7 +424,7 @@ export default function AddBlockModal({
                   <h4 className="text-xs font-bold text-foreground group-hover:text-primary transition-colors">
                     {def.title}
                   </h4>
-                  <p className="text-[11px] text-muted-foreground line-clamp-2 mt-1 leading-normal">
+                  <p className="text-xs text-muted-foreground line-clamp-2 mt-1 leading-normal">
                     {def.description}
                   </p>
                 </div>

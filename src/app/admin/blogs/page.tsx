@@ -570,7 +570,7 @@ export default function AdminBlogsPage() {
           <MessageSquare size={15} />
           <span>Comment Moderation</span>
           {pendingCommentsCount > 0 && (
-            <span className="px-1.5 py-0.2 rounded-full bg-amber-500 text-stone-950 text-[10px] font-bold">
+            <span className="px-1.5 py-0.2 rounded-full bg-amber-500 text-stone-950 text-xs font-bold">
               {pendingCommentsCount} Pending
             </span>
           )}
@@ -627,7 +627,7 @@ export default function AdminBlogsPage() {
           <div className="bg-card border border-border rounded-xl overflow-hidden shadow-xs">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="bg-muted/40 border-b border-border text-muted-foreground font-semibold uppercase text-[10px] tracking-wider">
+                <thead className="bg-muted/40 border-b border-border text-muted-foreground font-semibold uppercase text-xs tracking-wider">
                   <tr>
                     <th className="py-3 px-4">Article</th>
                     <th className="py-3 px-4">Category</th>
@@ -671,27 +671,27 @@ export default function AdminBlogsPage() {
                                     className="w-full h-full object-cover"
                                   />
                                 ) : (
-                                  <div className="w-full h-full flex items-center justify-center text-[9px] text-muted-foreground font-semibold">
+                                  <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground font-semibold">
                                     Blog
                                   </div>
                                 )}
                               </div>
                               <div className="min-w-0">
                                 <div className="line-clamp-1 font-semibold">{blog.title}</div>
-                                <div className="text-[10px] text-muted-foreground font-mono truncate">/{blog.slug}</div>
+                                <div className="text-xs text-muted-foreground font-mono truncate">/{blog.slug}</div>
                                 <div className="flex items-center gap-2 mt-0.5">
                                   {blog.featured_image && (
-                                    <span className="text-[9px] text-primary font-medium">★ Featured Img</span>
+                                    <span className="text-xs text-primary font-medium">★ Featured Img</span>
                                   )}
                                   {blog.main_image && (
-                                    <span className="text-[9px] text-blue-500 font-medium">🖼 Main Img</span>
+                                    <span className="text-xs text-blue-500 font-medium">🖼 Main Img</span>
                                   )}
                                 </div>
                               </div>
                             </div>
                           </td>
                           <td className="py-3.5 px-4">
-                            <span className="px-2.5 py-1 bg-amber-500/10 text-amber-700 dark:text-amber-300 font-semibold rounded-full text-[10px] border border-amber-500/20 inline-block shadow-2xs">
+                            <span className="px-2.5 py-1 bg-amber-500/10 text-amber-700 dark:text-amber-300 font-semibold rounded-full text-xs border border-amber-500/20 inline-block shadow-2xs">
                               {blog.category || 'General'}
                             </span>
                           </td>
@@ -703,7 +703,7 @@ export default function AdminBlogsPage() {
                           </td>
                           <td className="py-3.5 px-4">
                             <span
-                              className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
+                              className={`px-2 py-0.5 rounded text-xs font-bold border ${
                                 blog.is_published
                                   ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
                                   : 'bg-zinc-500/10 text-zinc-500 border-zinc-500/20'
@@ -712,7 +712,7 @@ export default function AdminBlogsPage() {
                               {blog.is_published ? 'Published' : 'Draft'}
                             </span>
                           </td>
-                          <td className="py-3.5 px-4 text-muted-foreground text-[11px]">
+                          <td className="py-3.5 px-4 text-muted-foreground text-xs">
                             {new Date(blog.published_at).toLocaleDateString()}
                           </td>
                           <td className="py-3.5 px-4 text-right space-x-1">
@@ -872,7 +872,7 @@ export default function AdminBlogsPage() {
                                 setCategoryFilter(cat.name);
                                 setActiveTab('blogs');
                               }}
-                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-secondary hover:bg-secondary/80 text-secondary-foreground transition cursor-pointer"
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-secondary hover:bg-secondary/80 text-secondary-foreground transition cursor-pointer"
                               title="Click to view articles in this category"
                             >
                               <span>
@@ -987,9 +987,9 @@ export default function AdminBlogsPage() {
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="font-bold text-sm text-foreground">{comment.author_name}</span>
                       <span className="text-xs text-muted-foreground font-mono">({comment.author_email})</span>
-                      <span className="text-[11px] text-muted-foreground">• {new Date(comment.created_at).toLocaleString()}</span>
+                      <span className="text-xs text-muted-foreground">• {new Date(comment.created_at).toLocaleString()}</span>
                       <span
-                        className={`px-2 py-0.5 rounded text-[10px] font-bold border ml-1 ${
+                        className={`px-2 py-0.5 rounded text-xs font-bold border ml-1 ${
                           comment.status === 'APPROVED'
                             ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
                             : comment.status === 'PENDING'
@@ -1117,7 +1117,7 @@ export default function AdminBlogsPage() {
                           setFormData({ ...formData, category: categories[0] });
                         }
                       }}
-                      className="text-[11px] text-primary hover:underline font-medium cursor-pointer"
+                      className="text-xs text-primary hover:underline font-medium cursor-pointer"
                     >
                       {isCustomCategory ? 'Choose Existing' : '+ Add New'}
                     </button>
@@ -1167,9 +1167,9 @@ export default function AdminBlogsPage() {
                     <label className="block font-semibold text-foreground">
                       ★ Featured Image
                     </label>
-                    <span className="text-[10px] text-muted-foreground">Grid Card (800×600)</span>
+                    <span className="text-xs text-muted-foreground">Grid Card (800×600)</span>
                   </div>
-                  <p className="text-[10px] text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     Thumbnail for blog cards, category lists, and social shares.
                   </p>
                   <div className="flex gap-2 items-center">
@@ -1203,7 +1203,7 @@ export default function AdminBlogsPage() {
                       <button
                         type="button"
                         onClick={() => setFormData({ ...formData, featured_image: '' })}
-                        className="text-[10px] text-red-500 hover:underline flex items-center gap-1 cursor-pointer"
+                        className="text-xs text-red-500 hover:underline flex items-center gap-1 cursor-pointer"
                       >
                         <Trash2 size={11} /> Remove
                       </button>
@@ -1217,9 +1217,9 @@ export default function AdminBlogsPage() {
                     <label className="block font-semibold text-foreground">
                       🖼 Main Article Image
                     </label>
-                    <span className="text-[10px] text-muted-foreground">Header Banner (1200×600)</span>
+                    <span className="text-xs text-muted-foreground">Header Banner (1200×600)</span>
                   </div>
-                  <p className="text-[10px] text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     Large hero cover banner at the top of the full article view.
                   </p>
                   <div className="flex gap-2 items-center">
@@ -1253,7 +1253,7 @@ export default function AdminBlogsPage() {
                       <button
                         type="button"
                         onClick={() => setFormData({ ...formData, main_image: '' })}
-                        className="text-[10px] text-red-500 hover:underline flex items-center gap-1 cursor-pointer"
+                        className="text-xs text-red-500 hover:underline flex items-center gap-1 cursor-pointer"
                       >
                         <Trash2 size={11} /> Remove
                       </button>

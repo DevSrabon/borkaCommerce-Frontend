@@ -33,6 +33,7 @@ import {
   Search,
   RefreshCw,
   ExternalLink,
+  Factory,
 } from 'lucide-react';
 
 interface OrderItem {
@@ -74,6 +75,7 @@ const getOrderItemFeaturedImage = (item: any) => {
 interface OrderDetail {
   id: string;
   order_number: string;
+  production_no?: string | null;
   customer_id: string;
   status: 'PENDING' | 'CONFIRMED' | 'PACKED' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | 'REFUNDED';
   subtotal: number | string;
@@ -300,6 +302,25 @@ export default function AdminOrderDetailPage() {
     'Lebanon',
     'Turkey',
   ];
+
+  const [generatingProdNo, setGeneratingProdNo] = useState(false);
+  const handleGenerateProductionNo = async () => {
+    if (!order || !token) return;
+    setGeneratingProdNo(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/admin/orders/${order.id}/generate-production-no`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setOrder((prev) => (prev ? { ...prev, production_no: data.production_no } : prev));
+      }
+    } catch (_) {}
+    finally {
+      setGeneratingProdNo(false);
+    }
+  };
 
   const handleSaveAddress = async () => {
     if (!order || !token) return;
@@ -683,6 +704,7 @@ export default function AdminOrderDetailPage() {
           <div style="text-align: right;">
             <h2 style="margin:0; font-size: 20px;">TAX INVOICE</h2>
             <p style="margin: 4px 0; font-size: 13px;"><strong>Invoice #:</strong> ${order.order_number}</p>
+            ${order.production_no ? `<p style="margin: 4px 0; font-size: 13px;"><strong>Production #:</strong> <span style="font-family: monospace; font-weight: bold; color: #b45309;">${order.production_no}</span></p>` : ''}
             <p style="margin: 4px 0; font-size: 13px;"><strong>Date:</strong> ${new Date(order.created_at).toLocaleDateString('en-AE')}</p>
             <p style="margin: 4px 0; font-size: 13px;"><strong>Status:</strong> ${order.status}</p>
           </div>
@@ -787,10 +809,30 @@ export default function AdminOrderDetailPage() {
             <ArrowLeft size={16} />
           </Link>
           <div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <h1 className="font-serif text-2xl font-bold tracking-tight text-foreground">
                 Order {order.order_number}
               </h1>
+              {order.production_no ? (
+                <span
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-mono font-bold bg-amber-500/10 text-amber-500 border border-amber-500/30 shadow-2xs"
+                  title="Workshop & Tailoring Production Number"
+                >
+                  <Factory size={13} className="text-amber-500" />
+                  <span>Production #{order.production_no}</span>
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleGenerateProductionNo}
+                  disabled={generatingProdNo}
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold bg-primary/10 text-primary border border-primary/30 hover:bg-primary/20 transition cursor-pointer"
+                  title="Generate factory production ID"
+                >
+                  <Factory size={13} />
+                  <span>{generatingProdNo ? 'Generating…' : '+ Generate Production #'}</span>
+                </button>
+              )}
               <span className={`px-2.5 py-1 rounded text-xs font-bold border ${STATUS_COLORS[order.status] || ''}`}>
                 {order.status}
               </span>
@@ -903,7 +945,7 @@ export default function AdminOrderDetailPage() {
                     <PlusCircle size={14} className="text-primary" /> Add Product to Order
                   </span>
                   {loadingCatalog && (
-                    <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                    <span className="text-xs text-muted-foreground flex items-center gap-1">
                       <RefreshCw size={10} className="animate-spin" /> Loading catalog...
                     </span>
                   )}
@@ -939,12 +981,12 @@ export default function AdminOrderDetailPage() {
                                   handleAddItemFromCatalog(product, variant);
                                   setSearchCatalog('');
                                 }}
-                                className="inline-flex items-center gap-1 px-2 py-1 text-[11px] bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded transition"
+                                className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded transition"
                               >
                                 <Plus size={11} />
                                 <span>{variant.sku || 'SKU'}</span>
                                 <span className="font-semibold">AED {Number(variant.price || 0).toFixed(2)}</span>
-                                <span className="text-[10px] text-muted-foreground">({variant.inventory?.available_quantity ?? 0} in stock)</span>
+                                <span className="text-xs text-muted-foreground">({variant.inventory?.available_quantity ?? 0} in stock)</span>
                               </button>
                             ))}
                           </div>
@@ -970,7 +1012,7 @@ export default function AdminOrderDetailPage() {
                               className="w-full h-full object-cover"
                             />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center text-[10px] text-muted-foreground font-semibold bg-muted/40">
+                            <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground font-semibold bg-muted/40">
                               Item
                             </div>
                           )}
@@ -978,7 +1020,7 @@ export default function AdminOrderDetailPage() {
                         <div className="space-y-0.5 min-w-0">
                           <h3 className="text-sm font-semibold text-foreground truncate">{item.product_name}</h3>
                           <p className="text-xs text-muted-foreground">{item.variant_name}</p>
-                          <p className="text-[11px] font-mono text-muted-foreground">SKU: {item.sku}</p>
+                          <p className="text-xs font-mono text-muted-foreground">SKU: {item.sku}</p>
                         </div>
                       </div>
                       <div className="text-right shrink-0">
@@ -1009,7 +1051,7 @@ export default function AdminOrderDetailPage() {
                               className="w-full h-full object-cover"
                             />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center text-[9px] text-muted-foreground font-semibold bg-muted/40">
+                            <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground font-semibold bg-muted/40">
                               Item
                             </div>
                           )}
@@ -1017,14 +1059,14 @@ export default function AdminOrderDetailPage() {
                         <div className="space-y-0.5 min-w-0">
                           <h3 className="text-sm font-semibold text-foreground truncate">{item.product_name}</h3>
                           <p className="text-xs text-muted-foreground">{item.variant_name}</p>
-                          <p className="text-[11px] font-mono text-muted-foreground">SKU: {item.sku}</p>
+                          <p className="text-xs font-mono text-muted-foreground">SKU: {item.sku}</p>
                         </div>
                       </div>
 
                     <div className="flex items-center justify-between sm:justify-end gap-3">
                       {/* Price input */}
                       <div className="text-right">
-                        <label className="text-[10px] uppercase font-semibold text-muted-foreground block">Price (AED)</label>
+                        <label className="text-xs uppercase font-semibold text-muted-foreground block">Price (AED)</label>
                         <input
                           type="number"
                           min="0"
@@ -1042,7 +1084,7 @@ export default function AdminOrderDetailPage() {
 
                       {/* Quantity Stepper */}
                       <div className="text-center">
-                        <label className="text-[10px] uppercase font-semibold text-muted-foreground block">Qty</label>
+                        <label className="text-xs uppercase font-semibold text-muted-foreground block">Qty</label>
                         <div className="flex items-center border border-border rounded overflow-hidden">
                           <button
                             type="button"
@@ -1070,7 +1112,7 @@ export default function AdminOrderDetailPage() {
 
                       {/* Line Subtotal */}
                       <div className="w-24 text-right">
-                        <label className="text-[10px] uppercase font-semibold text-muted-foreground block">Line Total</label>
+                        <label className="text-xs uppercase font-semibold text-muted-foreground block">Line Total</label>
                         <span className="text-xs font-bold text-foreground">
                           AED {(item.price * item.quantity).toFixed(2)}
                         </span>
@@ -1122,7 +1164,7 @@ export default function AdminOrderDetailPage() {
               <div className="bg-muted/30 p-5 border-t border-border space-y-3 text-xs">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-3 border-b border-border">
                   <div>
-                    <label className="block text-[11px] font-semibold text-foreground mb-1">
+                    <label className="block text-xs font-semibold text-foreground mb-1">
                       Shipping / Delivery Charge (AED)
                     </label>
                     <input
@@ -1135,7 +1177,7 @@ export default function AdminOrderDetailPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-semibold text-foreground mb-1">
+                    <label className="block text-xs font-semibold text-foreground mb-1">
                       Discount (AED)
                     </label>
                     <input
@@ -1192,12 +1234,12 @@ export default function AdminOrderDetailPage() {
             </h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-xs">
               <div>
-                <span className="text-muted-foreground block text-[10px] uppercase font-semibold">Method</span>
+                <span className="text-muted-foreground block text-xs uppercase font-semibold">Method</span>
                 <span className="font-semibold text-foreground">{order.payment_method}</span>
               </div>
               <div>
-                <span className="text-muted-foreground block text-[10px] uppercase font-semibold">Payment Status</span>
-                <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold border mt-0.5 ${
+                <span className="text-muted-foreground block text-xs uppercase font-semibold">Payment Status</span>
+                <span className={`inline-block px-2 py-0.5 rounded text-xs font-bold border mt-0.5 ${
                   order.payment_status === 'PAID'
                     ? 'bg-green-500/10 text-green-600 border-green-500/20'
                     : 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20'
@@ -1206,13 +1248,13 @@ export default function AdminOrderDetailPage() {
                 </span>
               </div>
               <div>
-                <span className="text-muted-foreground block text-[10px] uppercase font-semibold">Currency</span>
+                <span className="text-muted-foreground block text-xs uppercase font-semibold">Currency</span>
                 <span className="font-semibold text-foreground">{order.currency || 'AED'}</span>
               </div>
             </div>
 
             {order.payments && order.payments.length > 0 && (
-              <div className="border-t border-border pt-3 text-[11px] text-muted-foreground font-mono space-y-1">
+              <div className="border-t border-border pt-3 text-xs text-muted-foreground font-mono space-y-1">
                 {order.payments.map((p) => (
                   <div key={p.id} className="flex justify-between">
                     <span>Provider: {p.provider} ({p.status})</span>
@@ -1233,11 +1275,11 @@ export default function AdminOrderDetailPage() {
             </h2>
             <div className="space-y-3 text-xs">
               <div>
-                <span className="text-muted-foreground text-[10px] uppercase font-semibold block">Full Name</span>
+                <span className="text-muted-foreground text-xs uppercase font-semibold block">Full Name</span>
                 <span className="font-semibold text-foreground text-sm">
                   {order.customer.first_name} {order.customer.last_name}
                 </span>
-                <span className="ml-2 px-1.5 py-0.5 text-[9px] bg-primary/10 text-primary border border-primary/20 rounded font-semibold uppercase">
+                <span className="ml-2 px-1.5 py-0.5 text-xs bg-primary/10 text-primary border border-primary/20 rounded font-semibold uppercase">
                   {order.customer.role}
                 </span>
               </div>
@@ -1310,7 +1352,7 @@ export default function AdminOrderDetailPage() {
                         href={order.tracking_url}
                         target="_blank"
                         rel="noreferrer"
-                        className="text-[11px] text-sky-400 hover:text-sky-300 font-semibold flex items-center gap-1 underline"
+                        className="text-xs text-sky-400 hover:text-sky-300 font-semibold flex items-center gap-1 underline"
                       >
                         <ExternalLink size={12} /> Track Package Live
                       </a>
@@ -1318,7 +1360,7 @@ export default function AdminOrderDetailPage() {
                   )}
 
                   {order.delivery_notes && (
-                    <div className="pt-2 border-t border-border/60 text-[11px]">
+                    <div className="pt-2 border-t border-border/60 text-xs">
                       <span className="text-muted-foreground block font-medium">Delivery Notes:</span>
                       <p className="text-foreground italic">{order.delivery_notes}</p>
                     </div>
@@ -1328,13 +1370,13 @@ export default function AdminOrderDetailPage() {
                 <div className="space-y-3 pt-1">
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <label className="text-[10px] font-semibold text-muted-foreground uppercase">
+                      <label className="text-xs font-semibold text-muted-foreground uppercase">
                         Select Delivery Partner / Courier
                       </label>
                       <button
                         type="button"
                         onClick={() => setShowManageCouriers(!showManageCouriers)}
-                        className="text-[11px] text-primary hover:underline font-semibold flex items-center gap-1 cursor-pointer"
+                        className="text-xs text-primary hover:underline font-semibold flex items-center gap-1 cursor-pointer"
                       >
                         <Plus size={11} /> {showManageCouriers ? 'Close Management' : '+ Add / Manage Couriers'}
                       </button>
@@ -1343,12 +1385,12 @@ export default function AdminOrderDetailPage() {
                     {/* Manage / Add Courier inline panel */}
                     {showManageCouriers && (
                       <div className="mb-3 p-3 bg-background/90 border border-primary/30 rounded-lg space-y-2.5 animate-in fade-in shadow-inner">
-                        <span className="text-[11px] font-bold text-foreground block">
+                        <span className="text-xs font-bold text-foreground block">
                           ➕ Register New Courier Partner
                         </span>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                           <div>
-                            <label className="text-[9px] text-muted-foreground uppercase block mb-0.5">Courier Name *</label>
+                            <label className="text-xs text-muted-foreground uppercase block mb-0.5">Courier Name *</label>
                             <input
                               type="text"
                               placeholder="e.g. Steadfast, Aramex, Sundarban"
@@ -1358,7 +1400,7 @@ export default function AdminOrderDetailPage() {
                             />
                           </div>
                           <div>
-                            <label className="text-[9px] text-muted-foreground uppercase block mb-0.5">Tracking URL Template</label>
+                            <label className="text-xs text-muted-foreground uppercase block mb-0.5">Tracking URL Template</label>
                             <input
                               type="text"
                               placeholder="https://.../t/{tracking_number}"
@@ -1369,7 +1411,7 @@ export default function AdminOrderDetailPage() {
                           </div>
                         </div>
                         <div className="flex items-center justify-between pt-1">
-                          <p className="text-[10px] text-muted-foreground italic">
+                          <p className="text-xs text-muted-foreground italic">
                             Use <code className="text-primary font-bold">{'{tracking_number}'}</code> as placeholder in URL.
                           </p>
                           <button
@@ -1385,14 +1427,14 @@ export default function AdminOrderDetailPage() {
                         {/* Existing Couriers List for quick deletion */}
                         {deliveryPartners.length > 0 && (
                           <div className="pt-2 border-t border-border/60">
-                            <span className="text-[10px] text-muted-foreground font-semibold uppercase block mb-1">
+                            <span className="text-xs text-muted-foreground font-semibold uppercase block mb-1">
                               Active Registered Couriers:
                             </span>
                             <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
                               {deliveryPartners.map((dp) => (
                                 <span
                                   key={dp.id}
-                                  className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-muted/40 border border-border rounded text-[11px] text-foreground"
+                                  className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-muted/40 border border-border rounded text-xs text-foreground"
                                 >
                                   <span className="font-medium">{dp.name}</span>
                                   <button
@@ -1434,7 +1476,7 @@ export default function AdminOrderDetailPage() {
 
                   {courierName === 'Custom Courier' && (
                     <div>
-                      <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">
+                      <label className="text-xs font-semibold text-muted-foreground uppercase block mb-1">
                         Custom Courier Name *
                       </label>
                       <input
@@ -1454,7 +1496,7 @@ export default function AdminOrderDetailPage() {
                   )}
 
                   <div>
-                    <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase block mb-1">
                       Tracking Number / Waybill ID
                     </label>
                     <input
@@ -1468,7 +1510,7 @@ export default function AdminOrderDetailPage() {
 
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <label className="text-[10px] font-semibold text-muted-foreground uppercase">
+                      <label className="text-xs font-semibold text-muted-foreground uppercase">
                         Live Tracking URL (Optional)
                       </label>
                       {trackingUrl && (
@@ -1476,7 +1518,7 @@ export default function AdminOrderDetailPage() {
                           href={trackingUrl}
                           target="_blank"
                           rel="noreferrer"
-                          className="text-[11px] text-sky-400 hover:text-sky-300 font-semibold flex items-center gap-1 underline"
+                          className="text-xs text-sky-400 hover:text-sky-300 font-semibold flex items-center gap-1 underline"
                         >
                           <ExternalLink size={11} /> Test Live Link ↗
                         </a>
@@ -1492,7 +1534,7 @@ export default function AdminOrderDetailPage() {
                   </div>
 
                   <div>
-                    <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase block mb-1">
                       Delivery / Special Notes
                     </label>
                     <textarea
@@ -1530,7 +1572,7 @@ export default function AdminOrderDetailPage() {
             {/* Destination Shipping Address (Admin can edit before confirmation) */}
             <div className="text-xs space-y-3 pt-2 border-t border-border">
               <div className="flex items-center justify-between">
-                <p className="font-semibold text-foreground text-[11px] uppercase tracking-wider flex items-center gap-1.5">
+                <p className="font-semibold text-foreground text-xs uppercase tracking-wider flex items-center gap-1.5">
                   <MapPin size={13} className="text-primary" /> Destination Address
                 </p>
                 <button
@@ -1539,7 +1581,7 @@ export default function AdminOrderDetailPage() {
                     setIsEditingAddress(!isEditingAddress);
                     setAddressError(null);
                   }}
-                  className="text-[11px] text-primary hover:underline font-semibold flex items-center gap-1 cursor-pointer"
+                  className="text-xs text-primary hover:underline font-semibold flex items-center gap-1 cursor-pointer"
                 >
                   <Pencil size={11} /> {isEditingAddress ? 'Cancel' : 'Edit Address'}
                 </button>
@@ -1547,12 +1589,12 @@ export default function AdminOrderDetailPage() {
 
               {isEditingAddress ? (
                 <div className="bg-muted/40 p-3.5 rounded-lg border border-primary/30 space-y-3 animate-in fade-in">
-                  <div className="text-[11px] font-bold text-foreground">
+                  <div className="text-xs font-bold text-foreground">
                     Edit Customer Shipping Address
                   </div>
 
                   {addressError && (
-                    <div className="p-2 bg-red-500/10 border border-red-500/30 text-red-500 rounded text-[11px] flex items-center gap-1.5 font-medium">
+                    <div className="p-2 bg-red-500/10 border border-red-500/30 text-red-500 rounded text-xs flex items-center gap-1.5 font-medium">
                       <AlertCircle size={13} />
                       <span>{addressError}</span>
                     </div>
@@ -1560,7 +1602,7 @@ export default function AdminOrderDetailPage() {
 
                   {/* Country Dropdown */}
                   <div>
-                    <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase block mb-1">
                       Country * (Select Dropdown)
                     </label>
                     <select
@@ -1578,7 +1620,7 @@ export default function AdminOrderDetailPage() {
 
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">
+                      <label className="text-xs font-semibold text-muted-foreground uppercase block mb-1">
                         City *
                       </label>
                       <input
@@ -1590,7 +1632,7 @@ export default function AdminOrderDetailPage() {
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">
+                      <label className="text-xs font-semibold text-muted-foreground uppercase block mb-1">
                         Area / State
                       </label>
                       <input
@@ -1604,7 +1646,7 @@ export default function AdminOrderDetailPage() {
                   </div>
 
                   <div>
-                    <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase block mb-1">
                       Street Address *
                     </label>
                     <input
@@ -1618,7 +1660,7 @@ export default function AdminOrderDetailPage() {
 
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">
+                      <label className="text-xs font-semibold text-muted-foreground uppercase block mb-1">
                         Building / Villa / Apt
                       </label>
                       <input
@@ -1630,7 +1672,7 @@ export default function AdminOrderDetailPage() {
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">
+                      <label className="text-xs font-semibold text-muted-foreground uppercase block mb-1">
                         Postal Code
                       </label>
                       <input
@@ -1678,7 +1720,7 @@ export default function AdminOrderDetailPage() {
                       {street && <p>{street}</p>}
                       {area && <p>{area}</p>}
                       <p className="font-semibold text-primary">{city ? `${city}, ` : ''}{country}</p>
-                      {postal && <p className="font-mono text-[10px] text-muted-foreground">Postal Code: {postal}</p>}
+                      {postal && <p className="font-mono text-xs text-muted-foreground">Postal Code: {postal}</p>}
                     </div>
                   );
                 })()
@@ -1721,7 +1763,7 @@ export default function AdminOrderDetailPage() {
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Email:</span>
-                <span className="font-mono text-foreground text-[11px]">
+                <span className="font-mono text-foreground text-xs">
                   {order.customer.email}
                 </span>
               </div>
@@ -1732,7 +1774,7 @@ export default function AdminOrderDetailPage() {
                 <Mail className="w-3.5 h-3.5" />
                 Send Email Notification?
               </p>
-              <p className="text-[11px] text-amber-200/80">
+              <p className="text-xs text-amber-200/80">
                 Would you like to send an official luxury status update email to the customer informing them of this change?
               </p>
             </div>

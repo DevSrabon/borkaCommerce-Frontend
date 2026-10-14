@@ -188,7 +188,7 @@ export default function ProfilePage() {
             </div>
 
             {/* Hidden file input (Device upload ONLY) */}
-            <label className="absolute inset-0 bg-black/60 rounded-full opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white text-[10px] cursor-pointer transition">
+            <label className="absolute inset-0 bg-black/60 rounded-full opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white text-xs cursor-pointer transition">
               <Camera size={18} className="text-primary mb-0.5" />
               <span>Upload</span>
               <input
@@ -208,13 +208,13 @@ export default function ProfilePage() {
           </div>
 
           <div className="space-y-1">
-            <span className="text-[10px] font-semibold text-primary uppercase tracking-widest block">My Account Dashboard</span>
+            <span className="text-xs font-semibold text-primary uppercase tracking-widest block">My Account Dashboard</span>
             <h1 className="font-serif text-2xl sm:text-3xl font-bold text-foreground">
               Welcome, {user.first_name}!
             </h1>
             <p className="text-xs text-muted-foreground font-light">{user.email} &bull; {user.phone || 'No phone registered'}</p>
             {avatarMsg && (
-              <p className={`text-[11px] font-medium flex items-center gap-1 ${avatarMsg.type === 'success' ? 'text-green-500' : 'text-red-500'}`}>
+              <p className={`text-xs font-medium flex items-center gap-1 ${avatarMsg.type === 'success' ? 'text-green-500' : 'text-red-500'}`}>
                 {avatarMsg.type === 'success' ? <Check size={13} /> : <AlertCircle size={13} />}
                 <span>{avatarMsg.text}</span>
               </p>
@@ -225,7 +225,7 @@ export default function ProfilePage() {
         <div className="flex flex-wrap items-center gap-4">
           <div className="px-5 py-3 border border-border rounded-lg text-center bg-background/50">
             <span className="block text-2xl font-serif font-bold text-primary">{orders.length}</span>
-            <span className="text-[10px] text-muted-foreground uppercase font-semibold">Total Orders</span>
+            <span className="text-xs text-muted-foreground uppercase font-semibold">Total Orders</span>
           </div>
           {user.email === 'srabon@example.com' || user.email === 'admin@example.com' || (user as any).role === 'ADMIN' ? (
             <Link href="/admin" className="px-4 py-3 border border-primary text-primary hover:bg-primary hover:text-primary-foreground font-medium rounded text-xs tracking-wider flex items-center justify-center uppercase transition">
@@ -258,7 +258,7 @@ export default function ProfilePage() {
                   {/* Order Header */}
                   <div className="bg-background border-b border-border p-4 flex flex-wrap items-center justify-between gap-4">
                     <div>
-                      <span className="text-[10px] text-muted-foreground uppercase font-semibold block">Order Number</span>
+                      <span className="text-xs text-muted-foreground uppercase font-semibold block">Order Number</span>
                       <span className="font-mono text-xs font-bold text-foreground">{order.order_number}</span>
                     </div>
 
@@ -274,7 +274,7 @@ export default function ProfilePage() {
                     </div>
 
                     <div className="flex items-center gap-3">
-                      <span className={`text-[10px] uppercase font-semibold border px-2 py-1 rounded ${getStatusColor(order.status)}`}>
+                      <span className={`text-xs uppercase font-semibold border px-2 py-1 rounded ${getStatusColor(order.status)}`}>
                         {order.status}
                       </span>
                     </div>
@@ -295,14 +295,14 @@ export default function ProfilePage() {
                                   className="w-full h-full object-cover"
                                 />
                               ) : (
-                                <div className="w-full h-full flex items-center justify-center text-[9px] text-muted-foreground font-semibold bg-muted/40">
+                                <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground font-semibold bg-muted/40">
                                   Item
                                 </div>
                               )}
                             </div>
                             <div className="space-y-0.5 min-w-0">
                               <h4 className="font-medium text-xs text-foreground truncate">{item.product_name}</h4>
-                              <p className="text-[10px] text-muted-foreground font-mono">
+                              <p className="text-xs text-muted-foreground font-mono">
                                 SKU: {item.sku} &bull; Qty: {item.quantity}
                               </p>
                             </div>
@@ -325,7 +325,7 @@ export default function ProfilePage() {
                               {order.delivery_partner || 'Courier Delivery'}
                             </p>
                             {order.tracking_number && (
-                              <p className="text-[11px] text-muted-foreground font-mono">
+                              <p className="text-xs text-muted-foreground font-mono">
                                 Tracking #: <span className="font-semibold text-foreground">{order.tracking_number}</span>
                               </p>
                             )}
@@ -336,7 +336,7 @@ export default function ProfilePage() {
                             href={order.tracking_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground text-[11px] font-semibold rounded hover:bg-primary/90 transition shadow-xs"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground text-xs font-semibold rounded hover:bg-primary/90 transition shadow-xs"
                           >
                             <span>Track Package</span>
                             <ExternalLink size={12} />
@@ -366,7 +366,7 @@ export default function ProfilePage() {
             {/* Quick delivery instructions mock details */}
             <div className="space-y-4 text-xs font-light text-muted-foreground leading-relaxed">
               <div className="space-y-1">
-                <span className="font-medium text-foreground text-[10px] uppercase block tracking-wider">Default Shipping Address</span>
+                <span className="font-medium text-foreground text-xs uppercase block tracking-wider">Default Shipping Address</span>
                 <p className="border-l-2 border-primary/50 pl-3">
                   {user.first_name} {user.last_name} <br />
                   Marina Heights, Flat 12B <br />
@@ -376,7 +376,7 @@ export default function ProfilePage() {
               </div>
 
               <div className="space-y-1 pt-3 border-t border-border">
-                <span className="font-medium text-foreground text-[10px] uppercase block tracking-wider">Shipping Method</span>
+                <span className="font-medium text-foreground text-xs uppercase block tracking-wider">Shipping Method</span>
                 <p>Aramex Express Delivery (1-2 Working Days in UAE)</p>
               </div>
             </div>

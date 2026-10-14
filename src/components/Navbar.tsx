@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import LanguageSelector from './LanguageSelector';
 import CurrencySelector from './CurrencySelector';
+import CombinedLocaleSelector from './CombinedLocaleSelector';
 import { useLanguage } from '../context/LanguageContext';
 
 interface SubCategory {
@@ -77,7 +78,7 @@ export default function Navbar() {
   }, []);
 
   const logoUrl = siteSettings.logo_url;
-  const siteName = siteSettings.site_name || 'Saba Al Wadi';
+  const siteName = siteSettings.site_name || '';
 
   // Debounce search query by 300ms
   useEffect(() => {
@@ -253,42 +254,35 @@ export default function Navbar() {
       <header className="sticky top-0 z-40 w-full border-b border-border bg-background/95 backdrop-blur-md shadow-sm transition-all">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-20 items-center justify-between gap-4">
-            {/* Left: Mobile Toggle & Brand Logo */}
+            {/* Left: Brand Logo */}
             <div className="flex items-center gap-3 md:gap-6">
-              <button
-                onClick={() => setMobileMenuOpen(true)}
-                className="md:hidden p-2 -ml-2 text-foreground hover:text-primary transition"
-                aria-label="Open navigation menu"
-              >
-                <Menu size={22} />
-              </button>
-
-              <Link href="/" className="flex items-center gap-2.5 sm:gap-3 group shrink-0">
+              <Link href="/" className="flex items-center gap-2.5 sm:gap-3 group shrink-0" aria-label="Home">
                 {logoUrl ? (
                   <img
                     src={logoUrl}
-                    alt={siteName}
+                    alt={siteName || 'Store Logo'}
                     className="h-10 sm:h-12 w-auto max-h-12 object-contain transition-transform group-hover:scale-105"
                   />
                 ) : (
-                  /* Elegant Gold Monogram Emblem matching Footer */
-                  <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full border border-amber-500/40 bg-gradient-to-br from-amber-500/10 via-amber-400/5 to-transparent flex flex-col items-center justify-center p-1 shadow-xs group-hover:border-amber-500 transition-all shrink-0">
-                    <span className="font-serif font-black text-amber-500 text-xs sm:text-sm tracking-widest leading-none">
+                  /* Elegant Gold Monogram Emblem */
+                  <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full border border-amber-500/40 bg-gradient-to-br from-amber-500/10 via-amber-400/5 to-transparent flex items-center justify-center shadow-xs group-hover:border-amber-500 transition-all shrink-0">
+                    <span className="font-serif font-black text-amber-500 text-sm sm:text-base tracking-widest leading-none">
                       SW
-                    </span>
-                    <span className="text-[5px] sm:text-[5.5px] uppercase tracking-tighter text-amber-600 dark:text-amber-400 font-semibold text-center leading-[6.5px] mt-0.5">
-                      Saba Al Wadi
                     </span>
                   </div>
                 )}
-                <div className="flex flex-col justify-center">
-                  <span className="font-serif text-lg sm:text-xl font-bold tracking-widest text-foreground group-hover:opacity-90 leading-tight">
-                    SABA <span className="text-primary font-serif">AL WADI</span>
-                  </span>
-                  <span className="text-[7.5px] sm:text-[8px] uppercase tracking-[0.2em] text-muted-foreground font-medium hidden sm:block">
-                    Haute Couture &bull; Dubai
-                  </span>
-                </div>
+                {siteSettings.site_name && siteSettings.site_name.trim().toLowerCase() !== 'saba al wadi' && (
+                  <div className="flex flex-col justify-center">
+                    <span className="font-serif text-lg sm:text-xl font-bold tracking-wider text-foreground group-hover:opacity-90 leading-tight">
+                      {siteSettings.site_name}
+                    </span>
+                    {siteSettings.site_tagline && (
+                      <span className="text-xs uppercase tracking-[0.2em] text-muted-foreground font-medium hidden sm:block">
+                        {siteSettings.site_tagline}
+                      </span>
+                    )}
+                  </div>
+                )}
               </Link>
             </div>
 
@@ -325,14 +319,14 @@ export default function Navbar() {
                   <div className="absolute left-0 top-full pt-2 z-50 w-[460px] max-w-[90vw] animate-in fade-in slide-in-from-top-2 duration-150">
                     <div className="bg-card dark:bg-zinc-950 border border-border rounded-xl shadow-2xl p-4 space-y-4 text-card-foreground">
                       <div className="flex items-center justify-between pb-2 border-b border-border">
-                        <span className="text-[11px] font-bold uppercase tracking-wider text-primary flex items-center gap-1.5">
+                        <span className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-1.5">
                           <LayoutGrid size={13} />
                           All Categories & Collections
                         </span>
                         <Link
                           href="/catalog"
                           onClick={() => setAllCategoriesDropdownOpen(false)}
-                          className="text-[11px] text-muted-foreground hover:text-primary font-medium transition"
+                          className="text-xs text-muted-foreground hover:text-primary font-medium transition"
                         >
                           View Full Catalog &rarr;
                         </Link>
@@ -350,7 +344,7 @@ export default function Navbar() {
                                 {cat.name}
                               </Link>
                               {cat.description && (
-                                <p className="text-[10px] text-muted-foreground font-light line-clamp-1 mt-0.5">
+                                <p className="text-xs text-muted-foreground font-light line-clamp-1 mt-0.5">
                                   {cat.description}
                                 </p>
                               )}
@@ -363,7 +357,7 @@ export default function Navbar() {
                                     key={sub.id}
                                     href={`/catalog?category=${sub.slug}`}
                                     onClick={() => setAllCategoriesDropdownOpen(false)}
-                                    className="text-[10px] bg-card dark:bg-zinc-900 border border-border px-1.5 py-0.5 rounded text-foreground/80 hover:text-primary hover:border-primary/50 transition font-normal"
+                                    className="text-xs bg-card dark:bg-zinc-900 border border-border px-1.5 py-0.5 rounded text-foreground/80 hover:text-primary hover:border-primary/50 transition font-normal"
                                   >
                                     {sub.name}
                                   </Link>
@@ -434,11 +428,11 @@ export default function Navbar() {
                       <div className="absolute left-0 top-full pt-2 z-50 w-72 animate-in fade-in slide-in-from-top-2 duration-150">
                         <div className="bg-card dark:bg-zinc-950 border border-border rounded-xl shadow-2xl p-3 space-y-1 text-card-foreground">
                           <div className="px-3 py-1.5 border-b border-border mb-1">
-                            <span className="text-[10px] font-bold text-primary tracking-widest uppercase block">
+                            <span className="text-xs font-bold text-primary tracking-widest uppercase block">
                               {cat.name} Subcategories
                             </span>
                             {cat.description && (
-                              <p className="text-[11px] text-muted-foreground font-normal normal-case line-clamp-1">
+                              <p className="text-xs text-muted-foreground font-normal normal-case line-clamp-1">
                                 {cat.description}
                               </p>
                             )}
@@ -457,7 +451,7 @@ export default function Navbar() {
                                 <ArrowRight size={12} className="opacity-0 group-hover:opacity-100 group-hover:translate-x-1 text-primary transition-all" />
                               </div>
                               {sub.description && (
-                                <p className="text-[10px] text-muted-foreground font-normal normal-case line-clamp-1 mt-0.5">
+                                <p className="text-xs text-muted-foreground font-normal normal-case line-clamp-1 mt-0.5">
                                   {sub.description}
                                 </p>
                               )}
@@ -467,7 +461,7 @@ export default function Navbar() {
                           <div className="pt-2 mt-1 border-t border-border">
                             <Link
                               href={`/catalog?category=${cat.slug}`}
-                              className="text-[11px] text-primary font-bold hover:underline px-3 py-1 block normal-case"
+                              className="text-xs text-primary font-bold hover:underline px-3 py-1 block normal-case"
                             >
                               Explore all {cat.name} &rarr;
                             </Link>
@@ -490,7 +484,7 @@ export default function Navbar() {
               >
                 <Sparkles size={13} className="text-amber-500 animate-pulse" />
                 <span>Offers</span>
-                <span className="text-[9px] bg-amber-500/20 text-amber-500 border border-amber-500/40 px-1 rounded font-mono font-bold">
+                <span className="text-xs bg-amber-500/20 text-amber-500 border border-amber-500/40 px-1 rounded font-mono font-bold">
                   20% OFF
                 </span>
               </Link>
@@ -508,12 +502,13 @@ export default function Navbar() {
               </Link>
             </nav>
 
-            {/* Right: Search, Currency, Language, Profile & Cart */}
-            <div className="flex items-center gap-3 sm:gap-4 shrink-0">
-              <CurrencySelector />
-              <LanguageSelector />
+            {/* Right: Desktop Combined Locale, Search, Profile + Universal Cart + Mobile Hamburger */}
+            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+              {/* Desktop Only: Combined Language & Currency, Search, Profile */}
+              <div className="hidden lg:flex items-center gap-3 sm:gap-4">
+                <CombinedLocaleSelector variant="desktop" />
 
-              {/* Search Toggle */}
+                {/* Search Toggle */}
               <div className="relative">
                 {searchOpen ? (
                   <div className="absolute right-0 top-1/2 -translate-y-1/2 z-50">
@@ -545,7 +540,7 @@ export default function Navbar() {
                     {/* Live Desktop Search Suggestions Dropdown */}
                     {debouncedSearch.length >= 2 && (
                       <div className="absolute right-0 top-full mt-2 w-72 sm:w-80 bg-card dark:bg-zinc-950 border border-border rounded-xl shadow-2xl overflow-hidden text-foreground animate-in fade-in slide-in-from-top-1">
-                        <div className="p-2 border-b border-border bg-accent/40 flex items-center justify-between text-[11px] text-muted-foreground">
+                        <div className="p-2 border-b border-border bg-accent/40 flex items-center justify-between text-xs text-muted-foreground">
                           <span>
                             {searchLoading ? 'Searching items...' : `${searchSuggestions.length} found`}
                           </span>
@@ -579,7 +574,7 @@ export default function Navbar() {
                                 </div>
                                 <div className="flex-1 min-w-0">
                                   <p className="text-xs font-medium text-foreground truncate">{prod.name}</p>
-                                  <p className="text-[11px] font-semibold text-primary">AED {prod.min_price}</p>
+                                  <p className="text-xs font-semibold text-primary">AED {prod.min_price}</p>
                                 </div>
                               </button>
                             ))}
@@ -653,7 +648,7 @@ export default function Navbar() {
                     <div className="absolute right-0 top-full pt-2 z-50 w-56 animate-in fade-in slide-in-from-top-1 duration-150">
                       <div className="bg-card dark:bg-zinc-950 border border-border rounded-xl shadow-2xl py-1 divide-y divide-border text-card-foreground">
                         <div className="px-4 py-2.5 text-xs">
-                          <span className="text-[10px] uppercase font-bold text-primary block">Signed in</span>
+                          <span className="text-xs uppercase font-bold text-primary block">Signed in</span>
                           <span className="font-semibold text-foreground truncate block">{user.email}</span>
                         </div>
                         <div className="py-1">
@@ -698,21 +693,31 @@ export default function Navbar() {
                   <User size={19} />
                 </Link>
               )}
-
-              {/* Shopping Bag */}
-              <Link
-                href="/cart"
-                className="relative p-1.5 text-foreground hover:text-primary transition-colors"
-                aria-label="View shopping bag"
-              >
-                <ShoppingBag size={19} />
-                {mounted && cartCount > 0 && (
-                  <span className="absolute -right-1 -top-1 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground shadow-sm">
-                    {cartCount}
-                  </span>
-                )}
-              </Link>
             </div>
+
+            {/* Shopping Bag (Desktop & Mobile) */}
+            <Link
+              href="/cart"
+              className="relative p-1.5 text-foreground hover:text-primary transition-colors"
+              aria-label="View shopping bag"
+            >
+              <ShoppingBag size={20} />
+              {mounted && cartCount > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground shadow-sm">
+                  {cartCount}
+                </span>
+              )}
+            </Link>
+
+            {/* Mobile Right: Hamburger Menu Toggle Button */}
+            <button
+              onClick={() => setMobileMenuOpen(true)}
+              className="lg:hidden p-2 text-foreground hover:text-primary transition rounded-lg hover:bg-accent cursor-pointer"
+              aria-label="Open mobile navigation menu"
+            >
+              <Menu size={22} />
+            </button>
+          </div>
           </div>
         </div>
       </header>
@@ -720,50 +725,52 @@ export default function Navbar() {
 
 
       {/* =========================================================================
-          MOBILE RESPONSIVE NAVIGATION DRAWER
+          MOBILE RESPONSIVE NAVIGATION DRAWER (SLIDES FROM RIGHT)
           ========================================================================= */}
       {mobileMenuOpen && (
-        <div className="fixed inset-0 z-50 flex lg:hidden">
+        <div className="fixed inset-0 z-50 flex justify-end lg:hidden">
           {/* Backdrop */}
           <div
             className="fixed inset-0 bg-black/80 backdrop-blur-sm transition-opacity"
             onClick={() => setMobileMenuOpen(false)}
           />
 
-          {/* Slide-out Drawer */}
-          <div className="relative w-4/5 max-w-xs bg-background border-r border-border h-full shadow-2xl p-5 overflow-y-auto space-y-6 z-10 flex flex-col justify-between">
-            <div className="space-y-6">
+          {/* Slide-out Drawer on Right */}
+          <div className="relative w-4/5 max-w-xs bg-background border-l border-border h-full shadow-2xl p-5 overflow-y-auto space-y-5 z-10 flex flex-col justify-between animate-in slide-in-from-right duration-200">
+            <div className="space-y-5">
               {/* Drawer Header */}
-              <div className="flex items-center justify-between border-b border-border pb-4">
+              <div className="flex items-center justify-between border-b border-border pb-3">
                 <Link
                   href="/"
                   onClick={() => setMobileMenuOpen(false)}
                   className="flex items-center gap-2.5 group"
+                  aria-label="Home"
                 >
                   {logoUrl ? (
                     <img
                       src={logoUrl}
-                      alt={siteName}
+                      alt={siteName || 'Store Logo'}
                       className="h-9 w-auto max-h-9 object-contain"
                     />
                   ) : (
-                    <div className="w-9 h-9 rounded-full border border-amber-500/40 bg-gradient-to-br from-amber-500/10 via-amber-400/5 to-transparent flex flex-col items-center justify-center p-0.5 shadow-xs shrink-0">
-                      <span className="font-serif font-black text-amber-500 text-[11px] tracking-widest leading-none">
+                    <div className="w-9 h-9 rounded-full border border-amber-500/40 bg-gradient-to-br from-amber-500/10 via-amber-400/5 to-transparent flex items-center justify-center shadow-xs shrink-0">
+                      <span className="font-serif font-black text-amber-500 text-xs tracking-widest leading-none">
                         SW
-                      </span>
-                      <span className="text-[4.5px] uppercase tracking-tighter text-amber-600 dark:text-amber-400 font-semibold text-center leading-[5.5px] mt-0.5">
-                        Saba Al Wadi
                       </span>
                     </div>
                   )}
-                  <div className="flex flex-col justify-center">
-                    <span className="font-serif text-base font-bold tracking-widest text-foreground leading-tight">
-                      SABA <span className="text-primary font-serif">AL WADI</span>
-                    </span>
-                    <span className="text-[7px] uppercase tracking-[0.2em] text-muted-foreground font-medium">
-                      Haute Couture &bull; Dubai
-                    </span>
-                  </div>
+                  {siteSettings.site_name && siteSettings.site_name.trim().toLowerCase() !== 'saba al wadi' && (
+                    <div className="flex flex-col justify-center">
+                      <span className="font-serif text-base font-bold tracking-wider text-foreground leading-tight">
+                        {siteSettings.site_name}
+                      </span>
+                      {siteSettings.site_tagline && (
+                        <span className="text-xs uppercase tracking-[0.2em] text-muted-foreground font-medium">
+                          {siteSettings.site_tagline}
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </Link>
                 <button
                   onClick={() => setMobileMenuOpen(false)}
@@ -772,6 +779,73 @@ export default function Navbar() {
                   <X size={20} />
                 </button>
               </div>
+
+              {/* Mobile Profile & Account Card */}
+              {mounted && user ? (
+                <div className="p-3 bg-card rounded-xl border border-border space-y-2">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full overflow-hidden border border-primary/40 bg-accent flex items-center justify-center font-serif text-xs font-bold text-primary shrink-0">
+                      {(user as any)?.avatar_url ? (
+                        <img
+                          src={
+                            (user as any).avatar_url.startsWith('http')
+                              ? (user as any).avatar_url
+                              : `${API_BASE_URL}${(user as any).avatar_url}`
+                          }
+                          alt={user.first_name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <span>{user.first_name?.[0]?.toUpperCase() || 'U'}</span>
+                      )}
+                    </div>
+                    <div className="overflow-hidden min-w-0">
+                      <p className="text-xs font-bold text-foreground truncate">{user.first_name} {user.last_name}</p>
+                      <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 border-t border-border flex items-center justify-between text-xs">
+                    {user.email === 'srabon@example.com' || user.email === 'admin@example.com' || (user as any).role === 'ADMIN' ? (
+                      <Link
+                        href="/admin"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="font-bold text-primary hover:underline"
+                      >
+                        Admin
+                      </Link>
+                    ) : null}
+                    <Link
+                      href="/profile"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="text-foreground hover:text-primary font-medium"
+                    >
+                      My Orders &rarr;
+                    </Link>
+                    <button
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        handleLogout();
+                      }}
+                      className="text-rose-500 font-semibold hover:underline cursor-pointer"
+                    >
+                      Sign Out
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <Link
+                  href="/login"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center justify-center gap-2 py-2.5 px-4 bg-primary text-primary-foreground font-bold text-xs uppercase tracking-wider rounded-xl shadow-xs hover:opacity-95 transition"
+                >
+                  <User size={15} />
+                  <span>Sign In / Register</span>
+                </Link>
+              )}
+
+              {/* Combined Language & Currency Switcher in Mobile Drawer */}
+              <CombinedLocaleSelector variant="mobile" />
 
               {/* Mobile Search Input with Suggestions */}
               <div className="space-y-2">
@@ -798,7 +872,7 @@ export default function Navbar() {
                 {/* Mobile live suggestions */}
                 {debouncedSearch.length >= 2 && (
                   <div className="bg-card border border-border rounded-lg overflow-hidden text-foreground">
-                    <div className="p-2 border-b border-border bg-accent/30 text-[10px] text-muted-foreground uppercase font-semibold">
+                    <div className="p-2 border-b border-border bg-accent/30 text-xs text-muted-foreground uppercase font-semibold">
                       {searchLoading ? 'Searching...' : `Suggestions (${searchSuggestions.length})`}
                     </div>
                     {searchSuggestions.map((prod: any) => (
@@ -821,7 +895,7 @@ export default function Navbar() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-medium truncate">{prod.name}</p>
-                          <p className="text-[10px] font-bold text-primary">AED {prod.min_price}</p>
+                          <p className="text-xs font-bold text-primary">AED {prod.min_price}</p>
                         </div>
                       </button>
                     ))}
@@ -842,7 +916,7 @@ export default function Navbar() {
 
               {/* Mobile Categorized Accordion */}
               <div className="space-y-1">
-                <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest px-2 py-1">
+                <div className="text-xs uppercase font-bold text-muted-foreground tracking-widest px-2 py-1">
                   Categories & Collections
                 </div>
 
@@ -922,56 +996,12 @@ export default function Navbar() {
               </div>
             </div>
 
-            {/* Mobile Footer / User Auth */}
-            <div className="pt-6 border-t border-border space-y-3">
-              {mounted && user ? (
-                <div className="space-y-2">
-                  <div className="flex items-center gap-3 p-2 bg-card rounded-lg border border-border">
-                    <div className="w-8 h-8 rounded-full overflow-hidden border border-primary/40 bg-accent flex items-center justify-center font-serif text-xs font-bold text-primary shrink-0">
-                      {(user as any)?.avatar_url ? (
-                        <img
-                          src={
-                            (user as any).avatar_url.startsWith('http')
-                              ? (user as any).avatar_url
-                              : `${API_BASE_URL}${(user as any).avatar_url}`
-                          }
-                          alt={user.first_name}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <span>{user.first_name?.[0]?.toUpperCase() || 'U'}</span>
-                      )}
-                    </div>
-                    <div className="overflow-hidden">
-                      <p className="text-xs font-bold text-foreground truncate">{user.first_name} {user.last_name}</p>
-                      <p className="text-[10px] text-muted-foreground truncate">{user.email}</p>
-                    </div>
-                  </div>
-
-                  <Link
-                    href="/profile"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="block text-center py-2 bg-card border border-border text-xs font-semibold rounded text-foreground hover:bg-accent"
-                  >
-                    View Account & Orders
-                  </Link>
-
-                  <button
-                    onClick={handleLogout}
-                    className="block w-full text-center py-2 text-xs font-semibold text-red-500 hover:underline"
-                  >
-                    Sign Out
-                  </button>
-                </div>
-              ) : (
-                <Link
-                  href="/login"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="block text-center py-2.5 bg-primary text-primary-foreground font-bold text-xs uppercase tracking-wider rounded"
-                >
-                  Sign In / Register
-                </Link>
-              )}
+            {/* Mobile Footer */}
+            <div className="pt-4 border-t border-border text-center text-xs text-muted-foreground space-y-1">
+              <p className="font-serif font-bold text-foreground">
+                {siteSettings.site_name || 'Saba Al Wadi'}
+              </p>
+              <p className="text-xs">Premium Modest Fashion &bull; UAE</p>
             </div>
           </div>
         </div>

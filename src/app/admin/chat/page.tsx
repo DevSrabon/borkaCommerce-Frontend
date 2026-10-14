@@ -478,7 +478,7 @@ export default function AdminChatPage() {
                         />
                       )}
                       {unread > 0 && (
-                        <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-destructive-foreground ring-2 ring-card animate-pulse">
+                        <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-xs font-bold text-destructive-foreground ring-2 ring-card animate-pulse">
                           {unread}
                         </span>
                       )}
@@ -491,35 +491,35 @@ export default function AdminChatPage() {
                             {s.customer_name || 'Guest Visitor'}
                           </span>
                           {s.is_online && (
-                            <span className="inline-flex items-center gap-1 text-[9px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.2 rounded-full shrink-0">
+                            <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.2 rounded-full shrink-0">
                               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                               Online
                             </span>
                           )}
                         </div>
-                        <span className="text-[10px] text-muted-foreground flex items-center gap-1 shrink-0">
+                        <span className="text-xs text-muted-foreground flex items-center gap-1 shrink-0">
                           <Clock className="w-3 h-3" />
                           {new Date(s.last_message_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </span>
                       </div>
 
                       {s.customer_email && (
-                        <p className="text-[10px] text-muted-foreground truncate">{s.customer_email}</p>
+                        <p className="text-xs text-muted-foreground truncate">{s.customer_email}</p>
                       )}
 
-                      <div className="flex items-center justify-between gap-1 text-[11px] text-muted-foreground mt-1">
+                      <div className="flex items-center justify-between gap-1 text-xs text-muted-foreground mt-1">
                         <p className="truncate text-muted-foreground flex-1">
                           {s.messages && s.messages.length > 0
                             ? s.messages[0].message
                             : 'Chat initiated'}
                         </p>
-                        <span className={`text-[10px] shrink-0 font-medium ${s.is_online ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'}`}>
+                        <span className={`text-xs shrink-0 font-medium ${s.is_online ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'}`}>
                           {formatLastSeen(s.last_active_at, s.is_online)}
                         </span>
                       </div>
 
                       {s.is_customer_typing && (
-                        <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium italic mt-0.5">
+                        <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium italic mt-0.5">
                           Typing...
                         </p>
                       )}
@@ -540,12 +540,12 @@ export default function AdminChatPage() {
                 <h2 className="text-xs font-bold text-foreground flex items-center gap-2">
                   <span>{activeSession?.customer_name || 'Guest Customer'}</span>
                   {activeSession?.customer_email && (
-                    <span className="text-[10px] text-muted-foreground font-normal">
+                    <span className="text-xs text-muted-foreground font-normal">
                       ({activeSession.customer_email})
                     </span>
                   )}
                 </h2>
-                <div className="flex items-center gap-3 text-[10px] text-muted-foreground mt-0.5">
+                <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
                   <span>Session: <code className="text-foreground bg-muted px-1 py-0.5 rounded font-mono">{activeSessionId}</code></span>
                   {activeSession?.ip_address && (
                     <span>IP: {activeSession.ip_address}</span>
@@ -570,7 +570,7 @@ export default function AdminChatPage() {
                   </div>
                 )}
 
-                <span className="px-2 py-0.5 bg-muted border border-border text-foreground text-[10px] rounded-full font-medium">
+                <span className="px-2 py-0.5 bg-muted border border-border text-foreground text-xs rounded-full font-medium">
                   {activeSession?.status || 'ACTIVE'}
                 </span>
               </div>
@@ -591,7 +591,7 @@ export default function AdminChatPage() {
                     key={m.id}
                     className={`flex flex-col ${isCustomer ? 'items-start' : 'items-end'}`}
                   >
-                    <div className="flex items-center gap-1.5 mb-1 text-[10px] text-muted-foreground">
+                    <div className="flex items-center gap-1.5 mb-1 text-xs text-muted-foreground">
                       {isBot ? (
                         <>
                           <Bot className="w-3 h-3 text-primary" />
@@ -631,7 +631,7 @@ export default function AdminChatPage() {
                                 alt={m.attachment_name || 'Attachment'}
                                 className="max-h-60 max-w-full rounded-xl object-cover border border-border group-hover:opacity-95 transition"
                               />
-                              <span className="absolute bottom-1.5 right-1.5 bg-black/70 text-white px-1.5 py-0.5 rounded text-[10px] opacity-0 group-hover:opacity-100 transition flex items-center gap-1">
+                              <span className="absolute bottom-1.5 right-1.5 bg-black/70 text-white px-1.5 py-0.5 rounded text-xs opacity-0 group-hover:opacity-100 transition flex items-center gap-1">
                                 <ExternalLink size={10} /> View
                               </span>
                             </a>
@@ -647,10 +647,10 @@ export default function AdminChatPage() {
                                 <FileText size={16} />
                               </div>
                               <div className="flex-1 min-w-0">
-                                <p className="text-[11px] font-medium truncate">
+                                <p className="text-xs font-medium truncate">
                                   {m.attachment_name || 'Attached File'}
                                 </p>
-                                <span className="text-[9px] opacity-75">Click to view/download</span>
+                                <span className="text-xs opacity-75">Click to view/download</span>
                               </div>
                             </a>
                           )}
@@ -707,10 +707,10 @@ export default function AdminChatPage() {
                     </div>
                   )}
                   <div className="min-w-0">
-                    <p className="text-[11px] font-medium text-foreground truncate">
+                    <p className="text-xs font-medium text-foreground truncate">
                       {adminPendingFile.file.name}
                     </p>
-                    <p className="text-[10px] text-muted-foreground">
+                    <p className="text-xs text-muted-foreground">
                       {(adminPendingFile.file.size / 1024).toFixed(1)} KB
                     </p>
                   </div>

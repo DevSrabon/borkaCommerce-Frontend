@@ -219,7 +219,7 @@ export default function CartPage() {
               <div className="text-right flex flex-col justify-start">
                 <span className="font-bold text-sm text-foreground">{formatPrice(item.discounted_price * item.quantity)}</span>
                 {item.discounted_price < item.price && (
-                  <span className="text-[10px] text-muted line-through font-light">{formatPrice(item.price * item.quantity)}</span>
+                  <span className="text-xs text-muted line-through font-light">{formatPrice(item.price * item.quantity)}</span>
                 )}
               </div>
             </div>
@@ -249,7 +249,7 @@ export default function CartPage() {
                 <div>
                   <span className="text-muted block">Shipping</span>
                   {shippingInfo?.applied_rule && (
-                    <span className="text-[10px] text-green-500 block font-normal">
+                    <span className="text-xs text-green-500 block font-normal">
                       ✓ {shippingInfo.applied_rule}
                     </span>
                   )}
@@ -263,7 +263,7 @@ export default function CartPage() {
                     <div className="flex flex-col items-end">
                       <span className="text-foreground font-medium">{formatPrice(shipping)}</span>
                       {shippingInfo && shippingInfo.discount_amount > 0 && (
-                        <span className="text-[10px] text-muted line-through">
+                        <span className="text-xs text-muted line-through">
                           {formatPrice(shippingInfo.base_fee)}
                         </span>
                       )}

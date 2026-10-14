@@ -230,7 +230,7 @@ export default function AdminAttributesPage() {
             <h2 className="font-serif text-md font-bold">Create New Attribute Group</h2>
           </div>
           <div className="space-y-1">
-            <label className="text-[10px] font-semibold text-muted-foreground uppercase">Attribute Name</label>
+            <label className="text-xs font-semibold text-muted-foreground uppercase">Attribute Name</label>
             <input
               type="text"
               placeholder="e.g. Length, Fit"
@@ -277,7 +277,7 @@ export default function AdminAttributesPage() {
                   <Tag size={16} className="text-primary" />
                   {attr.name}
                 </h3>
-                <p className="text-[10px] text-muted-foreground uppercase font-semibold">
+                <p className="text-xs text-muted-foreground uppercase font-semibold">
                   {attr.values.length} option values registered
                 </p>
               </div>

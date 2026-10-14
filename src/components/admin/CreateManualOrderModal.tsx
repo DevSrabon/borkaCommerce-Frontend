@@ -449,7 +449,7 @@ export default function CreateManualOrderModal({ isOpen, onClose, onOrderCreated
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
                 <div>
-                  <label className="text-[11px] font-semibold text-muted-foreground">First Name *</label>
+                  <label className="text-xs font-semibold text-muted-foreground">First Name *</label>
                   <input
                     type="text"
                     required
@@ -460,7 +460,7 @@ export default function CreateManualOrderModal({ isOpen, onClose, onOrderCreated
                   />
                 </div>
                 <div>
-                  <label className="text-[11px] font-semibold text-muted-foreground">Last Name</label>
+                  <label className="text-xs font-semibold text-muted-foreground">Last Name</label>
                   <input
                     type="text"
                     value={lastName}
@@ -470,7 +470,7 @@ export default function CreateManualOrderModal({ isOpen, onClose, onOrderCreated
                   />
                 </div>
                 <div>
-                  <label className="text-[11px] font-semibold text-muted-foreground">Email *</label>
+                  <label className="text-xs font-semibold text-muted-foreground">Email *</label>
                   <input
                     type="email"
                     required
@@ -481,7 +481,7 @@ export default function CreateManualOrderModal({ isOpen, onClose, onOrderCreated
                   />
                 </div>
                 <div>
-                  <label className="text-[11px] font-semibold text-muted-foreground">Phone Number</label>
+                  <label className="text-xs font-semibold text-muted-foreground">Phone Number</label>
                   <input
                     type="text"
                     value={phone}
@@ -491,7 +491,7 @@ export default function CreateManualOrderModal({ isOpen, onClose, onOrderCreated
                   />
                 </div>
                 <div className="sm:col-span-2">
-                  <label className="text-[11px] font-semibold text-muted-foreground">Street / Building Address</label>
+                  <label className="text-xs font-semibold text-muted-foreground">Street / Building Address</label>
                   <input
                     type="text"
                     value={street}
@@ -501,7 +501,7 @@ export default function CreateManualOrderModal({ isOpen, onClose, onOrderCreated
                   />
                 </div>
                 <div>
-                  <label className="text-[11px] font-semibold text-muted-foreground">City</label>
+                  <label className="text-xs font-semibold text-muted-foreground">City</label>
                   <input
                     type="text"
                     value={city}
@@ -511,7 +511,7 @@ export default function CreateManualOrderModal({ isOpen, onClose, onOrderCreated
                   />
                 </div>
                 <div>
-                  <label className="text-[11px] font-semibold text-muted-foreground">Country</label>
+                  <label className="text-xs font-semibold text-muted-foreground">Country</label>
                   <input
                     type="text"
                     value={country}
@@ -563,7 +563,7 @@ export default function CreateManualOrderModal({ isOpen, onClose, onOrderCreated
                         >
                           <div className="min-w-0 flex-1 pr-3">
                             <span className="font-semibold text-foreground block truncate">{p.name}</span>
-                            <span className="text-[11px] text-muted-foreground">
+                            <span className="text-xs text-muted-foreground">
                               SKU: {v.sku} • Stock: <b className={stock > 0 ? 'text-emerald-500' : 'text-red-500'}>{stock}</b>
                             </span>
                           </div>
@@ -596,13 +596,13 @@ export default function CreateManualOrderModal({ isOpen, onClose, onOrderCreated
                   <div key={item.variant_id} className="p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="min-w-0 flex-1">
                       <h4 className="text-xs font-bold text-foreground truncate">{item.product_name}</h4>
-                      <p className="text-[11px] text-muted-foreground">SKU: {item.sku}</p>
+                      <p className="text-xs text-muted-foreground">SKU: {item.sku}</p>
                     </div>
 
                     <div className="flex items-center gap-4">
                       {/* Price input */}
                       <div className="flex items-center gap-1 text-xs">
-                        <span className="text-muted-foreground text-[11px]">AED</span>
+                        <span className="text-muted-foreground text-xs">AED</span>
                         <input
                           type="number"
                           step="0.01"
@@ -670,7 +670,7 @@ export default function CreateManualOrderModal({ isOpen, onClose, onOrderCreated
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="text-[11px] font-semibold text-muted-foreground">Payment Method</label>
+                  <label className="text-xs font-semibold text-muted-foreground">Payment Method</label>
                   <select
                     value={paymentMethod}
                     onChange={(e) => setPaymentMethod(e.target.value)}
@@ -684,7 +684,7 @@ export default function CreateManualOrderModal({ isOpen, onClose, onOrderCreated
                 </div>
 
                 <div>
-                  <label className="text-[11px] font-semibold text-muted-foreground">Payment Status</label>
+                  <label className="text-xs font-semibold text-muted-foreground">Payment Status</label>
                   <select
                     value={paymentStatus}
                     onChange={(e) => setPaymentStatus(e.target.value)}
@@ -696,7 +696,7 @@ export default function CreateManualOrderModal({ isOpen, onClose, onOrderCreated
                 </div>
 
                 <div>
-                  <label className="text-[11px] font-semibold text-muted-foreground">Order Status</label>
+                  <label className="text-xs font-semibold text-muted-foreground">Order Status</label>
                   <select
                     value={orderStatus}
                     onChange={(e) => setOrderStatus(e.target.value)}
@@ -712,12 +712,12 @@ export default function CreateManualOrderModal({ isOpen, onClose, onOrderCreated
 
               {/* Delivery Courier & Tracking */}
               <div className="pt-2 border-t border-border/60 space-y-2">
-                <h5 className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                <h5 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                   <Truck size={13} className="text-primary" /> Courier & Tracking (Optional)
                 </h5>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   <div>
-                    <label className="text-[10px] text-muted-foreground font-medium">Delivery Partner</label>
+                    <label className="text-xs text-muted-foreground font-medium">Delivery Partner</label>
                     <select
                       value={deliveryPartner}
                       onChange={(e) => handlePartnerChange(e.target.value)}
@@ -734,7 +734,7 @@ export default function CreateManualOrderModal({ isOpen, onClose, onOrderCreated
                   </div>
 
                   <div>
-                    <label className="text-[10px] text-muted-foreground font-medium">Tracking Number / AWB</label>
+                    <label className="text-xs text-muted-foreground font-medium">Tracking Number / AWB</label>
                     <input
                       type="text"
                       placeholder="e.g. TRK12345678"
@@ -747,12 +747,12 @@ export default function CreateManualOrderModal({ isOpen, onClose, onOrderCreated
 
                 {trackingUrl && (
                   <div>
-                    <label className="text-[10px] text-muted-foreground font-medium">Tracking Link</label>
+                    <label className="text-xs text-muted-foreground font-medium">Tracking Link</label>
                     <input
                       type="text"
                       value={trackingUrl}
                       onChange={(e) => setTrackingUrl(e.target.value)}
-                      className="w-full mt-0.5 bg-background border border-border rounded-lg px-2 py-1 text-[11px] text-muted-foreground focus:outline-hidden"
+                      className="w-full mt-0.5 bg-background border border-border rounded-lg px-2 py-1 text-xs text-muted-foreground focus:outline-hidden"
                     />
                   </div>
                 )}
@@ -771,7 +771,7 @@ export default function CreateManualOrderModal({ isOpen, onClose, onOrderCreated
                   <Truck size={13} /> Delivery Charge
                 </span>
                 <div className="flex items-center gap-1">
-                  <span className="text-muted-foreground text-[11px]">AED</span>
+                  <span className="text-muted-foreground text-xs">AED</span>
                   <input
                     type="number"
                     min={0}
@@ -786,7 +786,7 @@ export default function CreateManualOrderModal({ isOpen, onClose, onOrderCreated
               <div className="flex items-center justify-between gap-4">
                 <span className="text-muted-foreground">Custom Discount</span>
                 <div className="flex items-center gap-1">
-                  <span className="text-muted-foreground text-[11px]">-AED</span>
+                  <span className="text-muted-foreground text-xs">-AED</span>
                   <input
                     type="number"
                     min={0}

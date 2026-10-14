@@ -779,7 +779,7 @@ export default function RichTextEditor({
           </button>
 
           {pasteNotice && (
-            <span className="text-[11px] font-semibold text-primary animate-in fade-in px-2 py-0.5 rounded bg-primary/10">
+            <span className="text-xs font-semibold text-primary animate-in fade-in px-2 py-0.5 rounded bg-primary/10">
               {pasteNotice}
             </span>
           )}
@@ -791,7 +791,7 @@ export default function RichTextEditor({
             type="button"
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => applyFormatBlock('h1')}
-            className="px-2 py-1 rounded text-[11px] font-bold hover:bg-accent text-foreground transition cursor-pointer font-serif"
+            className="px-2 py-1 rounded text-xs font-bold hover:bg-accent text-foreground transition cursor-pointer font-serif"
             title="Format selection as Heading 1"
           >
             H1
@@ -800,7 +800,7 @@ export default function RichTextEditor({
             type="button"
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => applyFormatBlock('h2')}
-            className="px-2 py-1 rounded text-[11px] font-bold hover:bg-accent text-foreground transition cursor-pointer font-serif"
+            className="px-2 py-1 rounded text-xs font-bold hover:bg-accent text-foreground transition cursor-pointer font-serif"
             title="Format selection as Heading 2"
           >
             H2
@@ -809,7 +809,7 @@ export default function RichTextEditor({
             type="button"
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => applyFormatBlock('h3')}
-            className="px-2 py-1 rounded text-[11px] font-bold hover:bg-accent text-foreground transition cursor-pointer font-serif"
+            className="px-2 py-1 rounded text-xs font-bold hover:bg-accent text-foreground transition cursor-pointer font-serif"
             title="Format selection as Heading 3"
           >
             H3
@@ -818,7 +818,7 @@ export default function RichTextEditor({
             type="button"
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => applyFormatBlock('p')}
-            className="px-2 py-1 rounded text-[11px] font-medium hover:bg-accent text-foreground transition cursor-pointer"
+            className="px-2 py-1 rounded text-xs font-medium hover:bg-accent text-foreground transition cursor-pointer"
             title="Format selection as Paragraph"
           >
             P
@@ -854,7 +854,7 @@ export default function RichTextEditor({
                 <h3 className="font-serif text-lg font-bold text-foreground">
                   Media &amp; Embed Manager
                 </h3>
-                <p className="text-[11px] text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   Select server media, upload images, enter web links, or embed responsive videos
                 </p>
               </div>
@@ -1097,7 +1097,7 @@ export default function RichTextEditor({
                       onChange={(e) => setVideoUrl(e.target.value)}
                       className="w-full bg-card border border-border rounded-lg px-3 py-2 text-xs font-mono text-foreground focus:outline-none"
                     />
-                    <span className="text-[10px] text-muted-foreground block">
+                    <span className="text-xs text-muted-foreground block">
                       Direct YouTube &amp; Vimeo links are automatically transformed into responsive 16:9 players.
                     </span>
                   </div>

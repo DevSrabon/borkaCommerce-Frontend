@@ -273,7 +273,7 @@ function LoginContent() {
 
             <div className="relative flex items-center justify-center">
               <div className="border-t border-border w-full" />
-              <span className="bg-card px-2 text-[10px] uppercase font-semibold text-muted-foreground tracking-wider absolute">
+              <span className="bg-card px-2 text-xs uppercase font-semibold text-muted-foreground tracking-wider absolute">
                 Or with Email
               </span>
             </div>
@@ -281,7 +281,7 @@ function LoginContent() {
             {isRegister && (
               <div className="grid grid-cols-2 gap-3 pt-1">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-semibold text-muted-foreground uppercase">First Name</label>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase">First Name</label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
                       <User size={13} />
@@ -299,7 +299,7 @@ function LoginContent() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-semibold text-muted-foreground uppercase">Last Name</label>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase">Last Name</label>
                   <input
                     type="text"
                     name="last_name"
@@ -314,7 +314,7 @@ function LoginContent() {
             )}
 
             <div className="space-y-1">
-              <label className="text-[10px] font-semibold text-muted-foreground uppercase">Email Address</label>
+              <label className="text-xs font-semibold text-muted-foreground uppercase">Email Address</label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
                   <Mail size={13} />
@@ -333,7 +333,7 @@ function LoginContent() {
 
             {isRegister && (
               <div className="space-y-1">
-                <label className="text-[10px] font-semibold text-muted-foreground uppercase">Phone (Optional)</label>
+                <label className="text-xs font-semibold text-muted-foreground uppercase">Phone (Optional)</label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
                     <Phone size={13} />
@@ -351,7 +351,7 @@ function LoginContent() {
             )}
 
             <div className="space-y-1">
-              <label className="text-[10px] font-semibold text-muted-foreground uppercase">Password</label>
+              <label className="text-xs font-semibold text-muted-foreground uppercase">Password</label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
                   <Lock size={13} />
@@ -385,7 +385,7 @@ function LoginContent() {
         {step === 'OTP' && (
           <form onSubmit={handleOtpSubmit} className="space-y-5">
             <div className="space-y-2">
-              <label className="text-[10px] font-semibold text-muted-foreground uppercase block text-center">
+              <label className="text-xs font-semibold text-muted-foreground uppercase block text-center">
                 6-Digit Verification Code
               </label>
               <div className="relative">

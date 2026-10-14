@@ -21,7 +21,7 @@ export default function CurrencySelector() {
     <div className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground border border-transparent hover:border-border rounded px-2 py-1 transition-all duration-200 cursor-pointer"
+        className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground border border-transparent hover:border-border rounded px-2 py-1 transition-all duration-200 cursor-pointer"
         aria-label="Select currency"
       >
         <span>{selected.flag}</span>
@@ -51,7 +51,7 @@ export default function CurrencySelector() {
                 <span className="text-base">{c.flag}</span>
                 <span>{c.label}</span>
                 {currency === c.value && (
-                  <span className="ml-auto text-primary text-[10px]">✓</span>
+                  <span className="ml-auto text-primary text-xs">✓</span>
                 )}
               </button>
             ))}

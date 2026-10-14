@@ -50,7 +50,7 @@ export default async function ProductDetailsPage({ params }: PageProps) {
   }
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:py-12 sm:px-6 lg:px-8 w-full space-y-12 sm:space-y-16">
+    <div className="mx-auto max-w-7xl px-4 py-3 sm:py-5 sm:px-6 lg:px-8 w-full space-y-6 sm:space-y-8">
       {/* Breadcrumbs / Back navigation */}
       <div>
         <Link href="/catalog" className="text-xs text-muted hover:text-primary transition font-medium inline-flex items-center gap-1.5">
@@ -65,13 +65,13 @@ export default async function ProductDetailsPage({ params }: PageProps) {
 
       {/* Modern Curated Related Products Section */}
       {relatedProducts && relatedProducts.length > 0 && (
-        <section className="border-t border-border pt-10 sm:pt-14 space-y-6 sm:space-y-8">
+        <section className="border-t border-border pt-6 sm:pt-8 space-y-4 sm:space-y-5">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 pb-3 border-b border-border">
             <div className="space-y-1">
-              <span className="text-[11px] font-bold uppercase tracking-widest text-primary flex items-center gap-1.5">
+              <span className="text-xs font-bold uppercase tracking-widest text-primary flex items-center gap-1.5">
                 <Sparkles size={13} className="text-primary" /> Curated Recommendations
               </span>
-              <h2 className="font-serif text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+              <h2 className="font-serif text-xl sm:text-2xl font-bold tracking-tight text-foreground">
                 Related Masterpieces
               </h2>
               <p className="text-xs text-muted-foreground font-light">
@@ -87,7 +87,7 @@ export default async function ProductDetailsPage({ params }: PageProps) {
             </Link>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
             {relatedProducts.map((item: any) => {
               const hasDiscount = item.min_original_price > item.min_price;
               const discountPct = hasDiscount
@@ -113,12 +113,12 @@ export default async function ProductDetailsPage({ params }: PageProps) {
                     {/* Floating Badges */}
                     <div className="absolute top-2.5 left-2.5 flex flex-col gap-1 z-10">
                       {discountPct > 0 && (
-                        <span className="bg-red-600 text-white font-bold text-[10px] sm:text-xs px-2 py-0.5 rounded shadow-sm tracking-wider">
+                        <span className="bg-red-600 text-white font-bold text-xs sm:text-xs px-2 py-0.5 rounded shadow-sm tracking-wider">
                           {discountPct}% OFF
                         </span>
                       )}
                       {item.is_featured && (
-                        <span className="bg-black/75 backdrop-blur-sm text-primary font-bold text-[9px] sm:text-[10px] px-2 py-0.5 rounded border border-primary/30 uppercase tracking-wider">
+                        <span className="bg-black/75 backdrop-blur-sm text-primary font-bold text-xs sm:text-xs px-2 py-0.5 rounded border border-primary/30 uppercase tracking-wider">
                           Featured
                         </span>
                       )}
@@ -129,7 +129,7 @@ export default async function ProductDetailsPage({ params }: PageProps) {
                   <div className="p-3.5 sm:p-4 flex-1 flex flex-col justify-between space-y-2.5">
                     <div className="space-y-1">
                       {item.categories && item.categories.length > 0 && (
-                        <span className="text-[10px] text-muted-foreground uppercase tracking-wider block font-medium">
+                        <span className="text-xs text-muted-foreground uppercase tracking-wider block font-medium">
                           {item.categories[0].name}
                         </span>
                       )}
@@ -137,7 +137,7 @@ export default async function ProductDetailsPage({ params }: PageProps) {
                         <Link href={`/product/${item.slug}`}>{item.name}</Link>
                       </h3>
                       {item.short_description && (
-                        <p className="text-[11px] text-muted-foreground font-light line-clamp-1 hidden sm:block">
+                        <p className="text-xs text-muted-foreground font-light line-clamp-1 hidden sm:block">
                           {item.short_description}
                         </p>
                       )}
@@ -151,7 +151,7 @@ export default async function ProductDetailsPage({ params }: PageProps) {
                         size="sm"
                       />
                       {item.average_rating > 0 && (
-                        <span className="text-[10px] font-semibold text-amber-500 flex items-center gap-0.5">
+                        <span className="text-xs font-semibold text-amber-500 flex items-center gap-0.5">
                           ★ {item.average_rating}
                         </span>
                       )}

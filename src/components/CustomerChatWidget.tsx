@@ -325,11 +325,11 @@ export default function CustomerChatWidget() {
         >
           <MessageSquare className="w-6 h-6" />
           {unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-[10px] font-bold text-white shadow ring-2 ring-background animate-pulse">
+            <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-xs font-bold text-white shadow ring-2 ring-background animate-pulse">
               {unreadCount}
             </span>
           )}
-          <span className="absolute -bottom-1 text-[9px] font-semibold uppercase tracking-wider text-amber-200">
+          <span className="absolute -bottom-1 text-xs font-semibold uppercase tracking-wider text-amber-200">
             24/7
           </span>
         </button>
@@ -349,7 +349,7 @@ export default function CustomerChatWidget() {
                 <h3 className="text-xs font-serif font-bold tracking-wide text-amber-300">
                   Saba Al Wadi Concierge
                 </h3>
-                <p className="text-[10px] text-stone-400 flex items-center gap-1">
+                <p className="text-xs text-stone-400 flex items-center gap-1">
                   <ShieldCheck className="w-3 h-3 text-emerald-400 inline" />
                   Luxury Stylist &amp; Customer Support
                 </p>
@@ -373,7 +373,7 @@ export default function CustomerChatWidget() {
               <div className="flex flex-col items-center justify-center h-full text-center text-stone-500 p-6 space-y-2">
                 <Sparkles className="w-8 h-8 text-amber-500/50 animate-pulse" />
                 <p className="text-xs text-stone-300 font-serif">Welcome to Saba Al Wadi</p>
-                <p className="text-[11px] text-stone-500">
+                <p className="text-xs text-stone-500">
                   Our private client advisors are available to guide your bespoke abaya inquiries.
                 </p>
               </div>
@@ -387,7 +387,7 @@ export default function CustomerChatWidget() {
                     key={m.id}
                     className={`flex flex-col ${isCustomer ? 'items-end' : 'items-start'}`}
                   >
-                    <div className="flex items-center gap-1.5 mb-1 text-[10px] text-stone-500">
+                    <div className="flex items-center gap-1.5 mb-1 text-xs text-stone-500">
                       {isBot ? (
                         <>
                           <Bot className="w-3 h-3 text-amber-400" />
@@ -427,7 +427,7 @@ export default function CustomerChatWidget() {
                                 alt={m.attachment_name || 'Attachment'}
                                 className="max-h-52 max-w-full rounded-xl object-cover border border-white/10 group-hover:opacity-95 transition"
                               />
-                              <span className="absolute bottom-1.5 right-1.5 bg-black/70 text-white px-1.5 py-0.5 rounded text-[10px] opacity-0 group-hover:opacity-100 transition flex items-center gap-1">
+                              <span className="absolute bottom-1.5 right-1.5 bg-black/70 text-white px-1.5 py-0.5 rounded text-xs opacity-0 group-hover:opacity-100 transition flex items-center gap-1">
                                 <ExternalLink size={10} /> View
                               </span>
                             </a>
@@ -443,10 +443,10 @@ export default function CustomerChatWidget() {
                                 <FileText size={16} />
                               </div>
                               <div className="flex-1 min-w-0">
-                                <p className="text-[11px] font-medium truncate">
+                                <p className="text-xs font-medium truncate">
                                   {m.attachment_name || 'Attached Document'}
                                 </p>
-                                <span className="text-[9px] opacity-75">Click to view/download</span>
+                                <span className="text-xs opacity-75">Click to view/download</span>
                               </div>
                             </a>
                           )}
@@ -463,7 +463,7 @@ export default function CustomerChatWidget() {
 
             {/* Admin typing indicator */}
             {isAdminTyping && (
-              <div className="flex items-center gap-2 text-[11px] text-emerald-400 italic">
+              <div className="flex items-center gap-2 text-xs text-emerald-400 italic">
                 <span className="flex gap-1 items-center">
                   <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-bounce [animation-delay:-0.3s]" />
                   <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-bounce [animation-delay:-0.15s]" />
@@ -474,7 +474,7 @@ export default function CustomerChatWidget() {
             )}
 
             {rateLimitError && (
-              <div className="p-2 text-[11px] bg-red-950/80 border border-red-800 text-red-200 rounded-md text-center">
+              <div className="p-2 text-xs bg-red-950/80 border border-red-800 text-red-200 rounded-md text-center">
                 {rateLimitError}
               </div>
             )}
@@ -488,7 +488,7 @@ export default function CustomerChatWidget() {
               <button
                 type="button"
                 onClick={() => scrollToBottom('smooth')}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-stone-900/95 border border-amber-500/50 text-amber-300 hover:text-amber-200 text-[11px] font-semibold shadow-xl transition cursor-pointer backdrop-blur-md animate-in fade-in slide-in-from-bottom-2"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-stone-900/95 border border-amber-500/50 text-amber-300 hover:text-amber-200 text-xs font-semibold shadow-xl transition cursor-pointer backdrop-blur-md animate-in fade-in slide-in-from-bottom-2"
               >
                 <ChevronDown size={14} className="animate-bounce" />
                 <span>Latest messages</span>
@@ -512,10 +512,10 @@ export default function CustomerChatWidget() {
                   </div>
                 )}
                 <div className="min-w-0">
-                  <p className="text-[11px] font-medium text-stone-200 truncate">
+                  <p className="text-xs font-medium text-stone-200 truncate">
                     {pendingFile.file.name}
                   </p>
-                  <p className="text-[10px] text-stone-500">
+                  <p className="text-xs text-stone-500">
                     {(pendingFile.file.size / 1024).toFixed(1)} KB
                   </p>
                 </div>

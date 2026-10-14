@@ -344,7 +344,7 @@ export default function AdminCustomersPage() {
                     <td className="p-4 text-foreground">{cust.phone || '—'}</td>
                     <td className="p-4">
                       <span
-                        className={`px-2 py-0.5 rounded font-bold text-[10px] uppercase border ${
+                        className={`px-2 py-0.5 rounded font-bold text-xs uppercase border ${
                           cust.role === 'ADMIN'
                             ? 'bg-amber-500/10 text-amber-500 border-amber-500/20'
                             : 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20'
@@ -355,7 +355,7 @@ export default function AdminCustomersPage() {
                     </td>
                     <td className="p-4">
                       <span
-                        className={`px-2 py-0.5 rounded font-semibold text-[10px] uppercase border ${
+                        className={`px-2 py-0.5 rounded font-semibold text-xs uppercase border ${
                           cust.is_blocked
                             ? 'bg-red-500/10 text-red-500 border-red-500/20'
                             : 'bg-green-500/10 text-green-500 border-green-500/20'
@@ -432,7 +432,7 @@ export default function AdminCustomersPage() {
             <form onSubmit={handleCreateAdmin} className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-semibold uppercase text-muted-foreground">First Name *</label>
+                  <label className="text-xs font-semibold uppercase text-muted-foreground">First Name *</label>
                   <input
                     type="text"
                     required
@@ -442,7 +442,7 @@ export default function AdminCustomersPage() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-semibold uppercase text-muted-foreground">Last Name *</label>
+                  <label className="text-xs font-semibold uppercase text-muted-foreground">Last Name *</label>
                   <input
                     type="text"
                     required
@@ -454,7 +454,7 @@ export default function AdminCustomersPage() {
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-semibold uppercase text-muted-foreground">Admin Email Address *</label>
+                <label className="text-xs font-semibold uppercase text-muted-foreground">Admin Email Address *</label>
                 <input
                   type="email"
                   required
@@ -466,7 +466,7 @@ export default function AdminCustomersPage() {
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-semibold uppercase text-muted-foreground">Phone Number</label>
+                <label className="text-xs font-semibold uppercase text-muted-foreground">Phone Number</label>
                 <input
                   type="text"
                   placeholder="+971 50 000 0000"
@@ -477,7 +477,7 @@ export default function AdminCustomersPage() {
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-semibold uppercase text-muted-foreground">Password *</label>
+                <label className="text-xs font-semibold uppercase text-muted-foreground">Password *</label>
                 <input
                   type="password"
                   required
@@ -517,7 +517,7 @@ export default function AdminCustomersPage() {
             <form onSubmit={handleSaveEdit} className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-semibold uppercase text-muted-foreground">First Name</label>
+                  <label className="text-xs font-semibold uppercase text-muted-foreground">First Name</label>
                   <input
                     type="text"
                     value={editForm.first_name}
@@ -526,7 +526,7 @@ export default function AdminCustomersPage() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-semibold uppercase text-muted-foreground">Last Name</label>
+                  <label className="text-xs font-semibold uppercase text-muted-foreground">Last Name</label>
                   <input
                     type="text"
                     value={editForm.last_name}
@@ -537,7 +537,7 @@ export default function AdminCustomersPage() {
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-semibold uppercase text-muted-foreground">Phone Number</label>
+                <label className="text-xs font-semibold uppercase text-muted-foreground">Phone Number</label>
                 <input
                   type="text"
                   value={editForm.phone}
@@ -547,7 +547,7 @@ export default function AdminCustomersPage() {
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-semibold uppercase text-muted-foreground">Account Role</label>
+                <label className="text-xs font-semibold uppercase text-muted-foreground">Account Role</label>
                 <select
                   value={editForm.role}
                   onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}
@@ -559,7 +559,7 @@ export default function AdminCustomersPage() {
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-semibold uppercase text-muted-foreground">
+                <label className="text-xs font-semibold uppercase text-muted-foreground">
                   Reset Password (Leave blank to keep unchanged)
                 </label>
                 <input
@@ -616,21 +616,21 @@ export default function AdminCustomersPage() {
                 {/* Profile Overview */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-accent/30 p-4 rounded-lg border border-border text-xs">
                   <div>
-                    <span className="text-muted-foreground block text-[10px] uppercase">Account Role</span>
+                    <span className="text-muted-foreground block text-xs uppercase">Account Role</span>
                     <span className="font-bold text-foreground">{viewDetails.role || 'CUSTOMER'}</span>
                   </div>
                   <div>
-                    <span className="text-muted-foreground block text-[10px] uppercase">Status</span>
+                    <span className="text-muted-foreground block text-xs uppercase">Status</span>
                     <span className={viewDetails.is_blocked ? 'text-red-500 font-bold' : 'text-green-500 font-bold'}>
                       {viewDetails.is_blocked ? 'Blocked' : 'Active'}
                     </span>
                   </div>
                   <div>
-                    <span className="text-muted-foreground block text-[10px] uppercase">Total Orders</span>
+                    <span className="text-muted-foreground block text-xs uppercase">Total Orders</span>
                     <span className="font-bold text-foreground">{viewDetails.orders.length}</span>
                   </div>
                   <div>
-                    <span className="text-muted-foreground block text-[10px] uppercase">Total Reviews</span>
+                    <span className="text-muted-foreground block text-xs uppercase">Total Reviews</span>
                     <span className="font-bold text-primary">{viewDetails.reviews.length}</span>
                   </div>
                 </div>
@@ -680,10 +680,10 @@ export default function AdminCustomersPage() {
                           </div>
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                              <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-primary/10 text-primary border border-primary/20">
+                              <span className="px-2 py-0.5 rounded text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
                                 {ord.status}
                               </span>
-                              <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-zinc-500/10 text-zinc-400 border border-zinc-500/20">
+                              <span className="px-2 py-0.5 rounded text-xs font-semibold bg-zinc-500/10 text-zinc-400 border border-zinc-500/20">
                                 {ord.payment_status}
                               </span>
                             </div>
@@ -692,7 +692,7 @@ export default function AdminCustomersPage() {
                             </span>
                           </div>
                           {ord.items && ord.items.length > 0 && (
-                            <div className="text-[11px] text-muted-foreground pt-1 border-t border-border/50">
+                            <div className="text-xs text-muted-foreground pt-1 border-t border-border/50">
                               {ord.items.map((it: any) => (
                                 <div key={it.id} className="flex justify-between">
                                   <span>
@@ -726,7 +726,7 @@ export default function AdminCustomersPage() {
                             <span className="font-serif font-bold text-foreground">
                               {rev.product?.name}
                             </span>
-                            <span className="text-[10px] text-muted-foreground">
+                            <span className="text-xs text-muted-foreground">
                               {new Date(rev.created_at).toLocaleDateString()}
                             </span>
                           </div>
@@ -738,7 +738,7 @@ export default function AdminCustomersPage() {
                                 fill={s <= rev.rating ? 'currentColor' : 'none'}
                               />
                             ))}
-                            <span className="text-[10px] text-muted-foreground ml-1.5 font-mono">
+                            <span className="text-xs text-muted-foreground ml-1.5 font-mono">
                               ({rev.rating}/5) • {rev.status}
                             </span>
                           </div>

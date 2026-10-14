@@ -124,7 +124,7 @@ function AdminLoginContent() {
         {/* Login Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
-            <label className="text-[11px] font-semibold text-zinc-300 uppercase tracking-wider">
+            <label className="text-xs font-semibold text-zinc-300 uppercase tracking-wider">
               Admin Email
             </label>
             <div className="relative">
@@ -143,7 +143,7 @@ function AdminLoginContent() {
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[11px] font-semibold text-zinc-300 uppercase tracking-wider">
+            <label className="text-xs font-semibold text-zinc-300 uppercase tracking-wider">
               Password
             </label>
             <div className="relative">

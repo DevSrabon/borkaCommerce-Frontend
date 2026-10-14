@@ -279,7 +279,7 @@ export default function BannersAdminPage() {
             <form onSubmit={handleSave} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
               {/* Banner Size Selection */}
               <div className="space-y-2 bg-accent/30 p-3 rounded-lg border border-border">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground block">
                   Banner Placement & Size Type *
                 </label>
                 <div className="grid grid-cols-2 gap-2">
@@ -299,7 +299,7 @@ export default function BannersAdminPage() {
                     }`}
                   >
                     <div className="text-xs font-semibold">🌟 Hero Slider</div>
-                    <div className="text-[10px] text-muted-foreground mt-0.5">1920 × 800 px</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">1920 × 800 px</div>
                   </button>
                   <button
                     type="button"
@@ -317,17 +317,17 @@ export default function BannersAdminPage() {
                     }`}
                   >
                     <div className="text-xs font-semibold">🏷️ Small Banner</div>
-                    <div className="text-[10px] text-muted-foreground mt-0.5">600 × 400 px</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">600 × 400 px</div>
                   </button>
                 </div>
-                <p className="text-[10px] text-muted-foreground italic">
+                <p className="text-xs text-muted-foreground italic">
                   {form.size_type === 'SMALL' ? SIZE_PRESETS.SMALL.guide : SIZE_PRESETS.HERO.guide}
                 </p>
               </div>
 
               {/* Size description input */}
               <div className="space-y-1">
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Size Description / Dimension Badge
                 </label>
                 <input
@@ -342,10 +342,10 @@ export default function BannersAdminPage() {
               {/* Desktop Banner Image */}
               <div className="space-y-1">
                 <div className="flex items-center justify-between">
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                     Desktop Banner Image *
                   </label>
-                  <span className="text-[10px] text-muted-foreground">Recommended: 1920 × 800 px</span>
+                  <span className="text-xs text-muted-foreground">Recommended: 1920 × 800 px</span>
                 </div>
 
                 {form.image_url && (
@@ -398,13 +398,13 @@ export default function BannersAdminPage() {
               {/* Mobile Banner Image (Separate size for Mobile Devices) */}
               <div className="space-y-1">
                 <div className="flex items-center justify-between">
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                  <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                     <span>📱 Mobile Banner Image</span>
-                    <span className="text-[9px] text-amber-500 font-bold bg-amber-500/10 px-1.5 py-0.5 rounded">Separate Size</span>
+                    <span className="text-xs text-amber-500 font-bold bg-amber-500/10 px-1.5 py-0.5 rounded">Separate Size</span>
                   </label>
-                  <span className="text-[10px] text-muted-foreground">Recommended: 800 × 1000 px or 800 × 800 px</span>
+                  <span className="text-xs text-muted-foreground">Recommended: 800 × 1000 px or 800 × 800 px</span>
                 </div>
-                <p className="text-[10px] text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   Upload a vertical/square image specifically for smartphones & tablets. If left empty, the desktop image will be used.
                 </p>
 
@@ -445,7 +445,7 @@ export default function BannersAdminPage() {
                     <button
                       type="button"
                       onClick={() => setForm({ ...form, mobile_image_url: '' })}
-                      className="text-[10px] text-red-400 hover:underline self-end cursor-pointer"
+                      className="text-xs text-red-400 hover:underline self-end cursor-pointer"
                     >
                       Remove mobile image
                     </button>
@@ -454,7 +454,7 @@ export default function BannersAdminPage() {
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Title *</label>
+                <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Title *</label>
                 <input
                   type="text"
                   placeholder="New Eid Collection"
@@ -465,7 +465,7 @@ export default function BannersAdminPage() {
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Subtitle</label>
+                <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Subtitle</label>
                 <input
                   type="text"
                   placeholder="Shop the finest handcrafted abayas…"
@@ -477,7 +477,7 @@ export default function BannersAdminPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">CTA Text</label>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">CTA Text</label>
                   <input
                     type="text"
                     placeholder="Shop Now"
@@ -487,7 +487,7 @@ export default function BannersAdminPage() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">CTA Link</label>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">CTA Link</label>
                   <input
                     type="text"
                     placeholder="/catalog"
@@ -500,7 +500,7 @@ export default function BannersAdminPage() {
 
               <div className="grid grid-cols-2 gap-3 items-end">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Sort Order</label>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Sort Order</label>
                   <input
                     type="number"
                     min={0}
@@ -596,7 +596,7 @@ export default function BannersAdminPage() {
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="text-sm font-semibold text-foreground truncate">{b.title}</p>
                   <span
-                    className={`text-[9px] px-2 py-0.5 rounded font-bold uppercase tracking-wider border ${
+                    className={`text-xs px-2 py-0.5 rounded font-bold uppercase tracking-wider border ${
                       b.size_type === 'SMALL'
                         ? 'bg-purple-500/10 text-purple-400 border-purple-500/20'
                         : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
@@ -605,25 +605,25 @@ export default function BannersAdminPage() {
                     {b.size_type === 'SMALL' ? 'Small Banner (600x400)' : 'Hero Slider (1920x800)'}
                   </span>
                   {b.mobile_image_url ? (
-                    <span className="text-[9px] bg-blue-500/10 text-blue-400 border border-blue-500/20 px-1.5 py-0.5 rounded font-semibold">
+                    <span className="text-xs bg-blue-500/10 text-blue-400 border border-blue-500/20 px-1.5 py-0.5 rounded font-semibold">
                       📱 Mobile Size Set
                     </span>
                   ) : null}
                   {b.is_active ? (
-                    <span className="text-[9px] bg-green-500/10 text-green-500 border border-green-500/20 px-1.5 py-0.5 rounded font-semibold uppercase">
+                    <span className="text-xs bg-green-500/10 text-green-500 border border-green-500/20 px-1.5 py-0.5 rounded font-semibold uppercase">
                       Live
                     </span>
                   ) : (
-                    <span className="text-[9px] bg-zinc-500/10 text-zinc-400 border border-zinc-500/20 px-1.5 py-0.5 rounded font-semibold uppercase">
+                    <span className="text-xs bg-zinc-500/10 text-zinc-400 border border-zinc-500/20 px-1.5 py-0.5 rounded font-semibold uppercase">
                       Hidden
                     </span>
                   )}
                 </div>
                 {b.size_description && (
-                  <p className="text-[11px] text-primary/80 font-mono">{b.size_description}</p>
+                  <p className="text-xs text-primary/80 font-mono">{b.size_description}</p>
                 )}
                 {b.subtitle && <p className="text-xs text-muted-foreground truncate">{b.subtitle}</p>}
-                <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                <div className="flex items-center gap-3 text-xs text-muted-foreground">
                   <span>Order: {b.sort_order}</span>
                   {b.cta_text && b.cta_link && (
                     <span className="flex items-center gap-1">

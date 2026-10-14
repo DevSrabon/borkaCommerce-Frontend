@@ -301,7 +301,7 @@ export default function AdminCategoriesPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1">
-              <label className="text-[10px] font-semibold text-muted-foreground uppercase">Category Name</label>
+              <label className="text-xs font-semibold text-muted-foreground uppercase">Category Name</label>
               <input
                 type="text"
                 name="name"
@@ -313,7 +313,7 @@ export default function AdminCategoriesPage() {
             </div>
 
             <div className="space-y-1">
-              <label className="text-[10px] font-semibold text-muted-foreground uppercase">URL Slug</label>
+              <label className="text-xs font-semibold text-muted-foreground uppercase">URL Slug</label>
               <input
                 type="text"
                 name="slug"
@@ -325,7 +325,7 @@ export default function AdminCategoriesPage() {
             </div>
 
             <div className="space-y-1">
-              <label className="text-[10px] font-semibold text-muted-foreground uppercase">Parent Category</label>
+              <label className="text-xs font-semibold text-muted-foreground uppercase">Parent Category</label>
               <select
                 name="parent_id"
                 className="w-full text-xs bg-background border border-border rounded px-3 py-2.5 focus:outline-none"
@@ -340,7 +340,7 @@ export default function AdminCategoriesPage() {
             </div>
 
             <div className="space-y-1">
-              <label className="text-[10px] font-semibold text-muted-foreground uppercase">Status</label>
+              <label className="text-xs font-semibold text-muted-foreground uppercase">Status</label>
               <select
                 name="is_active"
                 className="w-full text-xs bg-background border border-border rounded px-3 py-2.5 focus:outline-none"
@@ -366,7 +366,7 @@ export default function AdminCategoriesPage() {
                   <span className="text-xs font-semibold flex items-center gap-1.5">
                     <Compass size={14} className="text-primary" /> Show in Navbar Navigation
                   </span>
-                  <p className="text-[11px] text-muted-foreground">Display this category as a direct button in the top navigation bar.</p>
+                  <p className="text-xs text-muted-foreground">Display this category as a direct button in the top navigation bar.</p>
                 </div>
               </label>
 
@@ -382,13 +382,13 @@ export default function AdminCategoriesPage() {
                   <span className="text-xs font-semibold flex items-center gap-1.5">
                     <Home size={14} className="text-amber-500" /> Show in Homepage &quot;Shop by Category&quot;
                   </span>
-                  <p className="text-[11px] text-muted-foreground">Highlight this category in the homepage visual category grid.</p>
+                  <p className="text-xs text-muted-foreground">Highlight this category in the homepage visual category grid.</p>
                 </div>
               </label>
             </div>
 
             <div className="space-y-1 sm:col-span-2">
-              <label className="text-[10px] font-semibold text-muted-foreground uppercase">Category Banner / Image</label>
+              <label className="text-xs font-semibold text-muted-foreground uppercase">Category Banner / Image</label>
               <div className="flex gap-2 items-center">
                 <div className="relative">
                   <input
@@ -413,7 +413,7 @@ export default function AdminCategoriesPage() {
             </div>
 
             <div className="space-y-1 sm:col-span-2">
-              <label className="text-[10px] font-semibold text-muted-foreground uppercase">Description</label>
+              <label className="text-xs font-semibold text-muted-foreground uppercase">Description</label>
               <textarea
                 name="description"
                 rows={2}
@@ -481,7 +481,7 @@ export default function AdminCategoriesPage() {
                         )}
                         <div>
                           <span className="font-semibold">{c.name}</span>
-                          {c.description && <p className="text-[10px] text-muted-foreground line-clamp-1">{c.description}</p>}
+                          {c.description && <p className="text-xs text-muted-foreground line-clamp-1">{c.description}</p>}
                         </div>
                       </td>
                       <td className="p-4 font-mono text-muted-foreground">{c.slug}</td>
@@ -492,7 +492,7 @@ export default function AdminCategoriesPage() {
                         <button
                           type="button"
                           onClick={() => handleQuickToggle(c, 'show_in_navbar')}
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold border cursor-pointer transition ${
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border cursor-pointer transition ${
                             c.show_in_navbar !== false
                               ? 'bg-primary/10 text-primary border-primary/30 hover:bg-primary/20'
                               : 'bg-muted/40 text-muted-foreground border-border hover:bg-muted/60'
@@ -509,7 +509,7 @@ export default function AdminCategoriesPage() {
                         <button
                           type="button"
                           onClick={() => handleQuickToggle(c, 'show_on_homepage')}
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold border cursor-pointer transition ${
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border cursor-pointer transition ${
                             c.show_on_homepage
                               ? 'bg-amber-500/10 text-amber-500 border-amber-500/30 hover:bg-amber-500/20'
                               : 'bg-muted/40 text-muted-foreground border-border hover:bg-muted/60'
@@ -525,7 +525,7 @@ export default function AdminCategoriesPage() {
                         <button
                           type="button"
                           onClick={() => handleQuickToggle(c, 'is_active')}
-                          className={`px-2 py-0.5 rounded font-semibold text-[10px] border cursor-pointer transition ${
+                          className={`px-2 py-0.5 rounded font-semibold text-xs border cursor-pointer transition ${
                             c.is_active
                               ? 'bg-green-500/10 text-green-500 border-green-500/20'
                               : 'bg-red-500/10 text-red-500 border-red-500/20'
@@ -559,7 +559,7 @@ export default function AdminCategoriesPage() {
                         <td colSpan={7} className="p-5 bg-background border-t border-b border-primary/20">
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                             <div>
-                              <label className="text-[10px] font-bold uppercase text-muted-foreground">Category Name</label>
+                              <label className="text-xs font-bold uppercase text-muted-foreground">Category Name</label>
                               <input
                                 type="text"
                                 className="w-full text-xs bg-card border border-border rounded px-3 py-2 mt-1 focus:outline-none"
@@ -568,7 +568,7 @@ export default function AdminCategoriesPage() {
                               />
                             </div>
                             <div>
-                              <label className="text-[10px] font-bold uppercase text-muted-foreground">Slug</label>
+                              <label className="text-xs font-bold uppercase text-muted-foreground">Slug</label>
                               <input
                                 type="text"
                                 className="w-full text-xs bg-card border border-border rounded px-3 py-2 mt-1 focus:outline-none font-mono"
@@ -577,7 +577,7 @@ export default function AdminCategoriesPage() {
                               />
                             </div>
                             <div>
-                              <label className="text-[10px] font-bold uppercase text-muted-foreground">Parent Category</label>
+                              <label className="text-xs font-bold uppercase text-muted-foreground">Parent Category</label>
                               <select
                                 className="w-full text-xs bg-card border border-border rounded px-3 py-2 mt-1 focus:outline-none text-foreground"
                                 value={editingCategory.parent_id}
@@ -593,7 +593,7 @@ export default function AdminCategoriesPage() {
                             </div>
 
                             <div className="md:col-span-2">
-                              <label className="text-[10px] font-bold uppercase text-muted-foreground">Image URL</label>
+                              <label className="text-xs font-bold uppercase text-muted-foreground">Image URL</label>
                               <div className="flex gap-2 mt-1">
                                 <input
                                   type="url"
@@ -616,7 +616,7 @@ export default function AdminCategoriesPage() {
                             </div>
 
                             <div>
-                              <label className="text-[10px] font-bold uppercase text-muted-foreground">Status</label>
+                              <label className="text-xs font-bold uppercase text-muted-foreground">Status</label>
                               <select
                                 className="w-full text-xs bg-card border border-border rounded px-3 py-2 mt-1 focus:outline-none text-foreground"
                                 value={editingCategory.is_active ? 'true' : 'false'}
@@ -650,7 +650,7 @@ export default function AdminCategoriesPage() {
                             </div>
 
                             <div className="md:col-span-3">
-                              <label className="text-[10px] font-bold uppercase text-muted-foreground">Description</label>
+                              <label className="text-xs font-bold uppercase text-muted-foreground">Description</label>
                               <textarea
                                 className="w-full text-xs bg-card border border-border rounded px-3 py-2 mt-1 focus:outline-none"
                                 rows={2}

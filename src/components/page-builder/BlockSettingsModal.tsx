@@ -59,11 +59,11 @@ export default function BlockSettingsModal({
                 <h3 className="font-serif text-base font-bold text-foreground">
                   Configure {block.type.replace('_', ' ')} Block
                 </h3>
-                <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 font-semibold">
+                <span className="text-xs uppercase font-mono px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 font-semibold">
                   {block.type}
                 </span>
               </div>
-              <p className="text-[11px] text-muted-foreground font-mono">ID: {block.id}</p>
+              <p className="text-xs text-muted-foreground font-mono">ID: {block.id}</p>
             </div>
           </div>
           <button
@@ -351,7 +351,7 @@ function BlockForm({
                           'New feature highlight',
                         ])
                       }
-                      className="text-primary text-[11px] font-bold inline-flex items-center gap-1 cursor-pointer"
+                      className="text-primary text-xs font-bold inline-flex items-center gap-1 cursor-pointer"
                     >
                       <Plus size={12} /> Add Point
                     </button>
@@ -408,7 +408,7 @@ function BlockForm({
                           { number: '100+', label: 'New Metric' },
                         ])
                       }
-                      className="text-primary text-[11px] font-bold inline-flex items-center gap-1 cursor-pointer"
+                      className="text-primary text-xs font-bold inline-flex items-center gap-1 cursor-pointer"
                     >
                       <Plus size={12} /> Add Stat
                     </button>
@@ -486,7 +486,7 @@ function BlockForm({
                           { icon: 'Sparkles', title: 'New Feature', description: 'Description here...' },
                         ])
                       }
-                      className="text-primary text-[11px] font-bold inline-flex items-center gap-1 cursor-pointer"
+                      className="text-primary text-xs font-bold inline-flex items-center gap-1 cursor-pointer"
                     >
                       <Plus size={12} /> Add Feature
                     </button>
@@ -587,7 +587,7 @@ function BlockForm({
                           },
                         ])
                       }
-                      className="text-primary text-[11px] font-bold inline-flex items-center gap-1 cursor-pointer"
+                      className="text-primary text-xs font-bold inline-flex items-center gap-1 cursor-pointer"
                     >
                       <Plus size={12} /> Add Review
                     </button>
@@ -672,7 +672,7 @@ function BlockForm({
                           { question: 'New Question?', answer: 'Answer goes here...' },
                         ])
                       }
-                      className="text-primary text-[11px] font-bold inline-flex items-center gap-1 cursor-pointer"
+                      className="text-primary text-xs font-bold inline-flex items-center gap-1 cursor-pointer"
                     >
                       <Plus size={12} /> Add FAQ Item
                     </button>
@@ -848,7 +848,7 @@ function BlockForm({
                     <label className="font-bold text-xs uppercase tracking-wider text-primary">
                       Map Embed Location or URL *
                     </label>
-                    <span className="text-[10px] text-muted-foreground">URL, Query, or &lt;iframe&gt;</span>
+                    <span className="text-xs text-muted-foreground">URL, Query, or &lt;iframe&gt;</span>
                   </div>
                   <input
                     type="text"
@@ -857,7 +857,7 @@ function BlockForm({
                     placeholder="e.g. Downtown Dubai or https://maps.google.com/..."
                     className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground font-mono text-xs"
                   />
-                  <p className="text-[11px] text-muted-foreground leading-normal">
+                  <p className="text-xs text-muted-foreground leading-normal">
                     Tip: You can paste a Google Maps embed URL, a full <code>&lt;iframe&gt;</code> code, or simply type any location query like <span className="text-primary font-medium">"Dubai Mall, UAE"</span> or <span className="text-primary font-medium">"Gulshan 2, Dhaka"</span>.
                   </p>
                 </div>
@@ -913,7 +913,7 @@ function BlockForm({
                   {(formData.show_card ?? true) && (
                     <div className="space-y-3 pt-2 border-t border-border/50">
                       <div>
-                        <label className="block font-semibold mb-1 text-[11px]">Boutique Physical Address</label>
+                        <label className="block font-semibold mb-1 text-xs">Boutique Physical Address</label>
                         <input
                           type="text"
                           value={formData.address || ''}
@@ -925,7 +925,7 @@ function BlockForm({
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
-                          <label className="block font-semibold mb-1 text-[11px]">Telephone Concierge</label>
+                          <label className="block font-semibold mb-1 text-xs">Telephone Concierge</label>
                           <input
                             type="text"
                             value={formData.phone || ''}
@@ -936,7 +936,7 @@ function BlockForm({
                         </div>
 
                         <div>
-                          <label className="block font-semibold mb-1 text-[11px]">Direct Email</label>
+                          <label className="block font-semibold mb-1 text-xs">Direct Email</label>
                           <input
                             type="email"
                             value={formData.email || ''}
@@ -948,7 +948,7 @@ function BlockForm({
                       </div>
 
                       <div>
-                        <label className="block font-semibold mb-1 text-[11px]">Visiting / Business Hours</label>
+                        <label className="block font-semibold mb-1 text-xs">Visiting / Business Hours</label>
                         <input
                           type="text"
                           value={formData.hours || ''}
@@ -993,7 +993,7 @@ function BlockForm({
                     }`}
                   >
                     <div className="text-xs font-semibold">{opt.label}</div>
-                    <div className="text-[10px] text-muted-foreground mt-0.5">{opt.desc}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">{opt.desc}</div>
                   </button>
                 ))}
               </div>
@@ -1014,7 +1014,7 @@ function BlockForm({
                   <option value="spacious">Spacious Luxury (80px - 128px)</option>
                 </select>
                 <div className="pt-2">
-                  <label className="block text-[11px] text-muted-foreground mb-1">
+                  <label className="block text-xs text-muted-foreground mb-1">
                     Or Custom Vertical Padding (px)
                   </label>
                   <input
@@ -1041,7 +1041,7 @@ function BlockForm({
                 </select>
 
                 <div className="pt-2">
-                  <label className="block text-[11px] text-muted-foreground mb-1">Section Vertical Margin</label>
+                  <label className="block text-xs text-muted-foreground mb-1">Section Vertical Margin</label>
                   <select
                     value={formData.margin_y || 'none'}
                     onChange={(e) => updateField('margin_y', e.target.value)}
@@ -1119,7 +1119,7 @@ function BlockForm({
                 </select>
                 {formData.border_style === 'solid' && (
                   <div className="pt-2 flex items-center gap-2">
-                    <span className="text-[11px] text-muted-foreground">Custom Border Color:</span>
+                    <span className="text-xs text-muted-foreground">Custom Border Color:</span>
                     <input
                       type="color"
                       value={formData.border_color || '#e5e7eb'}
@@ -1183,7 +1183,7 @@ function BlockForm({
                     }`}
                   >
                     <div className="text-xs font-semibold">{bg.label}</div>
-                    <div className="text-[10px] text-muted-foreground mt-0.5">{bg.desc}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">{bg.desc}</div>
                   </button>
                 ))}
               </div>
@@ -1278,7 +1278,7 @@ function BlockForm({
                 </div>
 
                 <div className="pt-2">
-                  <label className="block text-[11px] text-muted-foreground mb-1">
+                  <label className="block text-xs text-muted-foreground mb-1">
                     Or Custom CSS Gradient Syntax:
                   </label>
                   <input
@@ -1336,7 +1336,7 @@ function BlockForm({
                       onChange={(e) => updateField('bg_overlay', parseInt(e.target.value))}
                       className="w-full"
                     />
-                    <span className="text-[10px] text-muted-foreground block mt-0.5">
+                    <span className="text-xs text-muted-foreground block mt-0.5">
                       Ensures high text contrast over images
                     </span>
                   </div>
@@ -1396,7 +1396,7 @@ function BlockForm({
                       <button
                         type="button"
                         onClick={() => updateField('text_color', '')}
-                        className="text-[10px] text-muted-foreground hover:text-foreground"
+                        className="text-xs text-muted-foreground hover:text-foreground"
                       >
                         Reset
                       </button>
@@ -1429,7 +1429,7 @@ function BlockForm({
                   />
                   <div>
                     <span className="font-semibold block text-foreground">Hide on Mobile</span>
-                    <span className="text-[10px] text-muted-foreground">Hidden on screens &lt; 768px</span>
+                    <span className="text-xs text-muted-foreground">Hidden on screens &lt; 768px</span>
                   </div>
                 </label>
 
@@ -1442,7 +1442,7 @@ function BlockForm({
                   />
                   <div>
                     <span className="font-semibold block text-foreground">Hide on Desktop</span>
-                    <span className="text-[10px] text-muted-foreground">Hidden on screens &ge; 1024px</span>
+                    <span className="text-xs text-muted-foreground">Hidden on screens &ge; 1024px</span>
                   </div>
                 </label>
               </div>
@@ -1453,7 +1453,7 @@ function BlockForm({
               <label className="block font-semibold text-xs">Mobile-Specific Behavior</label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-medium text-muted-foreground mb-1">
+                  <label className="block text-xs font-medium text-muted-foreground mb-1">
                     Mobile Text Alignment
                   </label>
                   <select
@@ -1485,7 +1485,7 @@ function BlockForm({
 
                 {(block.type === 'FEATURES_GRID' || block.type === 'STATS_COUNTER') && (
                   <div>
-                    <label className="block text-[11px] font-medium text-muted-foreground mb-1">
+                    <label className="block text-xs font-medium text-muted-foreground mb-1">
                       Mobile Grid Columns
                     </label>
                     <select
@@ -1514,7 +1514,7 @@ function BlockForm({
                 onChange={(e) => updateField('custom_classes', e.target.value)}
                 className="w-full bg-card border border-border rounded-lg px-3 py-2 text-xs font-mono text-foreground"
               />
-              <span className="text-[10px] text-muted-foreground block">
+              <span className="text-xs text-muted-foreground block">
                 Any valid Tailwind CSS utility class will be appended directly to the block wrapper.
               </span>
             </div>
@@ -1532,7 +1532,7 @@ function BlockForm({
                 onChange={(e) => updateField('custom_css', e.target.value)}
                 className="w-full bg-card border border-border rounded-lg px-3 py-2 text-xs font-mono text-foreground"
               />
-              <span className="text-[10px] text-muted-foreground block">
+              <span className="text-xs text-muted-foreground block">
                 Write standard CSS semicolon-separated declarations (e.g. <code>letter-spacing: 2px;</code>)
               </span>
             </div>
@@ -1542,7 +1542,7 @@ function BlockForm({
 
       {/* Modal Footer */}
       <div className="border-t border-border px-6 py-4 bg-background flex items-center justify-between">
-        <div className="text-[11px] text-muted-foreground">
+        <div className="text-xs text-muted-foreground">
           Changes will reflect in canvas immediately upon saving.
         </div>
         <div className="flex items-center gap-2">

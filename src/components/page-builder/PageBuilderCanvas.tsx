@@ -143,7 +143,7 @@ export default function PageBuilderCanvas({
             </button>
           </div>
 
-          <span className="text-[11px] font-mono text-muted-foreground hidden md:inline px-2 py-0.5 rounded bg-card border border-border">
+          <span className="text-xs font-mono text-muted-foreground hidden md:inline px-2 py-0.5 rounded bg-card border border-border">
             {deviceView === 'desktop'
               ? '100% Fluid Desktop'
               : deviceView === 'tablet'
@@ -172,7 +172,7 @@ export default function PageBuilderCanvas({
         }`}>
           {/* Mobile Status Bar Simulation */}
           {deviceView === 'mobile' && (
-            <div className="bg-zinc-950 px-6 pt-3 pb-2 flex items-center justify-between text-[11px] font-medium text-zinc-300 border-b border-zinc-900 select-none">
+            <div className="bg-zinc-950 px-6 pt-3 pb-2 flex items-center justify-between text-xs font-medium text-zinc-300 border-b border-zinc-900 select-none">
               <span>9:41</span>
               {/* Dynamic Island Pill */}
               <div className="w-24 h-4 bg-zinc-900 rounded-full mx-auto" />
@@ -226,7 +226,7 @@ export default function PageBuilderCanvas({
                         <button
                           type="button"
                           onClick={() => onOpenAddModal(idx)}
-                          className="absolute opacity-0 group-hover/divider:opacity-100 transition-all scale-90 group-hover/divider:scale-100 px-2 py-0.5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center gap-1 shadow-md cursor-pointer"
+                          className="absolute opacity-0 group-hover/divider:opacity-100 transition-all scale-90 group-hover/divider:scale-100 px-2 py-0.5 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center gap-1 shadow-md cursor-pointer"
                         >
                           <Plus size={10} /> Add Block Here
                         </button>
@@ -253,7 +253,7 @@ export default function PageBuilderCanvas({
                           </div>
 
                           <div className="flex items-center gap-1 border-r border-border pr-1.5">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-primary">
+                            <span className="text-xs font-bold uppercase tracking-wider text-primary">
                               {block.type.replace('_', ' ')}
                             </span>
                             {block.data.bg_type && block.data.bg_type !== 'default' && (

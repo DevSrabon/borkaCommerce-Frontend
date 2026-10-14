@@ -63,7 +63,7 @@ function CountdownTimer({ endDate }: { endDate: string }) {
 
   return (
     <div className="flex gap-2 items-center bg-red-500/10 border border-red-500/20 px-3 py-2 rounded text-red-500 font-mono text-xs w-full max-w-sm justify-between mt-2">
-      <span className="font-sans font-semibold uppercase tracking-wider text-[10px]">Flash Sale Ends In:</span>
+      <span className="font-sans font-semibold uppercase tracking-wider text-xs">Flash Sale Ends In:</span>
       <div className="flex gap-1.5 font-bold">
         {timeLeft.days > 0 && <span>{timeLeft.days}d</span>}
         <span>{timeLeft.hours.toString().padStart(2, '0')}h</span>
@@ -230,12 +230,12 @@ export default function ProductClient({ product }: { product: ProductDetails }) 
   };
 
   return (
-    <div className="space-y-16 w-full">
+    <div className="space-y-6 sm:space-y-8 w-full">
       {/* 2-Column Product Showcase & Purchase Box */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 items-start">
         {/* Product Image / Video Section */}
-        <div className="space-y-4">
-          <div className="relative h-[32rem] sm:h-[40rem] w-full border border-border bg-zinc-100 dark:bg-zinc-900 rounded-lg overflow-hidden shadow-sm">
+        <div className="space-y-2.5">
+          <div className="relative h-[22rem] sm:h-[26rem] lg:h-[30rem] w-full border border-border bg-zinc-100 dark:bg-zinc-900 rounded-lg overflow-hidden shadow-sm">
             {activeMediaMode === 'video' && embedUrl ? (
               <iframe
                 src={`${embedUrl}?autoplay=1`}
@@ -255,9 +255,9 @@ export default function ProductClient({ product }: { product: ProductDetails }) 
               <button
                 type="button"
                 onClick={() => setActiveMediaMode('video')}
-                className="absolute bottom-4 right-4 bg-black/80 hover:bg-black text-white text-xs font-semibold px-3.5 py-2 rounded-full backdrop-blur-md border border-white/20 flex items-center gap-2 shadow-xl cursor-pointer transition hover:scale-105"
+                className="absolute bottom-3 right-3 bg-black/80 hover:bg-black text-white text-xs font-semibold px-3 py-1.5 rounded-full backdrop-blur-md border border-white/20 flex items-center gap-1.5 shadow-xl cursor-pointer transition hover:scale-105"
               >
-                <Play size={14} className="fill-red-500 text-red-500" />
+                <Play size={13} className="fill-red-500 text-red-500" />
                 <span>Watch Product Video</span>
               </button>
             )}
@@ -272,7 +272,7 @@ export default function ProductClient({ product }: { product: ProductDetails }) 
             if (galleryImages.length <= 1 && !embedUrl) return null;
 
             return (
-              <div className="flex gap-4 overflow-x-auto py-2">
+              <div className="flex gap-2 sm:gap-2.5 overflow-x-auto py-1">
                 {galleryImages.map((img, idx) => (
                   <button
                     key={idx}
@@ -280,7 +280,7 @@ export default function ProductClient({ product }: { product: ProductDetails }) 
                       setActiveImage(img);
                       setActiveMediaMode('image');
                     }}
-                    className={`relative h-20 w-20 shrink-0 border rounded-lg overflow-hidden transition cursor-pointer ${
+                    className={`relative h-14 w-14 sm:h-16 sm:w-16 shrink-0 border rounded-lg overflow-hidden transition cursor-pointer ${
                       activeMediaMode === 'image' && activeImage === img
                         ? 'border-primary ring-2 ring-primary'
                         : 'border-border opacity-75 hover:opacity-100'
@@ -293,17 +293,17 @@ export default function ProductClient({ product }: { product: ProductDetails }) 
                   <button
                     type="button"
                     onClick={() => setActiveMediaMode('video')}
-                    className={`relative h-20 w-20 shrink-0 border rounded-lg overflow-hidden flex flex-col items-center justify-center bg-zinc-950 transition cursor-pointer ${
+                    className={`relative h-14 w-14 sm:h-16 sm:w-16 shrink-0 border rounded-lg overflow-hidden flex flex-col items-center justify-center bg-zinc-950 transition cursor-pointer ${
                       activeMediaMode === 'video'
                         ? 'border-primary ring-2 ring-primary text-primary'
                         : 'border-border text-zinc-400 hover:text-white hover:border-zinc-500'
                     }`}
                     title="Watch YouTube Product Video"
                   >
-                    <div className="h-7 w-7 rounded-full bg-red-600 text-white flex items-center justify-center shadow-md">
-                      <Play size={13} className="ml-0.5 fill-white text-white" />
+                    <div className="h-5 w-5 sm:h-6 sm:w-6 rounded-full bg-red-600 text-white flex items-center justify-center shadow-md">
+                      <Play size={10} className="ml-0.5 fill-white text-white" />
                     </div>
-                    <span className="text-[10px] font-bold mt-1 tracking-wider uppercase">Video</span>
+                    <span className="text-xs font-bold mt-0.5 tracking-wider uppercase">Video</span>
                   </button>
                 )}
               </div>
@@ -312,20 +312,20 @@ export default function ProductClient({ product }: { product: ProductDetails }) 
         </div>
 
       {/* Product Details Section */}
-      <div className="space-y-6 lg:py-4">
-        <div className="space-y-2">
-          <h1 className="font-serif text-3xl font-bold tracking-tight">{product.name}</h1>
+      <div className="space-y-3.5 lg:py-0">
+        <div className="space-y-1">
+          <h1 className="font-serif text-xl sm:text-2xl font-bold tracking-tight">{product.name}</h1>
           <div className="flex items-center space-x-2">
-            <div className="flex items-center text-amber-500 text-sm">
+            <div className="flex items-center text-amber-500 text-xs sm:text-sm">
               {[1, 2, 3, 4, 5].map((star) => (
                 <Star
                   key={star}
-                  size={15}
+                  size={14}
                   className={star <= Math.round(product.rating.average) ? 'fill-amber-500 text-amber-500' : 'text-zinc-600'}
                 />
               ))}
             </div>
-            <span className="font-bold text-sm text-foreground">{product.rating.average}</span>
+            <span className="font-bold text-xs sm:text-sm text-foreground">{product.rating.average}</span>
             <a href="#reviews" className="text-xs text-muted hover:text-primary transition underline cursor-pointer">
               ({product.rating.count} Customer Reviews)
             </a>
@@ -334,7 +334,7 @@ export default function ProductClient({ product }: { product: ProductDetails }) 
 
         {/* Dynamic Pricing */}
         {selectedVariant ? (
-          <div className="space-y-4 border-y border-border py-4">
+          <div className="space-y-2 border-y border-border py-2.5">
             <div className="flex items-center justify-between">
               <DiscountedPrice
                 discountedAed={selectedVariant.discounted_price}
@@ -345,15 +345,15 @@ export default function ProductClient({ product }: { product: ProductDetails }) 
 
               <div className="text-right">
                 {selectedVariant.available_stock <= 0 ? (
-                  <span className="text-xs text-red-500 font-semibold px-2.5 py-1 bg-red-500/10 border border-red-500/20 rounded">
+                  <span className="text-xs text-red-500 font-semibold px-2 py-0.5 bg-red-500/10 border border-red-500/20 rounded">
                     Out of Stock
                   </span>
                 ) : selectedVariant.available_stock <= 5 ? (
-                  <span className="text-xs text-amber-500 font-semibold px-2.5 py-1 bg-amber-500/10 border border-amber-500/20 rounded flex items-center gap-1">
+                  <span className="text-xs text-amber-500 font-semibold px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 rounded flex items-center gap-1">
                     <span>⚡ Only {selectedVariant.available_stock} left in stock!</span>
                   </span>
                 ) : (
-                  <span className="text-xs text-green-500 font-semibold px-2.5 py-1 bg-green-500/10 border border-green-500/20 rounded">
+                  <span className="text-xs text-green-500 font-semibold px-2 py-0.5 bg-green-500/10 border border-green-500/20 rounded">
                     ✓ In Stock ({selectedVariant.available_stock} available)
                   </span>
                 )}
@@ -364,15 +364,15 @@ export default function ProductClient({ product }: { product: ProductDetails }) 
             )}
           </div>
         ) : (
-          <div className="border-y border-border py-4">
-            <p className="text-sm text-muted">Select variant options below to see price and stock availability.</p>
+          <div className="border-y border-border py-2.5">
+            <p className="text-xs sm:text-sm text-muted">Select variant options below to see price and stock availability.</p>
           </div>
         )}
 
         {/* Variant Selectors */}
-        <div className="space-y-6">
+        <div className="space-y-3">
           {Object.keys(attributeOptions).map((attrName) => (
-            <div key={attrName} className="space-y-2">
+            <div key={attrName} className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <h3 className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">{attrName}</h3>
                 {attrName.toLowerCase().includes('size') && (
@@ -385,12 +385,12 @@ export default function ProductClient({ product }: { product: ProductDetails }) 
                   </button>
                 )}
               </div>
-              <div className="flex flex-wrap gap-3">
+              <div className="flex flex-wrap gap-2">
                 {attributeOptions[attrName].map((val) => (
                   <button
                     key={val}
                     onClick={() => handleSelectOption(attrName, val)}
-                    className={`px-4 py-2 text-sm rounded border transition cursor-pointer ${
+                    className={`px-3 py-1.5 text-xs sm:text-sm rounded border transition cursor-pointer ${
                       selections[attrName] === val
                         ? 'border-primary bg-primary/5 text-foreground ring-1 ring-primary font-medium'
                         : 'border-border bg-card hover:bg-accent text-foreground/80'
@@ -405,18 +405,18 @@ export default function ProductClient({ product }: { product: ProductDetails }) 
         </div>
 
         {/* Add to Cart & Share Actions */}
-        <div className="pt-6 space-y-4">
-          <div className="flex items-stretch gap-3">
+        <div className="pt-2.5 space-y-2.5">
+          <div className="flex items-stretch gap-2.5">
             <button
               onClick={handleAddToCart}
               disabled={!selectedVariant || selectedVariant.available_stock <= 0}
-              className={`flex-1 py-4 rounded-md uppercase font-semibold text-sm flex items-center justify-center gap-2 transition ${
+              className={`flex-1 py-2.5 sm:py-3 rounded-md uppercase font-semibold text-xs sm:text-sm flex items-center justify-center gap-2 transition ${
                 selectedVariant && selectedVariant.available_stock > 0
                   ? 'btn-luxury cursor-pointer'
                   : 'bg-zinc-800 text-zinc-500 border border-zinc-700 cursor-not-allowed'
               }`}
             >
-              <ShoppingBag size={18} />
+              <ShoppingBag size={16} />
               {selectedVariant
                 ? selectedVariant.available_stock > 0
                   ? 'Add to Shopping Bag'
@@ -426,10 +426,10 @@ export default function ProductClient({ product }: { product: ProductDetails }) 
             <button
               type="button"
               onClick={handleShare}
-              className="px-4 py-4 rounded-md border border-border bg-card hover:bg-accent text-foreground hover:text-primary flex items-center justify-center gap-2 transition cursor-pointer shadow-xs shrink-0"
+              className="px-3.5 py-2.5 sm:py-3 rounded-md border border-border bg-card hover:bg-accent text-foreground hover:text-primary flex items-center justify-center gap-1.5 transition cursor-pointer shadow-xs shrink-0"
               title="Share this product"
             >
-              <Share2 size={18} />
+              <Share2 size={16} />
               <span className="text-xs font-semibold uppercase hidden sm:inline">
                 {shareSuccess ? 'Copied!' : 'Share'}
               </span>
@@ -437,31 +437,31 @@ export default function ProductClient({ product }: { product: ProductDetails }) 
           </div>
 
           {shareSuccess && (
-            <div className="flex items-center gap-2 text-xs bg-primary/10 border border-primary/30 text-primary p-2.5 rounded-md">
+            <div className="flex items-center gap-2 text-xs bg-primary/10 border border-primary/30 text-primary p-2 rounded-md">
               <Check size={14} />
               <span>Product link copied to clipboard!</span>
             </div>
           )}
 
           {addedAlert && (
-            <div className="flex items-center gap-2 text-xs bg-green-500/10 border border-green-500/30 text-green-500 p-3 rounded-md transition duration-300">
+            <div className="flex items-center gap-2 text-xs bg-green-500/10 border border-green-500/30 text-green-500 p-2.5 rounded-md transition duration-300">
               <Check size={14} />
               <span>Variant added to your Shopping Bag successfully! <a href="/cart" className="underline font-bold">View Bag</a></span>
             </div>
           )}
 
           {/* Dynamic Delivery Perks & Trust Card */}
-          <div className="p-4 rounded-lg bg-card/70 border border-border space-y-3 shadow-xs">
+          <div className="p-3 rounded-lg bg-card/70 border border-border space-y-2 shadow-xs">
             {/* Dynamic Delivery status */}
-            <div className="flex items-start gap-3">
-              <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 mt-0.5">
-                <Truck size={16} />
+            <div className="flex items-start gap-2.5">
+              <div className="h-7 w-7 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 mt-0.5">
+                <Truck size={14} />
               </div>
               <div className="flex-1 text-xs space-y-0.5">
                 <div className="flex items-center justify-between">
                   <span className="font-semibold text-foreground">Express UAE &amp; GCC Delivery</span>
                   {shippingInfo && (
-                    <span className={`font-bold px-2 py-0.5 rounded text-[10px] ${
+                    <span className={`font-bold px-1.5 py-0.5 rounded text-xs ${
                       shippingInfo.is_free
                         ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
                         : 'bg-muted border border-border text-foreground font-mono'
@@ -471,22 +471,22 @@ export default function ProductClient({ product }: { product: ProductDetails }) 
                   )}
                 </div>
                 {shippingInfo?.threshold_rule && (
-                  <p className="text-[11px] text-amber-600 dark:text-amber-400 font-medium">
+                  <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">
                     ✈ {shippingInfo.threshold_rule.replace(/AED\s*\d+/i, formatPrice(500))}
                   </p>
                 )}
                 {shippingInfo?.applied_rule && (
-                  <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
+                  <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
                     ✓ {shippingInfo.applied_rule.replace(/AED\s*\d+/i, formatPrice(shippingInfo.discount_amount || 30))}
                   </p>
                 )}
-                <p className="text-muted-foreground text-[11px]">
+                <p className="text-muted-foreground text-xs">
                   Estimated delivery within 24 to 48 business hours with live tracking.
                 </p>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-2 border-t border-border/60 text-[11px] text-muted-foreground">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-2 border-t border-border/60 text-xs text-muted-foreground">
               <div className="flex items-center gap-1.5">
                 <ShieldCheck size={13} className="text-emerald-500 shrink-0" />
                 <span>100% Genuine Fabric</span>
@@ -515,13 +515,13 @@ export default function ProductClient({ product }: { product: ProductDetails }) 
     </div>
 
     {/* Dedicated Full-Width Product Description Section with tight, refined spacing */}
-    <div id="product-description" className="border-t border-border pt-8 space-y-5 text-left scroll-mt-20">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-3 text-left">
-        <div className="space-y-1 text-left">
-          <span className="text-[11px] font-semibold tracking-wider text-primary uppercase">
+    <div id="product-description" className="border-t border-border pt-5 space-y-3.5 text-left scroll-mt-20">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border pb-2.5 text-left">
+        <div className="space-y-0.5 text-left">
+          <span className="text-xs font-semibold tracking-wider text-primary uppercase">
             Signature Design &amp; Details
           </span>
-          <h2 className="font-serif text-xl sm:text-2xl font-bold tracking-tight text-foreground text-left">
+          <h2 className="font-serif text-lg sm:text-xl font-bold tracking-tight text-foreground text-left">
             Complete Craftsmanship &amp; Story
           </h2>
         </div>
@@ -539,7 +539,7 @@ export default function ProductClient({ product }: { product: ProductDetails }) 
         )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 text-left items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 text-left items-start">
         <div className={`${embedUrl ? 'lg:col-span-7' : 'lg:col-span-12'} space-y-4 text-left`}>
           <div
             className="text-sm sm:text-base text-muted-foreground leading-relaxed font-light prose prose-sm sm:prose-base dark:prose-invert prose-zinc max-w-none font-sans text-left"
@@ -564,7 +564,7 @@ export default function ProductClient({ product }: { product: ProductDetails }) 
                 allowFullScreen
               />
             </div>
-            <p className="text-[11px] text-muted-foreground text-left">
+            <p className="text-xs text-muted-foreground text-left">
               High-definition presentation demonstrating fabric texture, silhouette cut, and fluid motion.
             </p>
           </div>
@@ -594,7 +594,7 @@ export default function ProductClient({ product }: { product: ProductDetails }) 
                   <Ruler size={18} className="text-primary" />
                   <div>
                     <h2 className="font-serif text-lg font-bold">Abaya Sizing Chart &amp; Guide</h2>
-                    <p className="text-[11px] text-muted-foreground">Standard Gulf &amp; International Modest Sizing</p>
+                    <p className="text-xs text-muted-foreground">Standard Gulf &amp; International Modest Sizing</p>
                   </div>
                 </div>
                 <button
@@ -649,7 +649,7 @@ export default function ProductClient({ product }: { product: ProductDetails }) 
                 {/* Standard Sizing Table */}
                 <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-xs">
                   <table className="w-full text-xs text-left">
-                    <thead className="bg-muted/60 text-foreground font-semibold uppercase text-[10px] tracking-wider border-b border-border">
+                    <thead className="bg-muted/60 text-foreground font-semibold uppercase text-xs tracking-wider border-b border-border">
                       <tr>
                         <th className="py-3 px-3 sm:px-4">Size</th>
                         <th className="py-3 px-3 sm:px-4">Your Height</th>
@@ -686,7 +686,7 @@ export default function ProductClient({ product }: { product: ProductDetails }) 
                     <h4 className="font-semibold text-foreground flex items-center gap-1.5">
                       <span className="w-2 h-2 rounded-full bg-primary" /> How To Measure Length
                     </h4>
-                    <p className="text-muted-foreground leading-relaxed text-[11px]">
+                    <p className="text-muted-foreground leading-relaxed text-xs">
                       Measure from the highest point of your shoulder down to your ankle or shoe level. Abaya size numbers (e.g. 54) correspond directly to length in inches.
                     </p>
                   </div>
@@ -695,7 +695,7 @@ export default function ProductClient({ product }: { product: ProductDetails }) 
                     <h4 className="font-semibold text-foreground flex items-center gap-1.5">
                       <span className="w-2 h-2 rounded-full bg-primary" /> Modest Fit Ease
                     </h4>
-                    <p className="text-muted-foreground leading-relaxed text-[11px]">
+                    <p className="text-muted-foreground leading-relaxed text-xs">
                       Our abayas are designed with a graceful, modest drape featuring +4 to +6 inches of ease around the bust and hips for effortless modesty and comfort.
                     </p>
                   </div>
@@ -710,7 +710,7 @@ export default function ProductClient({ product }: { product: ProductDetails }) 
                         href={chartFile}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-[11px] text-primary hover:underline font-medium"
+                        className="text-xs text-primary hover:underline font-medium"
                       >
                         Open full size ↗
                       </a>

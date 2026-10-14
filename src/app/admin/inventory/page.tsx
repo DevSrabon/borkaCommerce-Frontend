@@ -238,7 +238,7 @@ export default function AdminInventoryPage() {
                       <tr key={inv.id} className="hover:bg-accent/40">
                         <td className="p-4">
                           <div className="font-medium text-foreground">{inv.variant?.product?.name || 'Seeded Product'}</div>
-                          <div className="text-[10px] text-muted-foreground font-mono mt-0.5">{inv.variant?.sku}</div>
+                          <div className="text-xs text-muted-foreground font-mono mt-0.5">{inv.variant?.sku}</div>
                         </td>
                         <td className="p-4 text-muted">{inv.warehouse?.name}</td>
                         <td className="p-4 font-semibold text-foreground">{inv.quantity} units</td>
@@ -265,7 +265,7 @@ export default function AdminInventoryPage() {
             <div className="space-y-3 text-xs">
               {/* Select Variant */}
               <div className="space-y-1">
-                <label className="text-[10px] font-semibold text-muted-foreground uppercase">Target Variant SKU</label>
+                <label className="text-xs font-semibold text-muted-foreground uppercase">Target Variant SKU</label>
                 <select
                   className="w-full text-xs bg-background border border-border rounded px-3 py-2.5 focus:outline-none"
                   value={adjustForm.variant_id}
@@ -283,7 +283,7 @@ export default function AdminInventoryPage() {
 
               {/* Select Warehouse */}
               <div className="space-y-1">
-                <label className="text-[10px] font-semibold text-muted-foreground uppercase">Warehouse</label>
+                <label className="text-xs font-semibold text-muted-foreground uppercase">Warehouse</label>
                 <select
                   className="w-full text-xs bg-background border border-border rounded px-3 py-2.5 focus:outline-none"
                   value={adjustForm.warehouse_id}
@@ -299,7 +299,7 @@ export default function AdminInventoryPage() {
 
               {/* Adjust Qty */}
               <div className="space-y-1">
-                <label className="text-[10px] font-semibold text-muted-foreground uppercase">Adjust Count (Use minus for deduction)</label>
+                <label className="text-xs font-semibold text-muted-foreground uppercase">Adjust Count (Use minus for deduction)</label>
                 <input
                   type="number"
                   className="w-full text-xs bg-background border border-border rounded px-3 py-2.5 focus:outline-none"
@@ -311,7 +311,7 @@ export default function AdminInventoryPage() {
 
               {/* Adjust Type */}
               <div className="space-y-1">
-                <label className="text-[10px] font-semibold text-muted-foreground uppercase">Audit Transaction Type</label>
+                <label className="text-xs font-semibold text-muted-foreground uppercase">Audit Transaction Type</label>
                 <select
                   className="w-full text-xs bg-background border border-border rounded px-3 py-2.5 focus:outline-none"
                   value={adjustForm.type}
@@ -326,7 +326,7 @@ export default function AdminInventoryPage() {
 
               {/* Reference */}
               <div className="space-y-1">
-                <label className="text-[10px] font-semibold text-muted-foreground uppercase">Audit Reference Tag</label>
+                <label className="text-xs font-semibold text-muted-foreground uppercase">Audit Reference Tag</label>
                 <input
                   type="text"
                   className="w-full text-xs bg-background border border-border rounded px-3 py-2.5 focus:outline-none"
@@ -372,7 +372,7 @@ export default function AdminInventoryPage() {
                     <td className="p-4 text-muted">{new Date(tx.created_at).toLocaleString()}</td>
                     <td className="p-4 font-mono font-bold">{tx.variant?.sku}</td>
                     <td className="p-4">
-                      <span className={`px-2 py-0.5 rounded font-semibold text-[10px] border ${tx.type === 'PURCHASE' || tx.type === 'RETURN'
+                      <span className={`px-2 py-0.5 rounded font-semibold text-xs border ${tx.type === 'PURCHASE' || tx.type === 'RETURN'
                           ? 'bg-green-500/10 text-green-500 border-green-500/20'
                           : 'bg-red-500/10 text-red-500 border-red-500/20'
                         }`}>

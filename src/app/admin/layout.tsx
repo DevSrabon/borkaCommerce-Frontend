@@ -28,12 +28,14 @@ import {
   BookOpen,
   Sun,
   Moon,
+  Activity,
 } from 'lucide-react';
 import { clearSession } from '../../store/authSlice';
 import { useDispatch } from 'react-redux';
 
 const NAV_MODULES = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard, exact: true },
+  { href: '/admin/logs', label: 'Request Logs', icon: Activity },
   { href: '/admin/pages', label: 'Pages Builder', icon: FileText },
   { href: '/admin/blogs', label: 'Blog & Comments', icon: BookOpen },
   { href: '/admin/chat', label: 'Support Chat', icon: MessageSquare },
@@ -216,7 +218,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           {!collapsed && (
             <div className="min-w-0">
               <p className="text-xs font-bold uppercase tracking-widest text-foreground truncate">Admin Panel</p>
-              <p className="text-[10px] text-muted-foreground truncate">Saba Al Wadi</p>
+              <p className="text-xs text-muted-foreground truncate">Store Management</p>
             </div>
           )}
         </div>
@@ -240,7 +242,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 <Icon size={16} className="shrink-0" />
                 {!collapsed && <span className="truncate">{mod.label}</span>}
                 {!collapsed && mod.href === '/admin/chat' && chatUnread > 0 && (
-                  <span className="ml-auto flex items-center justify-center px-1.5 py-0.5 text-[9px] font-bold rounded-full bg-red-600 text-white animate-pulse">
+                  <span className="ml-auto flex items-center justify-center px-1.5 py-0.5 text-xs font-bold rounded-full bg-red-600 text-white animate-pulse">
                     {chatUnread}
                   </span>
                 )}
@@ -271,7 +273,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             {!collapsed && (
               <div className="flex-1 flex items-center justify-between text-left">
                 <span>Theme</span>
-                <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-accent border border-border text-foreground">
+                <span className="text-xs font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-accent border border-border text-foreground">
                   {adminTheme === 'dark' ? 'Dark' : 'Light'}
                 </span>
               </div>
@@ -289,7 +291,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </Link>
 
           {!collapsed && user && (
-            <div className="px-3 py-2 text-[10px] text-muted-foreground border-t border-border mt-1 pt-2 flex items-center justify-between">
+            <div className="px-3 py-2 text-xs text-muted-foreground border-t border-border mt-1 pt-2 flex items-center justify-between">
               <div className="min-w-0">
                 <p className="font-semibold text-foreground truncate">{user.email}</p>
                 <p className="uppercase tracking-wider text-amber-500 font-bold">{user.role || 'Administrator'}</p>
@@ -332,7 +334,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <h2 className="text-sm font-semibold text-foreground">
               {NAV_MODULES.find((m) => isActive(m.href, m.exact))?.label ?? 'Admin'}
             </h2>
-            <p className="text-[10px] text-muted-foreground font-mono">
+            <p className="text-xs text-muted-foreground font-mono">
               {pathname}
             </p>
           </div>
@@ -356,7 +358,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   <Sun size={13} className="text-amber-600 fill-amber-600/20" />
                 )}
               </div>
-              <span className="text-[11px] font-semibold tracking-wider uppercase text-muted-foreground group-hover:text-foreground">
+              <span className="text-xs font-semibold tracking-wider uppercase text-muted-foreground group-hover:text-foreground">
                 {adminTheme === 'dark' ? 'Dark Mode' : 'Light Mode'}
               </span>
             </button>

@@ -145,7 +145,7 @@ export default async function HomePage() {
         <section className="mx-auto max-w-7xl px-4 pt-8 pb-4 sm:px-6 lg:px-8 w-full">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <span className="text-primary text-[10px] uppercase font-bold tracking-widest block">Limited Seasonal Offers</span>
+              <span className="text-primary text-xs uppercase font-bold tracking-widest block">Limited Seasonal Offers</span>
               <h2 className="font-serif text-2xl font-bold tracking-tight">Promotional Spotlights</h2>
             </div>
             <Link href="/catalog" className="text-xs font-semibold text-primary hover:underline">
@@ -169,11 +169,11 @@ export default async function HomePage() {
                 {/* Top Badge */}
                 <div className="relative z-10 p-5 flex items-start justify-between">
                   {banner.size_description ? (
-                    <span className="text-[10px] font-bold font-mono uppercase tracking-wider bg-black/60 backdrop-blur-sm text-primary px-2.5 py-1 rounded border border-primary/30">
+                    <span className="text-xs font-bold font-mono uppercase tracking-wider bg-black/60 backdrop-blur-sm text-primary px-2.5 py-1 rounded border border-primary/30">
                       {banner.size_description}
                     </span>
                   ) : (
-                    <span className="text-[10px] font-bold uppercase tracking-wider bg-primary text-primary-foreground px-2.5 py-1 rounded">
+                    <span className="text-xs font-bold uppercase tracking-wider bg-primary text-primary-foreground px-2.5 py-1 rounded">
                       Promo
                     </span>
                   )}
@@ -209,7 +209,7 @@ export default async function HomePage() {
       {/* Dynamic Shop by Category Grid (Managed from Admin Panel) */}
       <section className="mx-auto max-w-7xl px-4 py-10 sm:py-16 sm:px-6 lg:px-8 w-full space-y-6 sm:space-y-10">
         <div className="text-center space-y-2">
-          <span className="text-primary text-[10px] uppercase font-bold tracking-widest block">Curated Collections</span>
+          <span className="text-primary text-xs uppercase font-bold tracking-widest block">Curated Collections</span>
           <h2 className="font-serif text-2xl sm:text-3xl font-bold tracking-tight">Shop by Category</h2>
           <div className="h-0.5 w-16 bg-primary mx-auto"></div>
           <p className="text-xs sm:text-sm text-muted-foreground">Browse handcrafted abayas, festive collections, and matching shaylas</p>
@@ -232,7 +232,7 @@ export default async function HomePage() {
                 <div>
                   <h3 className="font-serif text-lg sm:text-2xl font-bold">{cat.name}</h3>
                   {cat.description && (
-                    <p className="text-[11px] sm:text-xs text-zinc-300 font-light line-clamp-1">{cat.description}</p>
+                    <p className="text-xs sm:text-xs text-zinc-300 font-light line-clamp-1">{cat.description}</p>
                   )}
                 </div>
                 <span className="text-xs sm:text-sm border-b border-primary text-primary font-medium tracking-wider group-hover:pl-2 transition-all">
@@ -247,7 +247,7 @@ export default async function HomePage() {
       {/* Featured Products Grid */}
       <section className="mx-auto max-w-7xl px-4 py-6 sm:py-8 sm:px-6 lg:px-8 w-full space-y-6 sm:space-y-10">
         <div className="text-center space-y-2">
-          <span className="text-primary text-[10px] uppercase font-bold tracking-widest block">Signature Pieces</span>
+          <span className="text-primary text-xs uppercase font-bold tracking-widest block">Signature Pieces</span>
           <h2 className="font-serif text-2xl sm:text-3xl font-bold tracking-tight">Featured Masterpieces</h2>
           <div className="h-0.5 w-16 bg-primary mx-auto"></div>
           <p className="text-xs sm:text-sm text-muted-foreground">Curated selections of our finest work</p>
@@ -264,7 +264,7 @@ export default async function HomePage() {
                   className="w-full h-full object-cover object-center group-hover:scale-105 transition duration-500"
                 />
                 {prod.min_price < prod.min_original_price && (
-                  <span className="absolute left-2 top-2 sm:left-3 sm:top-3 bg-red-600 text-white font-bold text-[10px] sm:text-xs px-2 py-0.5 sm:px-2.5 sm:py-1 rounded shadow-md tracking-wider">
+                  <span className="absolute left-2 top-2 sm:left-3 sm:top-3 bg-red-600 text-white font-bold text-xs sm:text-xs px-2 py-0.5 sm:px-2.5 sm:py-1 rounded shadow-md tracking-wider">
                     {Math.round(((prod.min_original_price - prod.min_price) / prod.min_original_price) * 100)}% OFF
                   </span>
                 )}
@@ -276,7 +276,7 @@ export default async function HomePage() {
                   <h3 className="font-medium text-xs sm:text-sm text-foreground line-clamp-1 group-hover:text-primary transition">
                     <Link href={`/product/${prod.slug}`}>{prod.name}</Link>
                   </h3>
-                  <p className="text-[11px] sm:text-xs text-muted-foreground line-clamp-2 leading-relaxed font-light hidden sm:block">
+                  <p className="text-xs sm:text-xs text-muted-foreground line-clamp-2 leading-relaxed font-light hidden sm:block">
                     {prod.short_description}
                   </p>
                 </div>
@@ -288,7 +288,7 @@ export default async function HomePage() {
                   />
                   <Link
                     href={`/product/${prod.slug}`}
-                    className="text-[11px] sm:text-xs text-primary font-medium hover:text-foreground transition underline sm:no-underline sm:border-b sm:border-primary"
+                    className="text-xs sm:text-xs text-primary font-medium hover:text-foreground transition underline sm:no-underline sm:border-b sm:border-primary"
                   >
                     Details &rarr;
                   </Link>

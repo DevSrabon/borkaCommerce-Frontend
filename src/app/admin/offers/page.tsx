@@ -521,7 +521,7 @@ export default function AdminOffersPage() {
                             </span>
                             <div>
                               <span>{off.name}</span>
-                              <span className="block text-[10px] text-muted-foreground font-mono font-normal">
+                              <span className="block text-xs text-muted-foreground font-mono font-normal">
                                 {off.type}
                               </span>
                             </div>
@@ -530,15 +530,15 @@ export default function AdminOffersPage() {
 
                         <td className="py-3.5 px-4">
                           {isAll ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-primary/10 text-primary border border-primary/20">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-primary/10 text-primary border border-primary/20">
                               <Layers size={11} /> All Products
                             </span>
                           ) : hasCategories ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
                               <FolderTree size={11} /> {off.categories!.length} {off.categories!.length === 1 ? 'Category' : 'Categories'}
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
                               <Package size={11} /> {off.products!.length} Variants
                             </span>
                           )}
@@ -551,7 +551,7 @@ export default function AdminOffersPage() {
                         </td>
 
                         <td className="py-3.5 px-4 text-muted-foreground">
-                          <div className="flex items-center gap-1 text-[11px]">
+                          <div className="flex items-center gap-1 text-xs">
                             <Calendar size={12} className="text-muted-foreground/70" />
                             <span>
                               {new Date(off.start_date).toLocaleDateString()} &ndash; {new Date(off.end_date).toLocaleDateString()}
@@ -565,7 +565,7 @@ export default function AdminOffersPage() {
 
                         <td className="py-3.5 px-4 text-center">
                           <span
-                            className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
+                            className={`px-2 py-0.5 rounded text-xs font-bold border ${
                               off.status === 'ACTIVE'
                                 ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
                                 : 'bg-zinc-500/10 text-zinc-500 border-zinc-500/20'
@@ -651,13 +651,13 @@ export default function AdminOffersPage() {
                         {c.usage_limit ? `${c.usage_limit} claims` : 'Unlimited'}
                       </td>
 
-                      <td className="py-3.5 px-4 text-muted-foreground text-[11px]">
+                      <td className="py-3.5 px-4 text-muted-foreground text-xs">
                         {new Date(c.start_date).toLocaleDateString()} &ndash; {new Date(c.end_date).toLocaleDateString()}
                       </td>
 
                       <td className="py-3.5 px-4 text-center">
                         <span
-                          className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
+                          className={`px-2 py-0.5 rounded text-xs font-bold border ${
                             c.status
                               ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
                               : 'bg-red-500/10 text-red-600 border-red-500/20'
@@ -842,7 +842,7 @@ export default function AdminOffersPage() {
                   >
                     <Layers size={16} />
                     <span className="mt-2 text-xs">All Products</span>
-                    <span className="text-[10px] font-normal opacity-80">Storewide catalog</span>
+                    <span className="text-xs font-normal opacity-80">Storewide catalog</span>
                   </button>
 
                   <button
@@ -856,7 +856,7 @@ export default function AdminOffersPage() {
                   >
                     <FolderTree size={16} />
                     <span className="mt-2 text-xs">Specific Categories</span>
-                    <span className="text-[10px] font-normal opacity-80">Target collections</span>
+                    <span className="text-xs font-normal opacity-80">Target collections</span>
                   </button>
 
                   <button
@@ -870,14 +870,14 @@ export default function AdminOffersPage() {
                   >
                     <Package size={16} />
                     <span className="mt-2 text-xs">Specific Products</span>
-                    <span className="text-[10px] font-normal opacity-80">Choose items</span>
+                    <span className="text-xs font-normal opacity-80">Choose items</span>
                   </button>
                 </div>
 
                 {/* Sub-selector for CATEGORIES */}
                 {offerForm.target_type === 'CATEGORIES' && (
                   <div className="p-3 bg-muted/30 border border-border rounded-lg space-y-2 animate-in fade-in">
-                    <p className="text-[11px] font-medium text-muted-foreground">
+                    <p className="text-xs font-medium text-muted-foreground">
                       Select which categories will receive this discount:
                     </p>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-40 overflow-y-auto pt-1">
@@ -966,7 +966,7 @@ export default function AdminOffersPage() {
                         );
                       })}
                     </div>
-                    <p className="text-[10px] text-muted-foreground text-right">
+                    <p className="text-xs text-muted-foreground text-right">
                       {offerForm.selected_products.length} product(s) selected
                     </p>
                   </div>

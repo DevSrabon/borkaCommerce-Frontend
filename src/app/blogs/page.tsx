@@ -295,7 +295,7 @@ export default function BlogsPage() {
                           e.preventDefault();
                           setSelectedCategory(blog.category || 'Abaya');
                         }}
-                        className="absolute top-3 left-3 px-3 py-1 bg-emerald-800 hover:bg-emerald-700 text-white text-[11px] font-semibold rounded-full shadow-md transition cursor-pointer"
+                        className="absolute top-3 left-3 px-3 py-1 bg-emerald-800 hover:bg-emerald-700 text-white text-xs font-semibold rounded-full shadow-md transition cursor-pointer"
                         title={`Filter by ${blog.category || 'Abaya'}`}
                       >
                         {blog.category || 'Abaya'}
@@ -310,7 +310,7 @@ export default function BlogsPage() {
                           <span className="flex items-center gap-1 font-medium text-foreground/80">
                             {formatDate(blog.published_at)}
                           </span>
-                          <span className="flex items-center gap-1 text-[11px]">
+                          <span className="flex items-center gap-1 text-xs">
                             <Eye size={13} className="text-muted-foreground" />
                             <span>{blog.views}</span>
                           </span>
@@ -402,7 +402,7 @@ export default function BlogsPage() {
                           className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-[10px] text-muted-foreground">
+                        <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground">
                           Post
                         </div>
                       )}
@@ -412,7 +412,7 @@ export default function BlogsPage() {
                       <h3 className="text-xs font-bold text-foreground group-hover:text-primary transition line-clamp-2 leading-tight">
                         {item.title}
                       </h3>
-                      <p className="text-[11px] text-muted-foreground">
+                      <p className="text-xs text-muted-foreground">
                         {formatShortDate(item.published_at)}
                       </p>
                     </div>
@@ -442,7 +442,7 @@ export default function BlogsPage() {
                           className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-[10px] text-muted-foreground">
+                        <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground">
                           Post
                         </div>
                       )}
@@ -452,7 +452,7 @@ export default function BlogsPage() {
                       <h3 className="text-xs font-bold text-foreground group-hover:text-primary transition line-clamp-2 leading-tight">
                         {item.title}
                       </h3>
-                      <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+                      <p className="text-xs text-muted-foreground flex items-center gap-1">
                         <Eye size={11} />
                         <span>{item.views} views</span>
                       </p>

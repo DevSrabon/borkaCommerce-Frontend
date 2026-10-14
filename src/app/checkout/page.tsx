@@ -302,7 +302,7 @@ export default function CheckoutPage() {
               <div className="space-y-1 relative" ref={countryDropdownRef}>
                 <label className="text-xs font-semibold text-muted-foreground uppercase flex items-center justify-between">
                   <span>Country</span>
-                  <span className="text-[10px] text-primary font-normal">Searchable Dropdown</span>
+                  <span className="text-xs text-primary font-normal">Searchable Dropdown</span>
                 </label>
                 <button
                   type="button"
@@ -425,7 +425,7 @@ export default function CheckoutPage() {
                   <CreditCard size={20} className="text-primary" /> Payment Method
                 </h2>
                 {!isCodAvailable && (
-                  <span className="text-[11px] text-amber-500 font-semibold px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20">
+                  <span className="text-xs text-amber-500 font-semibold px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20">
                     COD Restricted
                   </span>
                 )}
@@ -524,7 +524,7 @@ export default function CheckoutPage() {
                   <button
                     type="button"
                     onClick={() => { dispatch(removeCoupon()); setCheckoutError(''); }}
-                    className="self-start text-[10px] font-semibold underline text-red-400 hover:text-red-300 cursor-pointer"
+                    className="self-start text-xs font-semibold underline text-red-400 hover:text-red-300 cursor-pointer"
                   >
                     Remove coupon "{coupon.code}"
                   </button>
@@ -552,7 +552,7 @@ export default function CheckoutPage() {
                 <img src={item.image || ''} alt="" className="h-16 w-12 object-cover rounded border border-border" />
                 <div className="flex-1 min-w-0">
                   <h4 className="text-xs font-semibold text-foreground line-clamp-1">{item.name}</h4>
-                  <p className="text-[10px] text-muted font-light">Qty: {item.quantity}</p>
+                  <p className="text-xs text-muted font-light">Qty: {item.quantity}</p>
                 </div>
                 <span className="text-xs font-semibold">{formatPrice(item.discounted_price * item.quantity)}</span>
               </div>
@@ -574,21 +574,21 @@ export default function CheckoutPage() {
               <div>
                 <span className="text-muted block">Shipping</span>
                 {shippingInfo?.applied_rule && (
-                  <span className="text-[10px] text-green-500 block font-normal">
+                  <span className="text-xs text-green-500 block font-normal">
                     ✓ {shippingInfo.applied_rule}
                   </span>
                 )}
               </div>
               <div className="text-right">
                 {shipping === 0 ? (
-                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-green-500/10 text-green-500 border border-green-500/20">
+                  <span className="px-2 py-0.5 rounded text-xs font-bold bg-green-500/10 text-green-500 border border-green-500/20">
                     FREE
                   </span>
                 ) : (
                   <div className="flex flex-col items-end">
                     <span className="text-foreground font-medium">{formatPrice(shipping)}</span>
                     {shippingInfo && shippingInfo.discount_amount > 0 && (
-                      <span className="text-[9px] text-muted line-through">
+                      <span className="text-xs text-muted line-through">
                         {formatPrice(shippingInfo.base_fee)}
                       </span>
                     )}
@@ -598,7 +598,7 @@ export default function CheckoutPage() {
             </div>
 
             {shippingInfo?.threshold_rule && (
-              <div className="p-2 rounded bg-amber-500/10 border border-amber-500/20 text-amber-500 text-[11px] font-medium flex items-center gap-1.5">
+              <div className="p-2 rounded bg-amber-500/10 border border-amber-500/20 text-amber-500 text-xs font-medium flex items-center gap-1.5">
                 <span>✈ {shippingInfo.threshold_rule}</span>
               </div>
             )}

@@ -64,6 +64,7 @@ interface Category {
 
 interface APIProduct {
   id: string;
+  product_number?: string;
   name: string;
   slug: string;
   status: string;
@@ -102,6 +103,7 @@ export default function AdminProductsPage() {
   const [editingProduct, setEditingProduct] = useState<any | null>(null);
 
   const emptyForm = {
+    product_number: '',
     name: '',
     slug: '',
     description: '',
@@ -176,13 +178,14 @@ export default function AdminProductsPage() {
 
       // Search filter (name, slug, tags, variant SKUs)
       if (debouncedProductSearch) {
+        const prodNoMatch = (p as any).product_number?.toLowerCase().includes(debouncedProductSearch);
         const nameMatch = p.name?.toLowerCase().includes(debouncedProductSearch);
         const slugMatch = p.slug?.toLowerCase().includes(debouncedProductSearch);
         const tagMatch = (p as any).tags?.toLowerCase().includes(debouncedProductSearch);
         const skuMatch = p.variants?.some((v) =>
           v.sku?.toLowerCase().includes(debouncedProductSearch)
         );
-        if (!nameMatch && !slugMatch && !tagMatch && !skuMatch) {
+        if (!nameMatch && !slugMatch && !tagMatch && !skuMatch && !prodNoMatch) {
           return false;
         }
       }
@@ -539,6 +542,7 @@ export default function AdminProductsPage() {
         setSlugMode('manual');
         setSkuMode('manual');
         setForm({
+          product_number: fullProd.product_number || '',
           name: fullProd.name,
           slug: fullProd.slug,
           description: fullProd.description || '',
@@ -795,11 +799,11 @@ export default function AdminProductsPage() {
   const renderImagePanel = (radioName: string) => (
     <div className="space-y-2 col-span-2">
       <div className="flex items-center gap-2">
-        <label className="text-[10px] font-semibold text-muted-foreground uppercase">
+        <label className="text-xs font-semibold text-muted-foreground uppercase">
           Product Images <span className="text-red-500">*</span>
         </label>
         {images.length === 0 && (
-          <span className="text-[10px] text-red-400 font-medium">At least one image required</span>
+          <span className="text-xs text-red-400 font-medium">At least one image required</span>
         )}
       </div>
       <div className="flex flex-col gap-4 border border-dashed border-border p-5 rounded-md bg-zinc-50/5">
@@ -830,7 +834,7 @@ export default function AdminProductsPage() {
                     i === idx ? { ...item, alt_text: e.target.value } : item
                   )))}
                 />
-                <div className="flex items-center justify-between w-full mt-2 text-[9px]">
+                <div className="flex items-center justify-between w-full mt-2 text-xs">
                   <label className="flex items-center gap-1 cursor-pointer">
                     <input
                       type="radio" name={radioName} checked={img.is_thumbnail}
@@ -858,32 +862,32 @@ export default function AdminProductsPage() {
 
   const renderSeoPanel = () => (
     <div className="col-span-2 border border-border rounded-md p-4 space-y-4 bg-background">
-      <h4 className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
+      <h4 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
         <Tag size={12} /> SEO / Search Engine Optimization
       </h4>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-1 sm:col-span-2">
-          <label className="text-[10px] font-semibold text-muted-foreground uppercase">SEO Title</label>
+          <label className="text-xs font-semibold text-muted-foreground uppercase">SEO Title</label>
           <input
             type="text" name="seo_title" maxLength={70}
             placeholder="Recommended: 50–70 characters"
             className="w-full text-xs bg-card border border-border rounded px-3 py-2.5 focus:outline-none"
             value={form.seo_title} onChange={handleInputChange}
           />
-          <span className="text-[9px] text-muted-foreground">{form.seo_title.length}/70</span>
+          <span className="text-xs text-muted-foreground">{form.seo_title.length}/70</span>
         </div>
         <div className="space-y-1 sm:col-span-2">
-          <label className="text-[10px] font-semibold text-muted-foreground uppercase">SEO Description</label>
+          <label className="text-xs font-semibold text-muted-foreground uppercase">SEO Description</label>
           <textarea
             name="seo_description" rows={2} maxLength={160}
             placeholder="Recommended: 120–160 characters"
             className="w-full text-xs bg-card border border-border rounded px-3 py-2.5 focus:outline-none resize-none"
             value={form.seo_description} onChange={handleInputChange}
           />
-          <span className="text-[9px] text-muted-foreground">{form.seo_description.length}/160</span>
+          <span className="text-xs text-muted-foreground">{form.seo_description.length}/160</span>
         </div>
         <div className="space-y-1 sm:col-span-2">
-          <label className="text-[10px] font-semibold text-muted-foreground uppercase">SEO Keywords</label>
+          <label className="text-xs font-semibold text-muted-foreground uppercase">SEO Keywords</label>
           <input
             type="text" name="seo_keywords"
             placeholder="Comma-separated: abaya, modest wear, dubai fashion"
@@ -907,7 +911,7 @@ export default function AdminProductsPage() {
               <Layers size={14} className="text-primary" />
               Dynamic Product Attributes
             </h4>
-            <p className="text-[11px] text-muted-foreground mt-0.5">
+            <p className="text-xs text-muted-foreground mt-0.5">
               Select which attributes apply to this product&apos;s variants (e.g. Color, Size, Fabric, Length, Sleeve).
             </p>
           </div>
@@ -933,7 +937,7 @@ export default function AdminProductsPage() {
 
         {/* Active attribute tags */}
         <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-border/50">
-          <span className="text-[10px] uppercase font-semibold text-muted-foreground mr-1">Active Attributes:</span>
+          <span className="text-xs uppercase font-semibold text-muted-foreground mr-1">Active Attributes:</span>
           {allActiveAttributeNames.map(attrName => (
             <span
               key={attrName}
@@ -951,7 +955,7 @@ export default function AdminProductsPage() {
             </span>
           ))}
           {allActiveAttributeNames.length === 0 && (
-            <span className="text-[11px] text-amber-500 italic">
+            <span className="text-xs text-amber-500 italic">
               No attributes configured. Click &ldquo;+ Add Attribute to Variants&rdquo; above to add options.
             </span>
           )}
@@ -964,7 +968,7 @@ export default function AdminProductsPage() {
           <h3 className="text-sm font-semibold uppercase tracking-wider text-foreground">
             Product Variants ({variants.length})
           </h3>
-          <p className="text-[11px] text-muted-foreground">Each variant defines specific SKU, price, stock and attribute values.</p>
+          <p className="text-xs text-muted-foreground">Each variant defines specific SKU, price, stock and attribute values.</p>
         </div>
         <button
           type="button" onClick={handleAddVariant}
@@ -981,26 +985,26 @@ export default function AdminProductsPage() {
             {/* Top row: SKU, Price, Compare Price, Qty */}
             <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-3 pr-8">
               <div className="space-y-1">
-                <label className="text-[9px] font-semibold text-muted-foreground uppercase">SKU Code</label>
+                <label className="text-xs font-semibold text-muted-foreground uppercase">SKU Code</label>
                 <input type="text" required
                   className="w-full text-xs bg-card border border-border rounded-lg px-2.5 py-2 focus:outline-none text-foreground font-mono"
                   value={v.sku} onChange={e => handleVariantChange(varIdx, 'sku', e.target.value)} />
               </div>
               <div className="space-y-1">
-                <label className="text-[9px] font-semibold text-muted-foreground uppercase">Price (AED)</label>
+                <label className="text-xs font-semibold text-muted-foreground uppercase">Price (AED)</label>
                 <input type="number" required
                   className="w-full text-xs bg-card border border-border rounded-lg px-2.5 py-2 focus:outline-none text-foreground font-semibold"
                   value={v.price} onChange={e => handleVariantChange(varIdx, 'price', e.target.value)} />
               </div>
               <div className="space-y-1">
-                <label className="text-[9px] font-semibold text-muted-foreground uppercase">Compare Price (Optional)</label>
+                <label className="text-xs font-semibold text-muted-foreground uppercase">Compare Price (Optional)</label>
                 <input type="number"
                   placeholder="e.g. 300"
                   className="w-full text-xs bg-card border border-border rounded-lg px-2.5 py-2 focus:outline-none text-foreground"
                   value={v.compare_price || ''} onChange={e => handleVariantChange(varIdx, 'compare_price', e.target.value ? Number(e.target.value) : null)} />
               </div>
               <div className="space-y-1">
-                <label className="text-[9px] font-semibold text-muted-foreground uppercase">Stock Qty</label>
+                <label className="text-xs font-semibold text-muted-foreground uppercase">Stock Qty</label>
                 <input type="number" required
                   className="w-full text-xs bg-card border border-border rounded-lg px-2.5 py-2 focus:outline-none text-foreground"
                   value={v.initial_quantity} onChange={e => handleVariantChange(varIdx, 'initial_quantity', e.target.value)} />
@@ -1010,7 +1014,7 @@ export default function AdminProductsPage() {
             {/* Middle row: Dynamic Attributes for this Variant */}
             <div className="border-t border-border/70 pt-3 space-y-2">
               <div className="flex items-center justify-between">
-                <label className="text-[10px] font-semibold text-muted-foreground uppercase flex items-center gap-1.5">
+                <label className="text-xs font-semibold text-muted-foreground uppercase flex items-center gap-1.5">
                   <Layers size={12} className="text-primary" />
                   Variant Attributes ({v.attributes.length})
                 </label>
@@ -1020,7 +1024,7 @@ export default function AdminProductsPage() {
                   onChange={(e) => {
                     if (e.target.value) handleAddAttributeToVariant(varIdx, e.target.value);
                   }}
-                  className="text-[10px] bg-card border border-border rounded px-2 py-1 text-muted-foreground hover:text-foreground cursor-pointer focus:outline-none"
+                  className="text-xs bg-card border border-border rounded px-2 py-1 text-muted-foreground hover:text-foreground cursor-pointer focus:outline-none"
                 >
                   <option value="">+ Add Attribute...</option>
                   {dbAttributes
@@ -1045,7 +1049,7 @@ export default function AdminProductsPage() {
                     return (
                       <div key={attrIdx} className="bg-card border border-border p-2.5 rounded-lg space-y-1.5 relative group shadow-xs">
                         <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-bold text-primary uppercase tracking-wider truncate">
+                          <span className="text-xs font-bold text-primary uppercase tracking-wider truncate">
                             {attr.name}
                           </span>
                           <button
@@ -1090,12 +1094,12 @@ export default function AdminProductsPage() {
             {/* Bottom row: Variant images */}
             <div className="sm:col-span-4 border-t border-border pt-3 mt-1 flex flex-col gap-2">
               <div className="flex items-center gap-3">
-                <label className="text-[10px] font-semibold text-muted-foreground uppercase">Variant Images</label>
+                <label className="text-xs font-semibold text-muted-foreground uppercase">Variant Images</label>
                 <div className="relative">
                   <input type="file" accept="image/*" multiple
                     onChange={e => handleVariantImagesUpload(e, varIdx)}
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
-                  <button type="button" className="px-2.5 py-1 border border-border rounded text-[10px] hover:bg-accent flex items-center gap-1 text-foreground cursor-pointer">
+                  <button type="button" className="px-2.5 py-1 border border-border rounded text-xs hover:bg-accent flex items-center gap-1 text-foreground cursor-pointer">
                     <Upload size={10} /> Upload
                   </button>
                 </div>
@@ -1109,7 +1113,7 @@ export default function AdminProductsPage() {
                         onClick={() => setVariants(prev => prev.map((item, i) =>
                           i === varIdx ? { ...item, images: (item.images || []).filter((_, j) => j !== imgIdx) } : item
                         ))}
-                        className="absolute inset-0 bg-red-500/80 text-white flex items-center justify-center text-[10px] font-bold opacity-0 group-hover:opacity-100 transition cursor-pointer">
+                        className="absolute inset-0 bg-red-500/80 text-white flex items-center justify-center text-xs font-bold opacity-0 group-hover:opacity-100 transition cursor-pointer">
                         ×
                       </button>
                     </div>
@@ -1183,7 +1187,7 @@ export default function AdminProductsPage() {
                     <>
                       <input type="text" value={editingAttrValue.value}
                         onChange={e => setEditingAttrValue({ ...editingAttrValue, value: e.target.value })}
-                        className="text-[11px] bg-transparent focus:outline-none w-16" autoFocus />
+                        className="text-xs bg-transparent focus:outline-none w-16" autoFocus />
                       <button type="button" onClick={handleUpdateAttributeValue}
                         className="text-green-500 hover:text-green-600 cursor-pointer"><Save size={10} /></button>
                       <button type="button" onClick={() => setEditingAttrValue(null)}
@@ -1191,7 +1195,7 @@ export default function AdminProductsPage() {
                     </>
                   ) : (
                     <>
-                      <span className="text-[11px]">{val.value}</span>
+                      <span className="text-xs">{val.value}</span>
                       <button type="button" onClick={() => setEditingAttrValue({ id: val.id, value: val.value })}
                         className="text-primary hover:text-primary/80 cursor-pointer"><Pencil size={9} /></button>
                       <button type="button" onClick={() => handleDeleteAttributeValue(val.id)}
@@ -1298,19 +1302,30 @@ export default function AdminProductsPage() {
   const renderProductFormFields = (radioName: string) => (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
       <div className="space-y-1">
-        <label className="text-[10px] font-semibold text-muted-foreground uppercase">Product Name</label>
+        <label className="text-xs font-semibold text-muted-foreground uppercase flex items-center justify-between">
+          <span>Product Name</span>
+        </label>
         <input type="text" name="name" required
           className="w-full text-xs bg-background border border-border rounded px-3 py-2.5 focus:outline-none"
           value={form.name} onChange={handleInputChange} />
       </div>
       <div className="space-y-1">
-        <label className="text-[10px] font-semibold text-muted-foreground uppercase">URL Slug</label>
+        <label className="text-xs font-semibold text-muted-foreground uppercase flex items-center justify-between">
+          <span>Product No</span>
+          <span className="text-xs text-primary font-normal">(e.g. P1000)</span>
+        </label>
+        <input type="text" name="product_number" placeholder="e.g. P1000"
+          className="w-full text-xs bg-background border border-border rounded px-3 py-2.5 font-mono text-primary font-bold focus:outline-none"
+          value={(form as any).product_number || ''} onChange={handleInputChange} />
+      </div>
+      <div className="space-y-1">
+        <label className="text-xs font-semibold text-muted-foreground uppercase">URL Slug</label>
         <input type="text" name="slug" required
           className="w-full text-xs bg-background border border-border rounded px-3 py-2.5 focus:outline-none"
           value={form.slug} onChange={handleInputChange} />
       </div>
       <div className="space-y-1">
-        <label className="text-[10px] font-semibold text-muted-foreground uppercase">Publishing Status</label>
+        <label className="text-xs font-semibold text-muted-foreground uppercase">Publishing Status</label>
         <select name="status"
           className="w-full text-xs bg-background border border-border rounded px-3 py-2.5 text-foreground focus:outline-none"
           value={form.status} onChange={handleInputChange}>
@@ -1320,17 +1335,17 @@ export default function AdminProductsPage() {
         </select>
       </div>
       <div className="space-y-1">
-        <label className="text-[10px] font-semibold text-muted-foreground uppercase">SKU Code Prefix</label>
+        <label className="text-xs font-semibold text-muted-foreground uppercase">SKU Code Prefix</label>
         <input type="text" name="sku_prefix" placeholder="e.g. ABA-NID"
           className="w-full text-xs bg-background border border-border rounded px-3 py-2.5 focus:outline-none"
           value={form.sku_prefix} onChange={handleInputChange} />
       </div>
       <div className="space-y-1 sm:col-span-2">
         <div className="flex items-center justify-between">
-          <label className="text-[10px] font-semibold text-muted-foreground uppercase flex items-center gap-1.5">
+          <label className="text-xs font-semibold text-muted-foreground uppercase flex items-center gap-1.5">
             <Video size={13} className="text-red-500" /> YouTube Video URL (Optional)
           </label>
-          <span className="text-[10px] text-muted-foreground">Supports watch, share, shorts &amp; embed links</span>
+          <span className="text-xs text-muted-foreground">Supports watch, share, shorts &amp; embed links</span>
         </div>
         <input
           type="url"
@@ -1342,7 +1357,7 @@ export default function AdminProductsPage() {
         />
         {form.video_url && getYoutubeEmbedUrl(form.video_url) && (
           <div className="mt-2 rounded-lg overflow-hidden border border-border bg-black/40 p-2.5 max-w-sm">
-            <p className="text-[10px] text-zinc-400 mb-1.5 flex items-center gap-1.5">
+            <p className="text-xs text-zinc-400 mb-1.5 flex items-center gap-1.5">
               <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
               <span className="font-semibold text-foreground">Live YouTube Preview:</span>
             </p>
@@ -1359,11 +1374,11 @@ export default function AdminProductsPage() {
         )}
       </div>
       <div className="space-y-1 sm:col-span-2">
-        <label className="text-[10px] font-semibold text-muted-foreground uppercase">Description</label>
+        <label className="text-xs font-semibold text-muted-foreground uppercase">Description</label>
         <RichTextEditor value={form.description} onChange={handleDescriptionChange} />
       </div>
       <div className="space-y-1 sm:col-span-2">
-        <label className="text-[10px] font-semibold text-muted-foreground uppercase">Tags (Comma-separated for search)</label>
+        <label className="text-xs font-semibold text-muted-foreground uppercase">Tags (Comma-separated for search)</label>
         <input type="text" name="tags" placeholder="e.g. modest, classic, abaya, ramadan"
           className="w-full text-xs bg-background border border-border rounded px-3 py-2.5 focus:outline-none"
           value={form.tags} onChange={handleInputChange} />
@@ -1373,7 +1388,7 @@ export default function AdminProductsPage() {
           <label className="text-xs font-semibold text-foreground block">
             Cash on Delivery (COD) Option
           </label>
-          <p className="text-[11px] text-muted-foreground">
+          <p className="text-xs text-muted-foreground">
             Allow customers to pay cash on delivery for this product. If turned off, customers must pay online before placing order.
           </p>
         </div>
@@ -1389,7 +1404,7 @@ export default function AdminProductsPage() {
         </label>
       </div>
       <div className="space-y-2 col-span-2">
-        <label className="text-[10px] font-semibold text-muted-foreground uppercase block">Categories</label>
+        <label className="text-xs font-semibold text-muted-foreground uppercase block">Categories</label>
         <div className="flex flex-wrap gap-4 pt-1">
           {categories.map(cat => (
             <label key={cat.id} className="flex items-center gap-2 text-xs cursor-pointer">
@@ -1402,7 +1417,7 @@ export default function AdminProductsPage() {
         </div>
       </div>
       <div className="space-y-2 col-span-2 border-t border-border pt-4">
-        <label className="text-[10px] font-semibold text-muted-foreground uppercase block">Related Categories (For related product suggestions)</label>
+        <label className="text-xs font-semibold text-muted-foreground uppercase block">Related Categories (For related product suggestions)</label>
         <div className="flex flex-wrap gap-4 pt-1">
           {categories.map(cat => (
             <label key={`related-${cat.id}`} className="flex items-center gap-2 text-xs cursor-pointer">
@@ -1443,13 +1458,24 @@ export default function AdminProductsPage() {
           <button
             id="btn-new-product"
             type="button"
-            onClick={() => {
+            onClick={async () => {
               const nextState = !showCreateForm;
               setShowCreateForm(nextState);
               setShowEditForm(false);
               setEditingProduct(null);
               resetForm();
               if (nextState) {
+                try {
+                  const res = await fetch(`${API_BASE_URL}/admin/products/next-number`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                  });
+                  if (res.ok) {
+                    const data = await res.json();
+                    if (data.next_product_number) {
+                      setForm((prev) => ({ ...prev, product_number: data.next_product_number }));
+                    }
+                  }
+                } catch {}
                 setTimeout(() => {
                   createFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }, 60);
@@ -1529,7 +1555,7 @@ export default function AdminProductsPage() {
             <div className="border-b border-border p-4 bg-background flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div className="flex items-center gap-3">
                 <h2 className="font-serif text-lg font-bold">Catalog Items Table</h2>
-                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-primary/10 text-primary border border-primary/20">
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20">
                   {filteredProducts.length} {filteredProducts.length === 1 ? 'item' : 'items'}
                   {filteredProducts.length !== products.length && ` (of ${products.length})`}
                 </span>
@@ -1607,6 +1633,7 @@ export default function AdminProductsPage() {
                   <thead>
                     <tr className="bg-background text-muted-foreground uppercase tracking-wider font-semibold border-b border-border">
                       <th className="p-4">Product Name</th>
+                      <th className="p-4">Product No</th>
                       <th className="p-4">Slug</th>
                       <th className="p-4">Starting Price</th>
                       <th className="p-4">Rating</th>
@@ -1637,16 +1664,25 @@ export default function AdminProductsPage() {
                                     className="w-full h-full object-cover"
                                   />
                                 ) : (
-                                  <div className="w-full h-full flex items-center justify-center text-[9px] text-muted-foreground font-semibold bg-muted/50">
+                                  <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground font-semibold bg-muted/50">
                                     No Img
                                   </div>
                                 )}
                               </div>
                               <div className="min-w-0">
                                 <p className="font-semibold text-foreground line-clamp-1">{p.name}</p>
-                                <p className="text-[10px] text-muted-foreground font-mono truncate">{p.variants?.[0]?.sku || ''}</p>
+                                <p className="text-xs text-muted-foreground font-mono truncate">{p.variants?.[0]?.sku || ''}</p>
                               </div>
                             </div>
+                          </td>
+                          <td className="p-4 font-mono font-bold text-primary">
+                            {(p as any).product_number ? (
+                              <span className="px-2 py-0.5 rounded bg-primary/10 border border-primary/20 text-primary">
+                                {(p as any).product_number}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground italic">None</span>
+                            )}
                           </td>
                           <td className="p-4 font-mono text-muted">{p.slug}</td>
                           <td className="p-4 font-semibold">AED {startingPrice}</td>
@@ -1654,40 +1690,40 @@ export default function AdminProductsPage() {
                             {rating.count > 0 ? (
                               <div className="flex items-center gap-1.5">
                                 <span className="text-amber-500 font-bold text-xs">★ {rating.average}</span>
-                                <span className="text-[10px] text-muted-foreground">({rating.count})</span>
+                                <span className="text-xs text-muted-foreground">({rating.count})</span>
                               </div>
                             ) : (
-                              <span className="text-[10px] text-muted-foreground italic">No reviews</span>
+                              <span className="text-xs text-muted-foreground italic">No reviews</span>
                             )}
                           </td>
                           <td className="p-4">
                             {totalStock <= 0 ? (
-                              <span className="px-2 py-0.5 rounded font-semibold text-[10px] bg-red-500/10 text-red-500 border border-red-500/20">
+                              <span className="px-2 py-0.5 rounded font-semibold text-xs bg-red-500/10 text-red-500 border border-red-500/20">
                                 Out of Stock (0)
                               </span>
                             ) : totalStock <= 5 ? (
-                              <span className="px-2 py-0.5 rounded font-semibold text-[10px] bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                              <span className="px-2 py-0.5 rounded font-semibold text-xs bg-amber-500/10 text-amber-500 border border-amber-500/20">
                                 Low Stock ({totalStock})
                               </span>
                             ) : (
-                              <span className="px-2 py-0.5 rounded font-semibold text-[10px] bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                              <span className="px-2 py-0.5 rounded font-semibold text-xs bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
                                 In Stock ({totalStock})
                               </span>
                             )}
                           </td>
                           <td className="p-4">
                             {(p as any).is_cod_allowed !== false ? (
-                              <span className="px-2 py-0.5 rounded font-semibold text-[10px] bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                              <span className="px-2 py-0.5 rounded font-semibold text-xs bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
                                 Available
                               </span>
                             ) : (
-                              <span className="px-2 py-0.5 rounded font-semibold text-[10px] bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                              <span className="px-2 py-0.5 rounded font-semibold text-xs bg-amber-500/10 text-amber-500 border border-amber-500/20">
                                 Prepaid Only
                               </span>
                             )}
                           </td>
                           <td className="p-4">
-                            <span className={`px-2 py-0.5 rounded font-semibold text-[10px] border ${
+                            <span className={`px-2 py-0.5 rounded font-semibold text-xs border ${
                               p.status === 'PUBLISHED'
                                 ? 'bg-green-500/10 text-green-500 border-green-500/20'
                                 : 'bg-zinc-500/10 text-zinc-500 border-zinc-500/20'

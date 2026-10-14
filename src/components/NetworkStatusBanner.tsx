@@ -123,11 +123,11 @@ export default function NetworkStatusBanner() {
                 <h4 className="text-xs sm:text-sm font-bold tracking-wide text-red-200">
                   No Internet Connection
                 </h4>
-                <span className="hidden sm:inline-block px-1.5 py-0.5 rounded text-[10px] uppercase font-semibold bg-red-900/60 text-red-300 border border-red-700/60">
+                <span className="hidden sm:inline-block px-1.5 py-0.5 rounded text-xs uppercase font-semibold bg-red-900/60 text-red-300 border border-red-700/60">
                   Offline
                 </span>
               </div>
-              <p className="text-[11px] sm:text-xs text-stone-300 truncate sm:whitespace-normal">
+              <p className="text-xs sm:text-xs text-stone-300 truncate sm:whitespace-normal">
                 ইন্টারনেট সংযোগ নেই • Please check your network connection
               </p>
             </div>
@@ -157,11 +157,11 @@ export default function NetworkStatusBanner() {
                 <h4 className="text-xs sm:text-sm font-bold tracking-wide text-emerald-200">
                   Connection Restored
                 </h4>
-                <span className="px-1.5 py-0.5 rounded text-[10px] uppercase font-semibold bg-emerald-900/60 text-emerald-300 border border-emerald-700/60">
+                <span className="px-1.5 py-0.5 rounded text-xs uppercase font-semibold bg-emerald-900/60 text-emerald-300 border border-emerald-700/60">
                   Online
                 </span>
               </div>
-              <p className="text-[11px] sm:text-xs text-stone-300">
+              <p className="text-xs sm:text-xs text-stone-300">
                 ইন্টারনেট সংযোগ পুনরায় চালু হয়েছে • You are back online
               </p>
             </div>

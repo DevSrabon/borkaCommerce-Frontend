@@ -24,7 +24,7 @@ export function PriceDisplay({ aedPrice, aedCompare, className, compareClassName
         {formatPrice(aedPrice)}
       </span>
       {aedCompare && aedCompare > aedPrice && (
-        <span className={`text-muted-foreground line-through text-[11px] ${compareClassName || ''}`}>
+        <span className={`text-muted-foreground line-through text-xs ${compareClassName || ''}`}>
           {formatPrice(aedCompare)}
         </span>
       )}
@@ -53,7 +53,7 @@ export function DiscountedPrice({ discountedAed, originalAed, offerName, size = 
           <span className={`font-semibold text-primary ${sizeClass}`}>
             {formatPrice(discountedAed)}
           </span>
-          <span className="text-muted-foreground line-through text-[11px]">
+          <span className="text-muted-foreground line-through text-xs">
             {formatPrice(originalAed)}
           </span>
         </div>
@@ -63,7 +63,7 @@ export function DiscountedPrice({ discountedAed, originalAed, offerName, size = 
         </span>
       )}
       {hasDiscount && offerName && (
-        <p className="text-[10px] text-primary font-semibold uppercase tracking-wider">{offerName}</p>
+        <p className="text-xs text-primary font-semibold uppercase tracking-wider">{offerName}</p>
       )}
     </div>
   );

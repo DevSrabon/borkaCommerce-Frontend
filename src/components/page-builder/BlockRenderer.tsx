@@ -297,7 +297,7 @@ export default function BlockRenderer({
               {/* Text Column */}
               <div className={`space-y-4 sm:space-y-6 ${isMobile && reverseOnMobile ? 'order-first' : ''} ${!isMobile && !isImgLeft ? 'lg:col-start-1' : ''}`}>
                 {data.subheading && (
-                  <span className="text-[11px] sm:text-xs font-bold tracking-widest uppercase text-primary block">
+                  <span className="text-xs sm:text-xs font-bold tracking-widest uppercase text-primary block">
                     {data.subheading}
                   </span>
                 )}
@@ -364,7 +364,7 @@ export default function BlockRenderer({
                   <div className={`font-serif ${isMobile ? 'text-2xl' : 'text-3xl sm:text-4xl md:text-5xl'} font-extrabold text-primary mb-1 tracking-tight`}>
                     {st.number}
                   </div>
-                  <div className="text-[11px] sm:text-xs opacity-75 font-medium uppercase tracking-wider">
+                  <div className="text-xs sm:text-xs opacity-75 font-medium uppercase tracking-wider">
                     {st.label}
                   </div>
                 </div>
@@ -454,7 +454,7 @@ export default function BlockRenderer({
                   </p>
                   <div className="pt-2 border-t border-border/40">
                     <div className="text-xs font-bold">{item.author}</div>
-                    <div className="text-[11px] opacity-70">{item.role}</div>
+                    <div className="text-xs opacity-70">{item.role}</div>
                   </div>
                 </div>
               ))}
@@ -650,7 +650,7 @@ export default function BlockRenderer({
                 >
                   <div className="space-y-6">
                     <div>
-                      <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-[11px] font-semibold mb-3">
+                      <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-semibold mb-3">
                         <MapPin size={12} />
                         <span>Flagship Boutique</span>
                       </div>

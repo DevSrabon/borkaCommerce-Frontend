@@ -19,7 +19,7 @@ export default function LanguageSelector() {
     <div className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground border border-transparent hover:border-border rounded px-2 py-1 transition-all duration-200 cursor-pointer"
+        className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground border border-transparent hover:border-border rounded px-2 py-1 transition-all duration-200 cursor-pointer"
         aria-label="Select language"
       >
         <Globe size={13} className="opacity-70" />
@@ -50,15 +50,15 @@ export default function LanguageSelector() {
                 <span className="text-base">{lang.flag}</span>
                 <div className="flex flex-col leading-tight">
                   <span className="font-semibold">{lang.native}</span>
-                  <span className="text-[10px] text-muted opacity-70">{lang.label}</span>
+                  <span className="text-xs text-muted opacity-70">{lang.label}</span>
                 </div>
                 {language === lang.value && (
-                  <span className="ml-auto text-primary text-[10px]">✓</span>
+                  <span className="ml-auto text-primary text-xs">✓</span>
                 )}
               </button>
             ))}
 
-            <div className="border-t border-border/60 px-3 py-1.5 bg-muted/20 flex items-center justify-between text-[9px] text-muted-foreground">
+            <div className="border-t border-border/60 px-3 py-1.5 bg-muted/20 flex items-center justify-between text-xs text-muted-foreground">
               <span>Google Translate API</span>
               <span className="text-primary font-mono font-semibold">AR / EN</span>
             </div>

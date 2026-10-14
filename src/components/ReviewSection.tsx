@@ -149,17 +149,17 @@ export default function ReviewSection({ productId, initialReviews = [] }: Props)
   };
 
   return (
-    <section id="reviews" className="border-t border-border pt-12 space-y-10 scroll-mt-20">
+    <section id="reviews" className="border-t border-border pt-6 space-y-5 scroll-mt-20">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="font-serif text-2xl font-bold tracking-tight text-foreground">Customer Ratings & Reviews</h2>
+          <h2 className="font-serif text-xl sm:text-2xl font-bold tracking-tight text-foreground">Customer Ratings & Reviews</h2>
           <p className="text-xs text-muted-foreground mt-0.5">Authentic reviews from verified buyers across the UAE.</p>
         </div>
       </div>
 
       {/* Ratings Overview Card */}
-      <div className="bg-card border border-border rounded-xl p-6 shadow-sm grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+      <div className="bg-card border border-border rounded-xl p-4 sm:p-5 shadow-sm grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
         {/* Average Score */}
         <div className="text-center md:border-r border-border md:pr-6 space-y-2">
           <div className="text-5xl font-serif font-bold text-foreground">
@@ -195,7 +195,7 @@ export default function ReviewSection({ productId, initialReviews = [] }: Props)
                     style={{ width: `${pct}%` }}
                   />
                 </div>
-                <span className="w-8 text-right text-[11px] text-muted-foreground">{count}</span>
+                <span className="w-8 text-right text-xs text-muted-foreground">{count}</span>
               </div>
             );
           })}
@@ -231,7 +231,7 @@ export default function ReviewSection({ productId, initialReviews = [] }: Props)
             <ShieldCheck size={18} className="shrink-0" />
             <div>
               <p className="font-semibold">Verified Purchase Only</p>
-              <p className="text-[11px] text-amber-500/90 font-light mt-0.5">
+              <p className="text-xs text-amber-500/90 font-light mt-0.5">
                 Reviews are reserved for customers who have placed an order for this abaya. Once you receive your order, you can share your feedback here!
               </p>
             </div>
@@ -255,7 +255,7 @@ export default function ReviewSection({ productId, initialReviews = [] }: Props)
 
             {/* Interactive Stars */}
             <div className="space-y-1.5">
-              <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground block">
+              <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block">
                 Overall Rating *
               </label>
               <div className="flex items-center gap-1.5">
@@ -287,7 +287,7 @@ export default function ReviewSection({ productId, initialReviews = [] }: Props)
 
             {/* Comment */}
             <div className="space-y-1.5">
-              <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground block">
+              <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block">
                 Your Review Feedback
               </label>
               <textarea
@@ -331,11 +331,11 @@ export default function ReviewSection({ productId, initialReviews = [] }: Props)
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <span className="font-medium text-xs text-foreground block">{rev.customer_name}</span>
-                    <span className="inline-flex items-center gap-1 text-[10px] text-green-500 font-semibold mt-0.5">
+                    <span className="inline-flex items-center gap-1 text-xs text-green-500 font-semibold mt-0.5">
                       <ShieldCheck size={11} /> Verified Buyer
                     </span>
                   </div>
-                  <span className="text-[10px] text-muted-foreground">
+                  <span className="text-xs text-muted-foreground">
                     {new Date(rev.created_at).toLocaleDateString('en-AE', {
                       year: 'numeric',
                       month: 'short',

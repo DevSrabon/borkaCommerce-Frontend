@@ -180,7 +180,7 @@ export default function PageBuilderEditorPage() {
               placeholder="Page Title"
               className="bg-transparent font-serif font-bold text-base sm:text-lg focus:outline-none focus:border-b border-primary"
             />
-            <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <span>Slug: /{slug}</span>
               <button
                 type="button"
@@ -195,7 +195,7 @@ export default function PageBuilderEditorPage() {
                   type="text"
                   value={slug}
                   onChange={(e) => setSlug(e.target.value)}
-                  className="bg-background border border-border rounded px-1 text-[11px] font-mono"
+                  className="bg-background border border-border rounded px-1 text-xs font-mono"
                 />
               )}
             </div>

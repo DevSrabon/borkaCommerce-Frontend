@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { PriceDisplay } from '../../components/PriceDisplay';
@@ -14,6 +14,7 @@ import {
   ArrowUpDown,
   Search,
   Filter,
+  Loader2,
 } from 'lucide-react';
 
 export interface ProductVariant {
@@ -293,6 +294,65 @@ export default function CatalogClient({
     sortBy,
   ]);
 
+  // Infinite Scroll Pagination
+  const PAGE_SIZE = 12;
+  const [visibleCount, setVisibleCount] = useState<number>(PAGE_SIZE);
+  const [loadingMore, setLoadingMore] = useState<boolean>(false);
+  const observerTarget = useRef<HTMLDivElement | null>(null);
+
+  // Reset pagination count when any filter or sort option changes
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [
+    debouncedCatalogSearch,
+    selectedCategory,
+    saleOnly,
+    selectedColors,
+    selectedSizes,
+    minPrice,
+    maxPrice,
+    sortBy,
+  ]);
+
+  // Visible sliced products
+  const visibleProducts = useMemo(() => {
+    return filteredProducts.slice(0, visibleCount);
+  }, [filteredProducts, visibleCount]);
+
+  const hasMore = visibleCount < filteredProducts.length;
+
+  const loadMore = useCallback(() => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    setTimeout(() => {
+      setVisibleCount((prev) => Math.min(prev + PAGE_SIZE, filteredProducts.length));
+      setLoadingMore(false);
+    }, 250);
+  }, [loadingMore, hasMore, filteredProducts.length]);
+
+  // IntersectionObserver for continuous infinite scroll
+  useEffect(() => {
+    if (!hasMore) return;
+    const target = observerTarget.current;
+    if (!target) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loadingMore) {
+          loadMore();
+        }
+      },
+      {
+        root: null,
+        rootMargin: '300px',
+        threshold: 0.1,
+      }
+    );
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [loadMore, hasMore, loadingMore]);
+
   // Render Sidebar content (reused in desktop sidebar & mobile drawer)
   const renderSidebarContent = () => (
     <div className="space-y-6">
@@ -319,7 +379,7 @@ export default function CatalogClient({
           <span className="text-xs font-bold tracking-wider text-primary uppercase flex items-center gap-1.5">
             <Sparkles size={13} /> Exclusive Deals
           </span>
-          <span className="text-[10px] bg-red-600 text-white font-bold px-1.5 py-0.5 rounded">
+          <span className="text-xs bg-red-600 text-white font-bold px-1.5 py-0.5 rounded">
             HOT
           </span>
         </div>
@@ -334,7 +394,7 @@ export default function CatalogClient({
         >
           <span className="flex items-center gap-1.5">🔥 Flash Sale &amp; Offers</span>
           <div
-            className={`w-4 h-4 rounded flex items-center justify-center border text-[10px] ${
+            className={`w-4 h-4 rounded flex items-center justify-center border text-xs ${
               saleOnly ? 'bg-red-600 border-red-600 text-white' : 'border-border'
             }`}
           >
@@ -349,7 +409,7 @@ export default function CatalogClient({
           <h3 className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
             Price Range (AED)
           </h3>
-          <span className="text-[11px] font-mono font-medium text-primary">
+          <span className="text-xs font-mono font-medium text-primary">
             {minPrice} - {maxPrice} AED
           </span>
         </div>
@@ -369,7 +429,7 @@ export default function CatalogClient({
         {/* Inputs min & max */}
         <div className="grid grid-cols-2 gap-2 text-xs">
           <div className="space-y-1">
-            <span className="text-[10px] text-muted-foreground uppercase">Min AED</span>
+            <span className="text-xs text-muted-foreground uppercase">Min AED</span>
             <input
               type="number"
               min={globalMinPrice}
@@ -380,7 +440,7 @@ export default function CatalogClient({
             />
           </div>
           <div className="space-y-1">
-            <span className="text-[10px] text-muted-foreground uppercase">Max AED</span>
+            <span className="text-xs text-muted-foreground uppercase">Max AED</span>
             <input
               type="number"
               min={minPrice}
@@ -404,7 +464,7 @@ export default function CatalogClient({
               <button
                 type="button"
                 onClick={() => setSelectedColors([])}
-                className="text-[10px] text-primary hover:underline font-medium"
+                className="text-xs text-primary hover:underline font-medium"
               >
                 Clear ({selectedColors.length})
               </button>
@@ -436,7 +496,7 @@ export default function CatalogClient({
                     style={{ backgroundColor: hex }}
                   />
                   <span>{color.name}</span>
-                  <span className="text-[10px] text-muted-foreground">({color.count})</span>
+                  <span className="text-xs text-muted-foreground">({color.count})</span>
                 </button>
               );
             })}
@@ -455,7 +515,7 @@ export default function CatalogClient({
               <button
                 type="button"
                 onClick={() => setSelectedSizes([])}
-                className="text-[10px] text-primary hover:underline font-medium"
+                className="text-xs text-primary hover:underline font-medium"
               >
                 Clear ({selectedSizes.length})
               </button>
@@ -478,7 +538,7 @@ export default function CatalogClient({
                   }`}
                 >
                   <span>{size.name}</span>
-                  <span className="text-[10px] text-muted-foreground font-normal">
+                  <span className="text-xs text-muted-foreground font-normal">
                     {size.count} pcs
                   </span>
                 </button>
@@ -562,8 +622,8 @@ export default function CatalogClient({
               )}
             </div>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Showing {filteredProducts.length} of {initialProducts.length}{' '}
-              {initialProducts.length === 1 ? 'item' : 'items'}
+              Showing {Math.min(visibleCount, filteredProducts.length)} of {filteredProducts.length}{' '}
+              {filteredProducts.length === 1 ? 'product' : 'products'}
             </p>
           </div>
 
@@ -628,7 +688,7 @@ export default function CatalogClient({
         {/* Active Filter Chips */}
         {hasActiveFilters && (
           <div className="flex flex-wrap items-center gap-2 p-3 bg-muted/20 border border-border rounded-xl text-xs">
-            <span className="font-semibold text-muted-foreground text-[11px] uppercase tracking-wider">
+            <span className="font-semibold text-muted-foreground text-xs uppercase tracking-wider">
               Active:
             </span>
 
@@ -694,7 +754,7 @@ export default function CatalogClient({
 
             <button
               onClick={resetFilters}
-              className="text-[11px] text-red-500 hover:underline font-semibold ml-auto cursor-pointer"
+              className="text-xs text-red-500 hover:underline font-semibold ml-auto cursor-pointer"
             >
               Clear All
             </button>
@@ -716,7 +776,7 @@ export default function CatalogClient({
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-            {filteredProducts.map((prod) => {
+            {visibleProducts.map((prod) => {
               const discountPct =
                 prod.discount_percentage ||
                 (prod.min_original_price > prod.min_price
@@ -746,7 +806,7 @@ export default function CatalogClient({
                       </span>
                     )}
                     {prod.active_offer_name && (
-                      <span className="absolute right-3 top-3 bg-black/75 backdrop-blur-sm text-primary font-bold text-[10px] px-2 py-0.5 rounded border border-primary/30">
+                      <span className="absolute right-3 top-3 bg-black/75 backdrop-blur-sm text-primary font-bold text-xs px-2 py-0.5 rounded border border-primary/30">
                         {prod.active_offer_name}
                       </span>
                     )}
@@ -783,6 +843,35 @@ export default function CatalogClient({
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {/* Infinite Scroll Sentinel, Loading Spinner, and End of Collection Status */}
+        {filteredProducts.length > 0 && (
+          <div
+            ref={observerTarget}
+            className="py-10 flex flex-col items-center justify-center space-y-4"
+          >
+            {loadingMore && (
+              <div className="flex items-center gap-2.5 px-5 py-2.5 rounded-full bg-accent/60 border border-border text-xs text-muted-foreground animate-pulse shadow-xs">
+                <Loader2 size={16} className="animate-spin text-primary" />
+                <span>Loading more exclusive abayas...</span>
+              </div>
+            )}
+
+            {!hasMore && filteredProducts.length > PAGE_SIZE && (
+              <div className="flex flex-col items-center gap-2 text-center py-6 text-muted-foreground">
+                <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                  <Check size={16} />
+                </div>
+                <p className="text-xs font-semibold text-foreground">
+                  All {filteredProducts.length} products loaded
+                </p>
+                <p className="text-xs text-muted-foreground font-light">
+                  You have viewed all matching pieces in this collection.
+                </p>
+              </div>
+            )}
           </div>
         )}
       </div>

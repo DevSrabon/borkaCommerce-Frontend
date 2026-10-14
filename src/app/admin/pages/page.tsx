@@ -121,7 +121,7 @@ export default function AdminPagesListPage() {
             <h1 className="font-serif text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
               Dynamic Pages & Builder
             </h1>
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-primary/10 text-primary border border-primary/20">
+            <span className="px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-primary/10 text-primary border border-primary/20">
               WordPress Style
             </span>
           </div>
@@ -166,11 +166,11 @@ export default function AdminPagesListPage() {
               <FileText size={20} />
             </div>
             <p className="text-xs font-medium text-foreground">No pages found</p>
-            <p className="text-[11px] text-muted-foreground">Create your first drag-and-drop page to get started.</p>
+            <p className="text-xs text-muted-foreground">Create your first drag-and-drop page to get started.</p>
           </div>
         ) : (
           <table className="w-full text-left text-xs">
-            <thead className="bg-background/80 border-b border-border text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <thead className="bg-background/80 border-b border-border text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               <tr>
                 <th className="py-3 px-4">Title & Slug</th>
                 <th className="py-3 px-4">Status</th>
@@ -185,22 +185,22 @@ export default function AdminPagesListPage() {
                     <div className="font-bold text-foreground text-sm font-serif">
                       {p.title}
                     </div>
-                    <div className="text-[11px] font-mono text-muted-foreground flex items-center gap-1 mt-0.5">
+                    <div className="text-xs font-mono text-muted-foreground flex items-center gap-1 mt-0.5">
                       <span>/{p.slug}</span>
                     </div>
                   </td>
                   <td className="py-3.5 px-4">
                     {p.is_published ? (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
                         <CheckCircle2 size={11} /> Published
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-amber-500/10 text-amber-500 border border-amber-500/20">
                         <Clock size={11} /> Draft
                       </span>
                     )}
                   </td>
-                  <td className="py-3.5 px-4 text-muted-foreground text-[11px] hidden sm:table-cell">
+                  <td className="py-3.5 px-4 text-muted-foreground text-xs hidden sm:table-cell">
                     {new Date(p.updated_at).toLocaleDateString(undefined, {
                       month: 'short',
                       day: 'numeric',
@@ -212,7 +212,7 @@ export default function AdminPagesListPage() {
                       <Link
                         href={`/${p.slug}`}
                         target="_blank"
-                        className="p-1.5 rounded hover:bg-accent text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-[11px] font-medium transition"
+                        className="p-1.5 rounded hover:bg-accent text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-xs font-medium transition"
                         title="View Live Storefront Page"
                       >
                         <ExternalLink size={13} />
@@ -221,7 +221,7 @@ export default function AdminPagesListPage() {
                     )}
                     <Link
                       href={`/admin/pages/${p.id}`}
-                      className="px-3 py-1.5 rounded bg-primary/10 hover:bg-primary/20 text-primary font-semibold text-[11px] inline-flex items-center gap-1 transition"
+                      className="px-3 py-1.5 rounded bg-primary/10 hover:bg-primary/20 text-primary font-semibold text-xs inline-flex items-center gap-1 transition"
                     >
                       <Edit size={12} />
                       Open Builder

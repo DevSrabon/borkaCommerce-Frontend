@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { API_BASE_URL } from '@/config/api';
 import { PriceDisplay } from './PriceDisplay';
-import { Sparkles, Loader2, Check } from 'lucide-react';
+import { Sparkles, Loader2, Check, ArrowRight } from 'lucide-react';
 
 interface Product {
   id: string;
@@ -21,15 +21,16 @@ interface HomeInfiniteProductsProps {
   initialProducts?: Product[];
 }
 
+const MAX_HOME_PRODUCTS = 24;
 const PAGE_SIZE = 8;
 
 export default function HomeInfiniteProducts({
   initialProducts = [],
 }: HomeInfiniteProductsProps) {
-  const [products, setProducts] = useState<Product[]>(initialProducts);
+  const [products, setProducts] = useState<Product[]>(() => initialProducts.slice(0, MAX_HOME_PRODUCTS));
   const [page, setPage] = useState<number>(1);
   const [loading, setLoading] = useState<boolean>(false);
-  const [hasMore, setHasMore] = useState<boolean>(true);
+  const [hasMore, setHasMore] = useState<boolean>(initialProducts.length < MAX_HOME_PRODUCTS);
   const [initialLoaded, setInitialLoaded] = useState<boolean>(initialProducts.length > 0);
 
   const observerTarget = useRef<HTMLDivElement | null>(null);
@@ -42,8 +43,11 @@ export default function HomeInfiniteProducts({
         .then((res) => (res.ok ? res.json() : []))
         .then((data) => {
           if (Array.isArray(data)) {
-            setProducts(data);
-            if (data.length < PAGE_SIZE) setHasMore(false);
+            const capped = data.slice(0, MAX_HOME_PRODUCTS);
+            setProducts(capped);
+            if (capped.length >= MAX_HOME_PRODUCTS || data.length < PAGE_SIZE) {
+              setHasMore(false);
+            }
           }
         })
         .catch(() => {})
@@ -55,7 +59,10 @@ export default function HomeInfiniteProducts({
   }, [initialLoaded]);
 
   const loadMoreProducts = useCallback(async () => {
-    if (loading || !hasMore) return;
+    if (loading || !hasMore || products.length >= MAX_HOME_PRODUCTS) {
+      setHasMore(false);
+      return;
+    }
     setLoading(true);
 
     const nextPage = page + 1;
@@ -66,11 +73,15 @@ export default function HomeInfiniteProducts({
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data) && data.length > 0) {
-          // Avoid duplicate products by ID
+          // Avoid duplicate products by ID and cap at 24 total
           setProducts((prev) => {
             const existingIds = new Set(prev.map((p) => p.id));
             const newItems = data.filter((item) => !existingIds.has(item.id));
-            return [...prev, ...newItems];
+            const merged = [...prev, ...newItems].slice(0, MAX_HOME_PRODUCTS);
+            if (merged.length >= MAX_HOME_PRODUCTS) {
+              setHasMore(false);
+            }
+            return merged;
           });
           setPage(nextPage);
           if (data.length < PAGE_SIZE) {
@@ -87,22 +98,24 @@ export default function HomeInfiniteProducts({
     } finally {
       setLoading(false);
     }
-  }, [loading, hasMore, page]);
+  }, [loading, hasMore, page, products.length]);
 
-  // Intersection Observer for continuous Infinite Scroll
+  // Intersection Observer for continuous Infinite Scroll up to 24 products
   useEffect(() => {
+    if (!hasMore || products.length >= MAX_HOME_PRODUCTS) return;
+
     const target = observerTarget.current;
     if (!target) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && hasMore && !loading) {
+        if (entries[0].isIntersecting && hasMore && !loading && products.length < MAX_HOME_PRODUCTS) {
           loadMoreProducts();
         }
       },
       {
         root: null,
-        rootMargin: '250px', // Pre-fetch 250px before reaching bottom
+        rootMargin: '250px',
         threshold: 0.1,
       }
     );
@@ -111,14 +124,14 @@ export default function HomeInfiniteProducts({
     return () => {
       observer.disconnect();
     };
-  }, [loadMoreProducts, hasMore, loading]);
+  }, [loadMoreProducts, hasMore, loading, products.length]);
 
   return (
     <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8 w-full space-y-8">
       {/* Section Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-border pb-6">
         <div className="space-y-1">
-          <span className="text-primary text-[10px] uppercase font-bold tracking-widest block flex items-center gap-1.5">
+          <span className="text-primary text-xs uppercase font-bold tracking-widest block flex items-center gap-1.5">
             <Sparkles size={13} className="text-primary" /> Full Catalog Showcase
           </span>
           <h2 className="font-serif text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
@@ -153,7 +166,7 @@ export default function HomeInfiniteProducts({
                 className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
               />
               {prod.min_price < prod.min_original_price && (
-                <span className="absolute left-2.5 top-2.5 bg-red-600 text-white font-bold text-[10px] sm:text-xs px-2 py-0.5 rounded shadow-md tracking-wider">
+                <span className="absolute left-2.5 top-2.5 bg-red-600 text-white font-bold text-xs sm:text-xs px-2 py-0.5 rounded shadow-md tracking-wider">
                   {Math.round(
                     ((prod.min_original_price - prod.min_price) /
                       prod.min_original_price) *
@@ -171,7 +184,7 @@ export default function HomeInfiniteProducts({
                   <Link href={`/product/${prod.slug}`}>{prod.name}</Link>
                 </h3>
                 {prod.short_description && (
-                  <p className="text-[11px] sm:text-xs text-muted-foreground line-clamp-2 leading-relaxed font-light hidden sm:block">
+                  <p className="text-xs sm:text-xs text-muted-foreground line-clamp-2 leading-relaxed font-light hidden sm:block">
                     {prod.short_description}
                   </p>
                 )}
@@ -188,7 +201,7 @@ export default function HomeInfiniteProducts({
                 />
                 <Link
                   href={`/product/${prod.slug}`}
-                  className="text-[11px] sm:text-xs text-primary font-medium hover:text-foreground transition underline sm:no-underline sm:border-b sm:border-primary w-fit"
+                  className="text-xs sm:text-xs text-primary font-medium hover:text-foreground transition underline sm:no-underline sm:border-b sm:border-primary w-fit"
                 >
                   View Details &rarr;
                 </Link>
@@ -198,8 +211,8 @@ export default function HomeInfiniteProducts({
         ))}
       </div>
 
-      {/* Infinite Scroll Sentinel & Loading Indicator */}
-      <div ref={observerTarget} className="py-8 flex flex-col items-center justify-center">
+      {/* Infinite Scroll Sentinel, Loading Indicator, and Show More CTA */}
+      <div ref={observerTarget} className="py-6 flex flex-col items-center justify-center space-y-4">
         {loading && (
           <div className="flex items-center gap-2.5 px-4 py-2 rounded-full bg-accent/60 border border-border text-xs text-muted-foreground animate-pulse">
             <Loader2 size={16} className="animate-spin text-primary" />
@@ -207,17 +220,36 @@ export default function HomeInfiniteProducts({
           </div>
         )}
 
-        {!hasMore && products.length > 0 && (
-          <div className="flex flex-col items-center gap-1.5 text-center py-4 text-muted-foreground">
+        {/* When reaching the 24-product homepage limit, show the "Show More" Button linking to /catalog */}
+        {products.length >= MAX_HOME_PRODUCTS && (
+          <div className="flex flex-col items-center gap-3 text-center py-4">
+            <Link
+              href="/catalog"
+              className="btn-luxury px-8 py-3.5 rounded-xl text-sm font-bold uppercase tracking-wider flex items-center gap-2.5 shadow-md hover:shadow-xl hover:scale-105 transition-all duration-300"
+            >
+              <span>Show More &amp; Explore Full Catalog</span>
+              <ArrowRight size={16} />
+            </Link>
+            <p className="text-xs text-muted-foreground">
+              Showing top {products.length} featured abayas on homepage. Click above to view our entire collection in the catalog.
+            </p>
+          </div>
+        )}
+
+        {!hasMore && products.length < MAX_HOME_PRODUCTS && products.length > 0 && (
+          <div className="flex flex-col items-center gap-2 text-center py-4 text-muted-foreground">
             <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center">
               <Check size={16} />
             </div>
             <p className="text-xs font-semibold text-foreground">
               You&apos;ve viewed all available products
             </p>
-            <p className="text-[11px] text-muted-foreground">
-              Check back soon for upcoming Eid and seasonal collections.
-            </p>
+            <Link
+              href="/catalog"
+              className="text-xs font-semibold text-primary hover:underline flex items-center gap-1 mt-1"
+            >
+              <span>Browse Catalog by Category &rarr;</span>
+            </Link>
           </div>
         )}
       </div>

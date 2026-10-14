@@ -111,7 +111,7 @@ export default function AdminDashboard() {
               <Icon size={20} className={color} />
             </div>
             <div>
-              <p className="text-[10px] text-muted-foreground uppercase font-semibold tracking-wider">{label}</p>
+              <p className="text-xs text-muted-foreground uppercase font-semibold tracking-wider">{label}</p>
               <p className="text-xl font-serif font-bold text-foreground">{value}</p>
             </div>
           </div>
@@ -130,7 +130,7 @@ export default function AdminDashboard() {
               <Icon size={16} />
             </div>
             <p className="text-xs font-semibold text-foreground">{label}</p>
-            <p className="text-[10px] text-muted-foreground font-light">{desc}</p>
+            <p className="text-xs text-muted-foreground font-light">{desc}</p>
           </Link>
         ))}
       </div>
@@ -150,7 +150,7 @@ export default function AdminDashboard() {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
-                <tr className="bg-background text-muted-foreground uppercase tracking-wider font-semibold border-b border-border text-[10px]">
+                <tr className="bg-background text-muted-foreground uppercase tracking-wider font-semibold border-b border-border text-xs">
                   <th className="px-5 py-3">Order</th>
                   <th className="px-5 py-3">Customer</th>
                   <th className="px-5 py-3">Total</th>
@@ -165,28 +165,28 @@ export default function AdminDashboard() {
                     <td className="px-5 py-3 font-mono font-bold text-foreground">{ord.order_number}</td>
                     <td className="px-5 py-3">
                       <p className="font-medium">{ord.customer.first_name} {ord.customer.last_name}</p>
-                      <p className="text-muted-foreground text-[10px]">{ord.customer.email}</p>
+                      <p className="text-muted-foreground text-xs">{ord.customer.email}</p>
                     </td>
                     <td className="px-5 py-3 font-semibold">AED {Number(ord.total).toFixed(2)}</td>
                     <td className="px-5 py-3">
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-semibold border ${
+                      <span className={`px-2 py-0.5 rounded text-xs font-semibold border ${
                         ord.payment_status === 'PAID'
                           ? 'bg-green-500/10 text-green-500 border-green-500/20'
                           : 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'
                       }`}>{ord.payment_status}</span>
                     </td>
                     <td className="px-5 py-3">
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-semibold border ${STATUS_COLORS[ord.status] || 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20'}`}>
+                      <span className={`px-2 py-0.5 rounded text-xs font-semibold border ${STATUS_COLORS[ord.status] || 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20'}`}>
                         {ord.status}
                       </span>
                     </td>
                     <td className="px-5 py-3">
                       <div className="flex items-center justify-end gap-2">
                         {updatingId === ord.id ? (
-                          <span className="text-muted text-[10px]">Saving…</span>
+                          <span className="text-muted text-xs">Saving…</span>
                         ) : (
                           <select
-                            className="bg-background border border-border rounded px-2 py-1 text-[10px] focus:outline-none cursor-pointer"
+                            className="bg-background border border-border rounded px-2 py-1 text-xs focus:outline-none cursor-pointer"
                             value={ord.status}
                             onChange={(e) => handleUpdateStatus(ord.id, e.target.value)}
                           >

@@ -288,7 +288,7 @@ export default function BlogDetailPage() {
                           <h4 className="text-sm font-bold text-foreground">
                             {comment.author_name}
                           </h4>
-                          <span className="text-[11px] text-muted-foreground">
+                          <span className="text-xs text-muted-foreground">
                             {formatDate(comment.created_at)}
                           </span>
                         </div>
@@ -402,7 +402,7 @@ export default function BlogDetailPage() {
                           className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-[10px] text-muted-foreground">
+                        <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground">
                           Post
                         </div>
                       )}
@@ -412,7 +412,7 @@ export default function BlogDetailPage() {
                       <h3 className="text-xs font-bold text-foreground group-hover:text-primary transition line-clamp-2 leading-tight">
                         {item.title}
                       </h3>
-                      <p className="text-[11px] text-muted-foreground">
+                      <p className="text-xs text-muted-foreground">
                         {formatShortDate(item.published_at)}
                       </p>
                     </div>
@@ -442,7 +442,7 @@ export default function BlogDetailPage() {
                           className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-[10px] text-muted-foreground">
+                        <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground">
                           Post
                         </div>
                       )}
@@ -452,7 +452,7 @@ export default function BlogDetailPage() {
                       <h3 className="text-xs font-bold text-foreground group-hover:text-primary transition line-clamp-2 leading-tight">
                         {item.title}
                       </h3>
-                      <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+                      <p className="text-xs text-muted-foreground flex items-center gap-1">
                         <Eye size={11} />
                         <span>{item.views} views</span>
                       </p>
