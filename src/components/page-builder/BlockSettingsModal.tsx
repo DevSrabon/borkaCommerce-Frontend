@@ -25,6 +25,7 @@ import {
   AlignLeft,
   AlignCenter,
   AlignRight,
+  MapPin,
 } from 'lucide-react';
 import { PageBlock } from '@/types/page-builder';
 import RichTextEditor from '../RichTextEditor';
@@ -814,6 +815,150 @@ function BlockForm({
                   <label htmlFor="has_divider" className="font-semibold cursor-pointer text-foreground">
                     Show subtle horizontal divider line
                   </label>
+                </div>
+              </>
+            )}
+
+            {block.type === 'MAP' && (
+              <>
+                <div>
+                  <label className="block font-semibold mb-1">Section Title</label>
+                  <input
+                    type="text"
+                    value={formData.title || ''}
+                    onChange={(e) => updateField('title', e.target.value)}
+                    placeholder="e.g. Visit Our Flagship Boutique"
+                    className="w-full bg-card border border-border rounded-lg px-3 py-2 text-foreground font-serif font-bold text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-semibold mb-1">Subtitle / Description</label>
+                  <textarea
+                    rows={2}
+                    value={formData.subtitle || ''}
+                    onChange={(e) => updateField('subtitle', e.target.value)}
+                    placeholder="e.g. Experience our bespoke modest collections in person"
+                    className="w-full bg-card border border-border rounded-lg px-3 py-2 text-foreground"
+                  />
+                </div>
+
+                <div className="p-4 rounded-xl border border-border bg-card/60 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="font-bold text-xs uppercase tracking-wider text-primary">
+                      Map Embed Location or URL *
+                    </label>
+                    <span className="text-[10px] text-muted-foreground">URL, Query, or &lt;iframe&gt;</span>
+                  </div>
+                  <input
+                    type="text"
+                    value={formData.map_url || ''}
+                    onChange={(e) => updateField('map_url', e.target.value)}
+                    placeholder="e.g. Downtown Dubai or https://maps.google.com/..."
+                    className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground font-mono text-xs"
+                  />
+                  <p className="text-[11px] text-muted-foreground leading-normal">
+                    Tip: You can paste a Google Maps embed URL, a full <code>&lt;iframe&gt;</code> code, or simply type any location query like <span className="text-primary font-medium">"Dubai Mall, UAE"</span> or <span className="text-primary font-medium">"Gulshan 2, Dhaka"</span>.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block font-semibold mb-1">
+                      Map Height: {formData.map_height || 420}px
+                    </label>
+                    <input
+                      type="range"
+                      min="260"
+                      max="650"
+                      step="20"
+                      value={formData.map_height || 420}
+                      onChange={(e) => updateField('map_height', parseInt(e.target.value))}
+                      className="w-full"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-1">Layout Style</label>
+                    <select
+                      value={formData.layout || 'split'}
+                      onChange={(e) => updateField('layout', e.target.value)}
+                      className="w-full bg-card border border-border rounded-lg px-3 py-2 text-foreground"
+                    >
+                      <option value="split">Split View (Map + Store Info Card)</option>
+                      <option value="full">Full Width (Map with Floating Badge)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-xl border border-border bg-card space-y-4">
+                  <div className="flex items-center justify-between">
+                    <label className="font-bold text-xs uppercase tracking-wider text-primary">
+                      Store &amp; Atelier Details Card
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id="show_card"
+                        checked={formData.show_card ?? true}
+                        onChange={(e) => updateField('show_card', e.target.checked)}
+                        className="rounded"
+                      />
+                      <label htmlFor="show_card" className="text-xs font-semibold cursor-pointer">
+                        Display Card
+                      </label>
+                    </div>
+                  </div>
+
+                  {(formData.show_card ?? true) && (
+                    <div className="space-y-3 pt-2 border-t border-border/50">
+                      <div>
+                        <label className="block font-semibold mb-1 text-[11px]">Boutique Physical Address</label>
+                        <input
+                          type="text"
+                          value={formData.address || ''}
+                          onChange={(e) => updateField('address', e.target.value)}
+                          placeholder="e.g. Fashion Avenue, The Dubai Mall, Downtown Dubai, UAE"
+                          className="w-full bg-background border border-border rounded-lg px-3 py-1.5 text-foreground"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block font-semibold mb-1 text-[11px]">Telephone Concierge</label>
+                          <input
+                            type="text"
+                            value={formData.phone || ''}
+                            onChange={(e) => updateField('phone', e.target.value)}
+                            placeholder="e.g. +971 4 123 4567"
+                            className="w-full bg-background border border-border rounded-lg px-3 py-1.5 text-foreground"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block font-semibold mb-1 text-[11px]">Direct Email</label>
+                          <input
+                            type="email"
+                            value={formData.email || ''}
+                            onChange={(e) => updateField('email', e.target.value)}
+                            placeholder="e.g. boutique@borkacommerce.com"
+                            className="w-full bg-background border border-border rounded-lg px-3 py-1.5 text-foreground"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block font-semibold mb-1 text-[11px]">Visiting / Business Hours</label>
+                        <input
+                          type="text"
+                          value={formData.hours || ''}
+                          onChange={(e) => updateField('hours', e.target.value)}
+                          placeholder="e.g. Mon - Sun: 10:00 AM - 11:00 PM"
+                          className="w-full bg-background border border-border rounded-lg px-3 py-1.5 text-foreground"
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
               </>
             )}

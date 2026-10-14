@@ -73,8 +73,8 @@ export default function CartPage() {
   if (!mounted) return null;
 
   const shipping = shippingInfo !== null ? shippingInfo.final_fee : (subtotal > 500 || subtotal === 0 ? 0 : 30.00);
-  const tax = Number(((subtotal - discount) * 0.05).toFixed(2));
-  const total = Number((subtotal - discount + shipping + tax).toFixed(2));
+  const tax = 0;
+  const total = Number((subtotal - discount + shipping).toFixed(2));
 
   const handleApplyCoupon = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -278,10 +278,7 @@ export default function CartPage() {
                 </div>
               )}
 
-              <div className="flex justify-between">
-                <span className="text-muted">VAT (5%)</span>
-                <span className="text-foreground font-medium">{formatPrice(tax)}</span>
-              </div>
+
 
               <div className="border-t border-border pt-4 flex justify-between text-base font-bold">
                 <span>Total</span>

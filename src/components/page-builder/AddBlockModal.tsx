@@ -15,6 +15,7 @@ import {
   Sparkles,
   BookOpen,
   PhoneCall,
+  MapPin,
 } from 'lucide-react';
 import { BlockType, PageBlock } from '@/types/page-builder';
 
@@ -170,6 +171,24 @@ const BLOCK_DEFINITIONS: {
       has_divider: true,
     },
   },
+  {
+    type: 'MAP',
+    title: 'Interactive Map & Location',
+    description: 'Google Maps embed with boutique address, hours, directions, and store card',
+    icon: MapPin,
+    defaultData: {
+      title: 'Visit Our Flagship Boutique',
+      subtitle: 'Experience our bespoke modest collections in person',
+      map_url: 'https://maps.google.com/maps?q=Downtown+Dubai&t=&z=14&ie=UTF8&iwloc=&output=embed',
+      address: 'Fashion Avenue, The Dubai Mall, Financial Center Rd, Downtown Dubai, UAE',
+      phone: '+971 4 123 4567',
+      email: 'boutique@borkacommerce.com',
+      hours: 'Mon - Sun: 10:00 AM - 11:00 PM',
+      map_height: 420,
+      layout: 'split',
+      show_card: true,
+    },
+  },
 ];
 
 export default function AddBlockModal({
@@ -317,6 +336,22 @@ export default function AddBlockModal({
             { question: 'How can I track my shipment?', answer: 'Log into your profile and click Orders to see live tracking.' },
             { question: 'What is your exchange policy?', answer: 'We offer hassle-free 7-day exchanges on unworn items.' },
           ],
+        },
+      },
+      {
+        id: `map-${Date.now()}`,
+        type: 'MAP',
+        data: {
+          title: 'Flagship Atelier & Showroom',
+          subtitle: 'Drop in to consult our master tailors or preview seasonal fabrics',
+          map_url: 'https://maps.google.com/maps?q=Downtown+Dubai&t=&z=14&ie=UTF8&iwloc=&output=embed',
+          address: 'Fashion Avenue, The Dubai Mall, Financial Center Rd, Downtown Dubai, UAE',
+          phone: '+971 4 123 4567',
+          email: 'boutique@borkacommerce.com',
+          hours: 'Mon - Sun: 10:00 AM - 11:00 PM',
+          map_height: 440,
+          layout: 'split',
+          show_card: true,
         },
       },
     ];

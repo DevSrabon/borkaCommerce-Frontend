@@ -390,18 +390,18 @@ export default function AdminChatPage() {
   });
 
   return (
-    <div className="h-[calc(100vh-120px)] flex flex-col bg-stone-950 text-stone-100 rounded-xl border border-stone-800 overflow-hidden shadow-2xl">
+    <div className="h-[calc(100vh-120px)] flex flex-col bg-card text-foreground rounded-xl border border-border overflow-hidden shadow-sm">
       {/* Top Banner */}
-      <div className="px-6 py-4 bg-stone-900 border-b border-stone-800 flex items-center justify-between">
+      <div className="px-6 py-4 bg-card border-b border-border flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-amber-500/20 text-amber-400 rounded-lg border border-amber-500/30">
+          <div className="p-2 bg-primary/10 text-primary rounded-lg border border-primary/20">
             <MessageSquare className="w-5 h-5" />
           </div>
           <div>
-            <h1 className="text-sm font-bold tracking-wide text-amber-300">
+            <h1 className="text-sm font-bold tracking-wide text-foreground">
               Live Concierge & Customer Support
             </h1>
-            <p className="text-xs text-stone-400">
+            <p className="text-xs text-muted-foreground">
               Real-time customer inquiries, automated bot responses, and session management
             </p>
           </div>
@@ -412,12 +412,12 @@ export default function AdminChatPage() {
             onClick={() => setSoundEnabled(!soundEnabled)}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition cursor-pointer ${
               soundEnabled
-                ? 'bg-amber-950/40 border-amber-800/60 text-amber-300'
-                : 'bg-stone-800 border-stone-700 text-stone-400'
+                ? 'bg-primary/10 border-primary/30 text-primary'
+                : 'bg-muted border-border text-muted-foreground'
             }`}
             title={soundEnabled ? 'Sound alerts enabled' : 'Sound alerts muted'}
           >
-            {soundEnabled ? <Volume2 className="w-4 h-4 text-amber-400" /> : <VolumeX className="w-4 h-4 text-stone-500" />}
+            {soundEnabled ? <Volume2 className="w-4 h-4 text-primary" /> : <VolumeX className="w-4 h-4 text-muted-foreground" />}
             <span>{soundEnabled ? 'Sound On' : 'Muted'}</span>
           </button>
         </div>
@@ -426,25 +426,25 @@ export default function AdminChatPage() {
       {/* Main Split Body */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left Sidebar: Sessions List */}
-        <div className="w-80 md:w-96 border-r border-stone-800 bg-stone-900/60 flex flex-col">
+        <div className="w-80 md:w-96 border-r border-border bg-muted/20 flex flex-col">
           {/* Search bar */}
-          <div className="p-3 border-b border-stone-800">
+          <div className="p-3 border-b border-border bg-card">
             <div className="relative">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-stone-500" />
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <input
                 type="text"
                 placeholder="Search conversations..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-stone-950 border border-stone-800 rounded-lg pl-9 pr-3 py-2 text-xs text-stone-200 placeholder:text-stone-600 focus:outline-none focus:border-amber-500/60"
+                className="w-full bg-background border border-border rounded-lg pl-9 pr-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
           </div>
 
           {/* Session Cards */}
-          <div className="flex-1 overflow-y-auto divide-y divide-stone-800/60">
+          <div className="flex-1 overflow-y-auto divide-y divide-border">
             {filteredSessions.length === 0 ? (
-              <div className="p-8 text-center text-stone-500 text-xs">
+              <div className="p-8 text-center text-muted-foreground text-xs">
                 No active chat conversations found
               </div>
             ) : (
@@ -459,26 +459,26 @@ export default function AdminChatPage() {
                     onClick={() => handleSelectSession(s.session_id)}
                     className={`w-full text-left p-3.5 transition flex items-start gap-3 cursor-pointer ${
                       isSelected
-                        ? 'bg-amber-950/30 border-l-4 border-amber-500'
-                        : 'hover:bg-stone-800/40'
+                        ? 'bg-primary/10 border-l-4 border-primary'
+                        : 'hover:bg-muted/60'
                     }`}
                   >
-                    <div className="relative flex items-center justify-center w-10 h-10 rounded-full bg-stone-800 border border-stone-700 text-amber-400 shrink-0">
+                    <div className="relative flex items-center justify-center w-10 h-10 rounded-full bg-muted border border-border text-primary shrink-0">
                       <User className="w-5 h-5" />
                       {/* Customer Online indicator dot */}
                       {s.is_online ? (
                         <span
-                          className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-stone-900 rounded-full shadow-sm"
+                          className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-card rounded-full shadow-sm"
                           title="Customer is Online"
                         />
                       ) : (
                         <span
-                          className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-stone-600 border-2 border-stone-900 rounded-full"
+                          className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-muted-foreground/60 border-2 border-card rounded-full"
                           title={`Offline - ${formatLastSeen(s.last_active_at, false)}`}
                         />
                       )}
                       {unread > 0 && (
-                        <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-600 text-[9px] font-bold text-white ring-2 ring-stone-900 animate-pulse">
+                        <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-destructive-foreground ring-2 ring-card animate-pulse">
                           {unread}
                         </span>
                       )}
@@ -487,39 +487,39 @@ export default function AdminChatPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-1.5 min-w-0">
-                          <span className="text-xs font-semibold text-stone-200 truncate">
+                          <span className="text-xs font-semibold text-foreground truncate">
                             {s.customer_name || 'Guest Visitor'}
                           </span>
                           {s.is_online && (
-                            <span className="inline-flex items-center gap-1 text-[9px] font-semibold text-emerald-400 bg-emerald-950/60 border border-emerald-800/60 px-1.5 py-0.2 rounded-full shrink-0">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                            <span className="inline-flex items-center gap-1 text-[9px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.2 rounded-full shrink-0">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                               Online
                             </span>
                           )}
                         </div>
-                        <span className="text-[10px] text-stone-500 flex items-center gap-1 shrink-0">
+                        <span className="text-[10px] text-muted-foreground flex items-center gap-1 shrink-0">
                           <Clock className="w-3 h-3" />
                           {new Date(s.last_message_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </span>
                       </div>
 
                       {s.customer_email && (
-                        <p className="text-[10px] text-stone-500 truncate">{s.customer_email}</p>
+                        <p className="text-[10px] text-muted-foreground truncate">{s.customer_email}</p>
                       )}
 
-                      <div className="flex items-center justify-between gap-1 text-[11px] text-stone-400 mt-1">
-                        <p className="truncate text-stone-400 flex-1">
+                      <div className="flex items-center justify-between gap-1 text-[11px] text-muted-foreground mt-1">
+                        <p className="truncate text-muted-foreground flex-1">
                           {s.messages && s.messages.length > 0
                             ? s.messages[0].message
                             : 'Chat initiated'}
                         </p>
-                        <span className={`text-[10px] shrink-0 font-medium ${s.is_online ? 'text-emerald-400' : 'text-stone-500'}`}>
+                        <span className={`text-[10px] shrink-0 font-medium ${s.is_online ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'}`}>
                           {formatLastSeen(s.last_active_at, s.is_online)}
                         </span>
                       </div>
 
                       {s.is_customer_typing && (
-                        <p className="text-[10px] text-emerald-400 font-medium italic mt-0.5">
+                        <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium italic mt-0.5">
                           Typing...
                         </p>
                       )}
@@ -533,20 +533,20 @@ export default function AdminChatPage() {
 
         {/* Right Pane: Conversation Details */}
         {activeSessionId ? (
-          <div className="flex-1 flex flex-col bg-stone-950 relative">
+          <div className="flex-1 flex flex-col bg-background relative">
             {/* Header */}
-            <div className="px-6 py-3.5 bg-stone-900/80 border-b border-stone-800 flex items-center justify-between">
+            <div className="px-6 py-3.5 bg-card border-b border-border flex items-center justify-between">
               <div>
-                <h2 className="text-xs font-bold text-stone-200 flex items-center gap-2">
+                <h2 className="text-xs font-bold text-foreground flex items-center gap-2">
                   <span>{activeSession?.customer_name || 'Guest Customer'}</span>
                   {activeSession?.customer_email && (
-                    <span className="text-[10px] text-stone-400 font-normal">
+                    <span className="text-[10px] text-muted-foreground font-normal">
                       ({activeSession.customer_email})
                     </span>
                   )}
                 </h2>
-                <div className="flex items-center gap-3 text-[10px] text-stone-500 mt-0.5">
-                  <span>Session: <code className="text-stone-400">{activeSessionId}</code></span>
+                <div className="flex items-center gap-3 text-[10px] text-muted-foreground mt-0.5">
+                  <span>Session: <code className="text-foreground bg-muted px-1 py-0.5 rounded font-mono">{activeSessionId}</code></span>
                   {activeSession?.ip_address && (
                     <span>IP: {activeSession.ip_address}</span>
                   )}
@@ -556,21 +556,21 @@ export default function AdminChatPage() {
               <div className="flex items-center gap-2.5">
                 {/* Real-time Customer Online / Last Seen Badge */}
                 {activeSession?.is_online ? (
-                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-950/80 border border-emerald-700/70 text-emerald-300 text-xs font-medium shadow-sm">
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs font-medium shadow-sm">
                     <span className="relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75" />
                       <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
                     </span>
                     <span>Online • Active now</span>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-stone-900 border border-stone-800 text-stone-400 text-xs font-medium">
-                    <span className="w-1.5 h-1.5 rounded-full bg-stone-500" />
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-muted border border-border text-muted-foreground text-xs font-medium">
+                    <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50" />
                     <span>{formatLastSeen(activeSession?.last_active_at, false)}</span>
                   </div>
                 )}
 
-                <span className="px-2 py-0.5 bg-stone-800 border border-stone-700 text-stone-300 text-[10px] rounded-full font-medium">
+                <span className="px-2 py-0.5 bg-muted border border-border text-foreground text-[10px] rounded-full font-medium">
                   {activeSession?.status || 'ACTIVE'}
                 </span>
               </div>
@@ -580,7 +580,7 @@ export default function AdminChatPage() {
             <div
               ref={chatContainerRef}
               onScroll={handleScroll}
-              className="flex-1 overflow-y-auto p-6 space-y-4 relative"
+              className="flex-1 overflow-y-auto p-6 space-y-4 relative bg-background/50"
             >
               {messages.map((m) => {
                 const isCustomer = m.sender_type === 'CUSTOMER';
@@ -591,28 +591,28 @@ export default function AdminChatPage() {
                     key={m.id}
                     className={`flex flex-col ${isCustomer ? 'items-start' : 'items-end'}`}
                   >
-                    <div className="flex items-center gap-1.5 mb-1 text-[10px] text-stone-500">
+                    <div className="flex items-center gap-1.5 mb-1 text-[10px] text-muted-foreground">
                       {isBot ? (
                         <>
-                          <Bot className="w-3 h-3 text-amber-400" />
-                          <span className="text-amber-400 font-medium">Saba Concierge Bot</span>
+                          <Bot className="w-3 h-3 text-primary" />
+                          <span className="text-primary font-medium">Saba Concierge Bot</span>
                         </>
                       ) : isCustomer ? (
-                        <span className="text-stone-400 font-medium">{m.sender_name} (Customer)</span>
+                        <span className="text-muted-foreground font-medium">{m.sender_name} (Customer)</span>
                       ) : (
-                        <span className="text-emerald-400 font-medium">{m.sender_name} (Admin Reply)</span>
+                        <span className="text-primary font-medium">{m.sender_name} (Admin Reply)</span>
                       )}
                       <span>•</span>
                       <span>{new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                     </div>
 
                     <div
-                      className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-xs shadow-md leading-relaxed space-y-2 ${
+                      className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-xs shadow-sm leading-relaxed space-y-2 ${
                         isCustomer
-                          ? 'bg-stone-800 border border-stone-700 text-stone-100 rounded-bl-none'
+                          ? 'bg-muted border border-border text-foreground rounded-bl-none'
                           : isBot
-                          ? 'bg-amber-950/30 border border-amber-900/40 text-amber-200 rounded-tl-none'
-                          : 'bg-emerald-700 text-white rounded-br-none'
+                          ? 'bg-primary/10 border border-primary/20 text-foreground rounded-tl-none'
+                          : 'bg-primary text-primary-foreground rounded-br-none'
                       }`}
                     >
                       {/* Attachment rendering */}
@@ -629,7 +629,7 @@ export default function AdminChatPage() {
                               <img
                                 src={m.attachment_url}
                                 alt={m.attachment_name || 'Attachment'}
-                                className="max-h-60 max-w-full rounded-xl object-cover border border-white/10 group-hover:opacity-95 transition"
+                                className="max-h-60 max-w-full rounded-xl object-cover border border-border group-hover:opacity-95 transition"
                               />
                               <span className="absolute bottom-1.5 right-1.5 bg-black/70 text-white px-1.5 py-0.5 rounded text-[10px] opacity-0 group-hover:opacity-100 transition flex items-center gap-1">
                                 <ExternalLink size={10} /> View
@@ -641,9 +641,9 @@ export default function AdminChatPage() {
                               target="_blank"
                               rel="noopener noreferrer"
                               download={m.attachment_name || 'attachment'}
-                              className="flex items-center gap-2.5 p-2 bg-black/30 hover:bg-black/50 border border-white/10 rounded-xl transition text-inherit cursor-pointer"
+                              className="flex items-center gap-2.5 p-2 bg-muted/80 hover:bg-muted border border-border rounded-xl transition text-inherit cursor-pointer"
                             >
-                              <div className="p-1.5 bg-white/10 rounded-lg">
+                              <div className="p-1.5 bg-background rounded-lg border border-border">
                                 <FileText size={16} />
                               </div>
                               <div className="flex-1 min-w-0">
@@ -664,11 +664,11 @@ export default function AdminChatPage() {
               })}
 
               {activeSession?.is_customer_typing && (
-                <div className="flex items-center gap-2 text-xs text-amber-400 italic">
+                <div className="flex items-center gap-2 text-xs text-primary italic">
                   <span className="flex gap-1 items-center">
-                    <span className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-bounce [animation-delay:-0.3s]" />
-                    <span className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-bounce [animation-delay:-0.15s]" />
-                    <span className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-bounce" />
+                    <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce [animation-delay:-0.3s]" />
+                    <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce [animation-delay:-0.15s]" />
+                    <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" />
                   </span>
                   <span>Customer is typing...</span>
                 </div>
@@ -683,7 +683,7 @@ export default function AdminChatPage() {
                 <button
                   type="button"
                   onClick={() => scrollToBottom('smooth')}
-                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-stone-900/95 border border-emerald-500/50 text-emerald-300 hover:text-emerald-200 text-xs font-semibold shadow-2xl transition cursor-pointer backdrop-blur-md animate-in fade-in slide-in-from-bottom-2"
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-card border border-primary/40 text-foreground hover:bg-muted text-xs font-semibold shadow-xl transition cursor-pointer backdrop-blur-md animate-in fade-in slide-in-from-bottom-2"
                 >
                   <ChevronDown size={14} className="animate-bounce" />
                   <span>Scroll to latest</span>
@@ -693,24 +693,24 @@ export default function AdminChatPage() {
 
             {/* Pending Attachment Preview */}
             {adminPendingFile && (
-              <div className="px-4 py-2 bg-stone-900 border-t border-stone-800 flex items-center justify-between text-xs">
+              <div className="px-4 py-2 bg-card border-t border-border flex items-center justify-between text-xs">
                 <div className="flex items-center gap-2 max-w-[85%]">
                   {adminPendingFile.isImage ? (
                     <img
                       src={adminPendingFile.previewUrl}
                       alt="Preview"
-                      className="w-10 h-10 object-cover rounded-lg border border-emerald-500/40"
+                      className="w-10 h-10 object-cover rounded-lg border border-primary/40"
                     />
                   ) : (
-                    <div className="p-2 bg-stone-800 border border-stone-700 rounded-lg text-emerald-400">
+                    <div className="p-2 bg-muted border border-border rounded-lg text-primary">
                       <FileText size={16} />
                     </div>
                   )}
                   <div className="min-w-0">
-                    <p className="text-[11px] font-medium text-stone-200 truncate">
+                    <p className="text-[11px] font-medium text-foreground truncate">
                       {adminPendingFile.file.name}
                     </p>
-                    <p className="text-[10px] text-stone-500">
+                    <p className="text-[10px] text-muted-foreground">
                       {(adminPendingFile.file.size / 1024).toFixed(1)} KB
                     </p>
                   </div>
@@ -718,7 +718,7 @@ export default function AdminChatPage() {
                 <button
                   type="button"
                   onClick={handleRemovePendingFile}
-                  className="p-1 rounded-full text-stone-400 hover:text-white hover:bg-stone-800 transition cursor-pointer"
+                  className="p-1 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition cursor-pointer"
                   title="Remove attachment"
                 >
                   <X size={14} />
@@ -729,7 +729,7 @@ export default function AdminChatPage() {
             {/* Admin Input Bar */}
             <form
               onSubmit={handleSendReply}
-              className="p-3 bg-stone-900 border-t border-stone-800 flex items-center gap-2.5"
+              className="p-3 bg-card border-t border-border flex items-center gap-2.5"
             >
               <input
                 type="file"
@@ -742,7 +742,7 @@ export default function AdminChatPage() {
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={sending}
-                className="p-2.5 text-stone-400 hover:text-emerald-400 hover:bg-stone-800/80 rounded-xl transition cursor-pointer disabled:opacity-40"
+                className="p-2.5 text-muted-foreground hover:text-primary hover:bg-muted rounded-xl transition cursor-pointer disabled:opacity-40"
                 title="Attach photo or file"
               >
                 <Paperclip className="w-4 h-4" />
@@ -752,12 +752,12 @@ export default function AdminChatPage() {
                 placeholder="Type your official response or attach file..."
                 value={replyText}
                 onChange={handleInputChange}
-                className="flex-1 bg-stone-950 border border-stone-800 text-stone-100 text-xs rounded-xl px-4 py-2.5 focus:outline-none focus:border-amber-500/80 placeholder:text-stone-600"
+                className="flex-1 bg-background border border-border text-foreground text-xs rounded-xl px-4 py-2.5 focus:outline-none focus:ring-1 focus:ring-primary placeholder:text-muted-foreground"
               />
               <button
                 type="submit"
                 disabled={sending || (!replyText.trim() && !adminPendingFile)}
-                className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl transition flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-lg"
+                className="px-4 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold rounded-xl transition flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-sm"
               >
                 {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                 <span>Send Reply</span>
@@ -765,10 +765,10 @@ export default function AdminChatPage() {
             </form>
           </div>
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center text-center p-8 text-stone-500">
-            <MessageSquare className="w-12 h-12 text-stone-700 mb-3" />
-            <p className="text-sm font-medium text-stone-300">Select a Conversation</p>
-            <p className="text-xs text-stone-600 max-w-sm mt-1">
+          <div className="flex-1 flex flex-col items-center justify-center text-center p-8 text-muted-foreground">
+            <MessageSquare className="w-12 h-12 text-muted-foreground/30 mb-3" />
+            <p className="text-sm font-medium text-foreground">Select a Conversation</p>
+            <p className="text-xs text-muted-foreground max-w-sm mt-1">
               Select an active customer chat from the left panel to review message history and reply.
             </p>
           </div>

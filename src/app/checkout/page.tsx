@@ -2,15 +2,16 @@
 
 import { API_BASE_URL } from '@/config/api';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../../store';
 import { clearCart, removeCoupon } from '../../store/cartSlice';
 import { loadStripe } from '@stripe/stripe-js';
-import { CreditCard, Truck, CheckCircle2, AlertCircle, ShoppingBag } from 'lucide-react';
+import { CreditCard, Truck, CheckCircle2, AlertCircle, ShoppingBag, ChevronDown, Search, Check } from 'lucide-react';
 import { useCurrency } from '../../context/CurrencyContext';
+import { COUNTRIES_LIST } from '@/constants/countries';
 
 const stripePromise = loadStripe('pk_test_mock_holder'); // load client Stripe
 
@@ -37,6 +38,26 @@ export default function CheckoutPage() {
   const [checkoutError, setCheckoutError] = useState('');
   const [isSuccess, setIsSuccess] = useState(false);
   const [orderNum, setOrderNum] = useState('');
+
+  // Searchable Country Dropdown state
+  const [isCountryOpen, setIsCountryOpen] = useState(false);
+  const [countrySearch, setCountrySearch] = useState('');
+  const countryDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (countryDropdownRef.current && !countryDropdownRef.current.contains(event.target as Node)) {
+        setIsCountryOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const filteredCountries = COUNTRIES_LIST.filter((c) =>
+    c.name.toLowerCase().includes(countrySearch.toLowerCase()) ||
+    c.code.toLowerCase().includes(countrySearch.toLowerCase())
+  );
 
   const isCodAvailable = cartItems.length > 0 && cartItems.every((item) => (item as any).is_cod_allowed !== false);
   const [paymentMethod, setPaymentMethod] = useState<'CASH_ON_DELIVERY' | 'STRIPE'>('CASH_ON_DELIVERY');
@@ -98,8 +119,8 @@ export default function CheckoutPage() {
   if (!mounted) return null;
 
   const shipping = shippingInfo !== null ? shippingInfo.final_fee : (subtotal > 500 ? 0 : 30.00);
-  const tax = Number(((subtotal - discount) * 0.05).toFixed(2));
-  const total = Number((subtotal - discount + shipping + tax).toFixed(2));
+  const tax = 0; // VAT removed per user request
+  const total = Number((subtotal - discount + shipping).toFixed(2));
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -278,16 +299,74 @@ export default function CheckoutPage() {
             </h2>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-muted-foreground uppercase">Country</label>
-                <input
-                  type="text"
-                  name="country"
-                  className="w-full text-sm bg-background border border-border rounded px-3 py-2.5 focus:outline-none"
-                  value={addressForm.country}
-                  onChange={handleInputChange}
-                  required
-                />
+              <div className="space-y-1 relative" ref={countryDropdownRef}>
+                <label className="text-xs font-semibold text-muted-foreground uppercase flex items-center justify-between">
+                  <span>Country</span>
+                  <span className="text-[10px] text-primary font-normal">Searchable Dropdown</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setIsCountryOpen(!isCountryOpen)}
+                  className="w-full text-sm bg-background border border-border rounded px-3 py-2.5 flex items-center justify-between text-left focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer transition hover:border-primary/50"
+                >
+                  <span className="flex items-center gap-2 truncate">
+                    <span>{COUNTRIES_LIST.find((c) => c.name.toLowerCase() === addressForm.country?.toLowerCase())?.flag || '🌐'}</span>
+                    <span className="font-medium text-foreground">{addressForm.country || 'Select Country'}</span>
+                  </span>
+                  <ChevronDown size={16} className={`text-muted-foreground transition-transform ${isCountryOpen ? 'rotate-180 text-primary' : ''}`} />
+                </button>
+
+                {isCountryOpen && (
+                  <div className="absolute top-full left-0 right-0 mt-1 z-30 bg-card border border-border rounded-lg shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-1">
+                    <div className="p-2 border-b border-border bg-muted/30">
+                      <div className="relative">
+                        <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                        <input
+                          type="text"
+                          placeholder="Search country name or code..."
+                          value={countrySearch}
+                          onChange={(e) => setCountrySearch(e.target.value)}
+                          className="w-full bg-background border border-border rounded pl-8 pr-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                          autoFocus
+                        />
+                      </div>
+                    </div>
+
+                    <div className="max-h-56 overflow-y-auto divide-y divide-border/30">
+                      {filteredCountries.length === 0 ? (
+                        <div className="p-3 text-center text-xs text-muted-foreground">
+                          No countries matching "{countrySearch}"
+                        </div>
+                      ) : (
+                        filteredCountries.map((c) => {
+                          const isSelected = addressForm.country?.toLowerCase() === c.name.toLowerCase();
+                          return (
+                            <button
+                              key={c.code}
+                              type="button"
+                              onClick={() => {
+                                setAddressForm((prev) => ({ ...prev, country: c.name }));
+                                setIsCountryOpen(false);
+                                setCountrySearch('');
+                              }}
+                              className={`w-full px-3 py-2 text-left text-xs flex items-center justify-between transition cursor-pointer ${
+                                isSelected
+                                  ? 'bg-primary/10 text-primary font-semibold'
+                                  : 'hover:bg-muted/60 text-foreground'
+                              }`}
+                            >
+                              <span className="flex items-center gap-2">
+                                <span className="text-sm">{c.flag}</span>
+                                <span>{c.name}</span>
+                              </span>
+                              {isSelected && <Check size={14} className="text-primary" />}
+                            </button>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-1">
@@ -523,10 +602,7 @@ export default function CheckoutPage() {
                 <span>✈ {shippingInfo.threshold_rule}</span>
               </div>
             )}
-            <div className="flex justify-between">
-              <span className="text-muted">VAT (5%)</span>
-              <span>{formatPrice(tax)}</span>
-            </div>
+
             <div className="border-t border-border pt-3 flex justify-between text-sm font-bold">
               <span>Grand Total</span>
               <span className="text-primary font-serif">{formatPrice(total)}</span>

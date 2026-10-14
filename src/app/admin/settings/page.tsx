@@ -19,7 +19,23 @@ import {
   ArrowRightLeft,
   AlertCircle,
   FileText,
+  MapPin,
+  Plus,
+  Phone,
+  Mail,
+  Clock,
+  X,
+  Edit2,
 } from 'lucide-react';
+
+interface BranchItem {
+  id: string;
+  name: string;
+  address: string;
+  phone: string;
+  email: string;
+  hours: string;
+}
 
 const SETTING_GROUPS = [
   {
@@ -239,11 +255,63 @@ export default function SiteSettingsPage() {
   const [migrating, setMigrating] = useState(false);
   const [migrationMessage, setMigrationMessage] = useState('');
 
+  // Dynamic Multiple Branches State
+  const [branches, setBranches] = useState<BranchItem[]>([]);
+  const [editingBranch, setEditingBranch] = useState<BranchItem | null>(null);
+  const [isBranchModalOpen, setIsBranchModalOpen] = useState(false);
+  const [branchForm, setBranchForm] = useState<BranchItem>({
+    id: '',
+    name: '',
+    address: '',
+    phone: '',
+    email: '',
+    hours: '',
+  });
+
   const fetchSettings = async () => {
     setLoading(true);
     try {
       const res = await fetch(`${API_BASE_URL}/ecommerce/site-settings`);
-      if (res.ok) setSettings(await res.json());
+      if (res.ok) {
+        const data = await res.json();
+        setSettings(data);
+        if (data.footer_branches_json) {
+          try {
+            const parsed = JSON.parse(data.footer_branches_json);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setBranches(parsed);
+            }
+          } catch {}
+        } else {
+          // Defaults if not yet set
+          setBranches([
+            {
+              id: 'branch-1',
+              name: 'Abu Hail Main Showroom',
+              address: data.footer_address_1 || 'Suit No: M-49, 2nd Floor, Al Habtoor Building (Abu Hail Centre), Abu Hail, Deira-Dubai, P.O Box-67242',
+              phone: data.footer_phone_1 || '+971 55 642 4758',
+              email: 'abuhail@sabaalwadi.com',
+              hours: 'Sat-Thu: 09:00am-11:00pm | Fri: 04:00pm-10:00pm',
+            },
+            {
+              id: 'branch-2',
+              name: 'Abu Hail Second Suite',
+              address: data.footer_address_2 || 'Suit No: M-104, 2nd Floor, Al Habtoor Building (Abu Hail Centre), Abu Hail, Deira-Dubai, P.O Box-67242',
+              phone: data.footer_phone_2 || '+971 55 79 17 409',
+              email: 'deira@sabaalwadi.com',
+              hours: 'Sat-Thu: 09:00am-11:00pm',
+            },
+            {
+              id: 'branch-3',
+              name: 'Abu Hail Studio & Atelier',
+              address: data.footer_address_3 || 'Suit No: M-16, 2nd Floor, Al Habtoor Building (Abu Hail Centre), Abu Hail, Deira-Dubai, P.O Box-67242',
+              phone: data.footer_phone_4 || '+971 55 467 5285',
+              email: 'contact@sabaalwadi.com',
+              hours: 'Sat-Thu: 10:00am-10:00pm',
+            },
+          ]);
+        }
+      }
     } catch (_) {}
     finally { setLoading(false); }
   };
@@ -268,6 +336,49 @@ export default function SiteSettingsPage() {
 
   const handleChange = (key: string, value: string) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleOpenAddBranch = () => {
+    setEditingBranch(null);
+    setBranchForm({
+      id: '',
+      name: '',
+      address: '',
+      phone: '',
+      email: '',
+      hours: '',
+    });
+    setIsBranchModalOpen(true);
+  };
+
+  const handleOpenEditBranch = (b: BranchItem) => {
+    setEditingBranch(b);
+    setBranchForm({ ...b });
+    setIsBranchModalOpen(true);
+  };
+
+  const handleSaveBranchForm = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!branchForm.name.trim() || !branchForm.address.trim()) return;
+
+    let updated: BranchItem[];
+    if (editingBranch) {
+      updated = branches.map((b) => (b.id === branchForm.id ? { ...branchForm } : b));
+    } else {
+      updated = [...branches, { ...branchForm, id: `branch-${Date.now()}` }];
+    }
+    setBranches(updated);
+    handleChange('footer_branches_json', JSON.stringify(updated));
+    setIsBranchModalOpen(false);
+    setEditingBranch(null);
+  };
+
+  const handleDeleteBranch = (id: string) => {
+    if (confirm('Are you sure you want to remove this branch?')) {
+      const updated = branches.filter((b) => b.id !== id);
+      setBranches(updated);
+      handleChange('footer_branches_json', JSON.stringify(updated));
+    }
   };
 
   const handleSettingsImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, key: string) => {
@@ -637,6 +748,79 @@ export default function SiteSettingsPage() {
                     </div>
                   );
                 })}
+
+                {/* Dedicated Interactive Multi-Branch Management Section */}
+                {title === 'Dynamic Footer & Store Contact Information' && (
+                  <div className="pt-6 border-t border-border space-y-4">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <div>
+                        <h3 className="text-xs font-bold text-foreground flex items-center gap-2">
+                          <MapPin size={15} className="text-primary" />
+                          Multiple Store Branches &amp; Boutiques ({branches.length})
+                        </h3>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">
+                          Add, update, or remove physical branches displayed dynamically in the footer.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleOpenAddBranch}
+                        className="px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition shadow-xs"
+                      >
+                        <Plus size={13} /> Add New Branch
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {branches.map((b) => (
+                        <div
+                          key={b.id}
+                          className="p-3.5 rounded-xl border border-border bg-background space-y-2 relative group shadow-xs hover:border-primary/40 transition"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <h4 className="text-xs font-bold text-foreground line-clamp-1">{b.name}</h4>
+                            <div className="flex items-center gap-1 shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => handleOpenEditBranch(b)}
+                                className="p-1 rounded text-muted-foreground hover:text-primary transition cursor-pointer"
+                                title="Edit branch"
+                              >
+                                <Edit2 size={12} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteBranch(b.id)}
+                                className="p-1 rounded text-muted-foreground hover:text-red-500 transition cursor-pointer"
+                                title="Delete branch"
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                            </div>
+                          </div>
+                          <p className="text-[11px] text-muted-foreground leading-relaxed line-clamp-2">{b.address}</p>
+                          <div className="pt-1 border-t border-border/40 space-y-1 text-[10px]">
+                            {b.phone && (
+                              <p className="text-primary font-mono flex items-center gap-1">
+                                <Phone size={10} /> {b.phone}
+                              </p>
+                            )}
+                            {b.email && (
+                              <p className="text-muted-foreground flex items-center gap-1">
+                                <Mail size={10} /> {b.email}
+                              </p>
+                            )}
+                            {b.hours && (
+                              <p className="text-muted-foreground/75 italic flex items-center gap-1">
+                                <Clock size={10} /> {b.hours}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           ))}
@@ -665,6 +849,116 @@ export default function SiteSettingsPage() {
             )}
           </div>
         </form>
+      )}
+
+      {/* Add / Edit Branch Modal */}
+      {isBranchModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in">
+          <div className="bg-card border border-border w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col text-foreground">
+            <div className="p-4 sm:p-5 border-b border-border flex items-center justify-between bg-background">
+              <div className="flex items-center gap-2">
+                <MapPin size={18} className="text-primary" />
+                <h3 className="font-serif text-base font-bold text-foreground">
+                  {editingBranch ? 'Edit Store Branch' : 'Add New Store Branch'}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsBranchModalOpen(false)}
+                className="p-1.5 rounded-full hover:bg-accent text-muted-foreground hover:text-foreground cursor-pointer transition"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveBranchForm} className="p-5 space-y-3.5 bg-card text-xs">
+              <div>
+                <label className="block font-semibold mb-1 uppercase text-[10px] tracking-wider text-muted-foreground">
+                  Branch / Boutique Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Abu Hail Main Showroom"
+                  value={branchForm.name}
+                  onChange={(e) => setBranchForm({ ...branchForm, name: e.target.value })}
+                  className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-primary text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold mb-1 uppercase text-[10px] tracking-wider text-muted-foreground">
+                  Full Physical Address *
+                </label>
+                <textarea
+                  rows={3}
+                  required
+                  placeholder="e.g. Suit No: M-49, 2nd Floor, Al Habtoor Building, Abu Hail, Deira-Dubai, P.O Box-67242"
+                  value={branchForm.address}
+                  onChange={(e) => setBranchForm({ ...branchForm, address: e.target.value })}
+                  className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-primary text-xs leading-relaxed"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold mb-1 uppercase text-[10px] tracking-wider text-muted-foreground">
+                    Contact Phone / Mobile
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. +971 55 642 4758"
+                    value={branchForm.phone}
+                    onChange={(e) => setBranchForm({ ...branchForm, phone: e.target.value })}
+                    className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-primary text-xs font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-semibold mb-1 uppercase text-[10px] tracking-wider text-muted-foreground">
+                    Branch Email
+                  </label>
+                  <input
+                    type="email"
+                    placeholder="e.g. abuhail@sabaalwadi.com"
+                    value={branchForm.email}
+                    onChange={(e) => setBranchForm({ ...branchForm, email: e.target.value })}
+                    className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-primary text-xs"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-semibold mb-1 uppercase text-[10px] tracking-wider text-muted-foreground">
+                  Visiting / Business Hours
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Sat-Thu: 09:00am-11:00pm | Fri: 04:00pm-10:00pm"
+                  value={branchForm.hours}
+                  onChange={(e) => setBranchForm({ ...branchForm, hours: e.target.value })}
+                  className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-primary text-xs"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-border">
+                <button
+                  type="button"
+                  onClick={() => setIsBranchModalOpen(false)}
+                  className="px-4 py-2 border border-border rounded-lg text-xs font-semibold text-muted-foreground hover:bg-accent cursor-pointer transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg text-xs transition cursor-pointer shadow-sm"
+                >
+                  {editingBranch ? 'Update Branch' : 'Add Branch'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );

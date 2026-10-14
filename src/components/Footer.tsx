@@ -197,40 +197,27 @@ export default function Footer() {
           {/* Column 3: Need Help */}
           <div className="space-y-3">
             <h4 className="font-semibold text-foreground text-sm tracking-wide">
-              Need Help
+              Need Help &amp; Support
             </h4>
             <ul className="space-y-2 text-muted-foreground text-xs">
-              {settings.footer_phone_1 && (
-                <li>
-                  <a href={`tel:${settings.footer_phone_1.replace(/[^\d+]/g, '')}`} className="hover:text-primary transition block">
-                    {settings.footer_phone_1}
-                  </a>
-                </li>
-              )}
-              {settings.footer_phone_2 && (
-                <li>
-                  <a href={`tel:${settings.footer_phone_2.replace(/[^\d+]/g, '')}`} className="hover:text-primary transition block">
-                    {settings.footer_phone_2}
-                  </a>
-                </li>
-              )}
-              {settings.footer_phone_3 && (
-                <li>
-                  <a href={`tel:${settings.footer_phone_3.replace(/[^\d+]/g, '')}`} className="hover:text-primary transition block">
-                    {settings.footer_phone_3}
-                  </a>
-                </li>
-              )}
-              {settings.footer_phone_4 && (
-                <li>
-                  <span className="block leading-snug">
-                    {settings.footer_phone_4}
-                  </span>
-                </li>
-              )}
+              {[settings.footer_phone_1, settings.footer_phone_2, settings.footer_phone_3, settings.footer_phone_4]
+                .filter(Boolean)
+                .map((phone, idx) => (
+                  <li key={idx}>
+                    <a
+                      href={`tel:${phone.replace(/[^\d+]/g, '')}`}
+                      className="hover:text-primary transition block"
+                    >
+                      {phone}
+                    </a>
+                  </li>
+                ))}
               {settings.footer_email && (
                 <li className="pt-1">
-                  <a href={`mailto:${settings.footer_email}`} className="text-primary hover:underline font-medium block">
+                  <a
+                    href={`mailto:${settings.footer_email}`}
+                    className="text-primary hover:underline font-medium block"
+                  >
                     {settings.footer_email}
                   </a>
                 </li>
@@ -253,28 +240,68 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Column 5: Address */}
+          {/* Column 5: Multiple Branches & Address */}
           <div className="space-y-3">
             <h4 className="font-semibold text-foreground text-sm tracking-wide">
-              Address
+              Our Branches
             </h4>
-            <ul className="space-y-2.5 text-muted-foreground text-[11px] leading-relaxed">
-              {settings.footer_address_1 && (
-                <li className="border-b border-border/40 pb-2 last:border-b-0">
-                  {settings.footer_address_1}
-                </li>
-              )}
-              {settings.footer_address_2 && (
-                <li className="border-b border-border/40 pb-2 last:border-b-0">
-                  {settings.footer_address_2}
-                </li>
-              )}
-              {settings.footer_address_3 && (
-                <li className="last:border-b-0">
-                  {settings.footer_address_3}
-                </li>
-              )}
-            </ul>
+            <div className="space-y-3 text-muted-foreground text-[11px] leading-relaxed">
+              {(() => {
+                let branches: {
+                  id?: string;
+                  name?: string;
+                  address?: string;
+                  phone?: string;
+                  email?: string;
+                  hours?: string;
+                }[] = [];
+
+                try {
+                  if (settings.footer_branches_json) {
+                    const parsed = JSON.parse(settings.footer_branches_json);
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                      branches = parsed;
+                    }
+                  }
+                } catch {}
+
+                if (branches.length === 0) {
+                  if (settings.footer_address_1) branches.push({ name: 'Branch 1', address: settings.footer_address_1 });
+                  if (settings.footer_address_2) branches.push({ name: 'Branch 2', address: settings.footer_address_2 });
+                  if (settings.footer_address_3) branches.push({ name: 'Branch 3', address: settings.footer_address_3 });
+                }
+
+                if (branches.length === 0) {
+                  return <p className="text-muted-foreground">Main Store - Dubai, UAE</p>;
+                }
+
+                return branches.map((b, idx) => (
+                  <div key={b.id || idx} className="border-b border-border/40 pb-2.5 last:border-b-0 space-y-0.5">
+                    {b.name && <p className="font-semibold text-foreground text-xs">{b.name}</p>}
+                    {b.address && <p>{b.address}</p>}
+                    {b.phone && (
+                      <a
+                        href={`tel:${b.phone.replace(/[^\d+]/g, '')}`}
+                        className="text-primary hover:underline block text-[10px] font-medium"
+                      >
+                        {b.phone}
+                      </a>
+                    )}
+                    {b.email && (
+                      <a
+                        href={`mailto:${b.email}`}
+                        className="text-muted-foreground hover:text-primary block text-[10px]"
+                      >
+                        {b.email}
+                      </a>
+                    )}
+                    {b.hours && (
+                      <p className="text-[10px] text-muted-foreground/80 italic">{b.hours}</p>
+                    )}
+                  </div>
+                ));
+              })()}
+            </div>
           </div>
         </div>
 

@@ -7,7 +7,8 @@ export type BlockType =
   | 'TESTIMONIALS'
   | 'FAQ_ACCORDION'
   | 'CTA_BANNER'
-  | 'SPACER';
+  | 'SPACER'
+  | 'MAP';
 
 export interface PageBlock {
   id: string;

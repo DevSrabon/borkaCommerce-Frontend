@@ -1,0 +1,48 @@
+export interface CountryItem {
+  name: string;
+  code: string;
+  flag: string;
+}
+
+export const COUNTRIES_LIST: CountryItem[] = [
+  { name: 'United Arab Emirates', code: 'AE', flag: '🇦🇪' },
+  { name: 'Saudi Arabia', code: 'SA', flag: '🇸🇦' },
+  { name: 'Qatar', code: 'QA', flag: '🇶🇦' },
+  { name: 'Kuwait', code: 'KW', flag: '🇰🇼' },
+  { name: 'Bahrain', code: 'BH', flag: '🇧🇭' },
+  { name: 'Oman', code: 'OM', flag: '🇴🇲' },
+  { name: 'Bangladesh', code: 'BD', flag: '🇧🇩' },
+  { name: 'United Kingdom', code: 'GB', flag: '🇬🇧' },
+  { name: 'United States', code: 'US', flag: '🇺🇸' },
+  { name: 'Canada', code: 'CA', flag: '🇨🇦' },
+  { name: 'Australia', code: 'AU', flag: '🇦🇺' },
+  { name: 'Pakistan', code: 'PK', flag: '🇵🇰' },
+  { name: 'India', code: 'IN', flag: '🇮🇳' },
+  { name: 'Malaysia', code: 'MY', flag: '🇲🇾' },
+  { name: 'Singapore', code: 'SG', flag: '🇸🇬' },
+  { name: 'Germany', code: 'DE', flag: '🇩🇪' },
+  { name: 'France', code: 'FR', flag: '🇫🇷' },
+  { name: 'Italy', code: 'IT', flag: '🇮🇹' },
+  { name: 'Spain', code: 'ES', flag: '🇪🇸' },
+  { name: 'Turkey', code: 'TR', flag: '🇹🇷' },
+  { name: 'Egypt', code: 'EG', flag: '🇪🇬' },
+  { name: 'Jordan', code: 'JO', flag: '🇯🇴' },
+  { name: 'Lebanon', code: 'LB', flag: '🇱🇧' },
+  { name: 'Morocco', code: 'MA', flag: '🇲🇦' },
+  { name: 'Netherlands', code: 'NL', flag: '🇳🇱' },
+  { name: 'Sweden', code: 'SE', flag: '🇸🇪' },
+  { name: 'Switzerland', code: 'CH', flag: '🇨🇭' },
+  { name: 'South Africa', code: 'ZA', flag: '🇿🇦' },
+  { name: 'New Zealand', code: 'NZ', flag: '🇳🇿' },
+  { name: 'Indonesia', code: 'ID', flag: '🇮🇩' },
+  { name: 'Japan', code: 'JP', flag: '🇯🇵' },
+  { name: 'South Korea', code: 'KR', flag: '🇰🇷' },
+  { name: 'Ireland', code: 'IE', flag: '🇮🇪' },
+  { name: 'Norway', code: 'NO', flag: '🇳🇴' },
+  { name: 'Belgium', code: 'BE', flag: '🇧🇪' },
+  { name: 'Austria', code: 'AT', flag: '🇦🇹' },
+  { name: 'Denmark', code: 'DK', flag: '🇩🇰' },
+  { name: 'Finland', code: 'FI', flag: '🇫🇮' },
+  { name: 'Portugal', code: 'PT', flag: '🇵🇹' },
+  { name: 'Brazil', code: 'BR', flag: '🇧🇷' },
+];

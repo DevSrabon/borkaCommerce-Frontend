@@ -14,6 +14,12 @@ import {
   ArrowRight,
   HelpCircle,
   EyeOff,
+  MapPin,
+  Phone,
+  Mail,
+  Clock,
+  ExternalLink,
+  Navigation,
 } from 'lucide-react';
 import { PageBlock } from '@/types/page-builder';
 
@@ -541,6 +547,203 @@ export default function BlockRenderer({
         >
           {data.has_divider && <hr className="w-full border-border/40" />}
         </div>
+      );
+    }
+
+    case 'MAP': {
+      const rawMapUrl = data.map_url || data.address || 'Downtown Dubai';
+      let embedUrl = 'https://maps.google.com/maps?q=Downtown+Dubai&t=&z=14&ie=UTF8&iwloc=&output=embed';
+
+      if (rawMapUrl.includes('<iframe')) {
+        const match = rawMapUrl.match(/src=["']([^"']+)["']/);
+        if (match && match[1]) {
+          embedUrl = match[1];
+        }
+      } else if (rawMapUrl.startsWith('http://') || rawMapUrl.startsWith('https://')) {
+        if (rawMapUrl.includes('output=embed')) {
+          embedUrl = rawMapUrl;
+        } else if (rawMapUrl.includes('google.com/maps/embed')) {
+          embedUrl = rawMapUrl;
+        } else {
+          embedUrl = `${rawMapUrl}${rawMapUrl.includes('?') ? '&' : '?'}output=embed`;
+        }
+      } else {
+        embedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(rawMapUrl)}&t=&z=14&ie=UTF8&iwloc=&output=embed`;
+      }
+
+      const mapHeight = data.map_height || 420;
+      const responsiveHeight = isMobile ? Math.max(280, Math.round(mapHeight * 0.75)) : mapHeight;
+      const isSplit = data.layout === 'split';
+      const showCard = data.show_card !== false;
+
+      const directionsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+        data.address || 'Downtown Dubai'
+      )}`;
+
+      return (
+        <section style={layout.style} className={layout.sectionClass}>
+          <div className={layout.innerClass}>
+            {(data.title || data.subtitle) && (
+              <div className={`mb-8 sm:mb-12 ${layout.alignClass}`}>
+                {data.title && (
+                  <h2 className={`${layout.headingFontClass} ${isMobile ? 'text-2xl' : 'text-3xl sm:text-4xl'} font-bold mb-3`}>
+                    {data.title}
+                  </h2>
+                )}
+                {data.subtitle && (
+                  <p className="text-xs sm:text-sm text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+                    {data.subtitle}
+                  </p>
+                )}
+              </div>
+            )}
+
+            <div
+              className={`w-full ${
+                isSplit && showCard
+                  ? 'grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch'
+                  : 'flex flex-col'
+              }`}
+            >
+              {/* Map Embed Iframe Container */}
+              <div
+                className={`relative overflow-hidden rounded-2xl border border-border shadow-md bg-card/50 ${
+                  isSplit && showCard ? 'lg:col-span-7 xl:col-span-8' : 'w-full'
+                }`}
+                style={{ minHeight: `${responsiveHeight}px` }}
+              >
+                <iframe
+                  title={data.title || 'Location Map'}
+                  src={embedUrl}
+                  width="100%"
+                  height="100%"
+                  style={{
+                    border: 0,
+                    minHeight: `${responsiveHeight}px`,
+                    display: 'block',
+                  }}
+                  allowFullScreen={false}
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  className="w-full h-full grayscale-[15%] contrast-[105%] hover:grayscale-0 transition-all duration-300"
+                />
+
+                {/* Floating Directions Badge */}
+                <a
+                  href={directionsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="absolute bottom-4 right-4 z-10 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card/95 hover:bg-card border border-border text-foreground text-xs font-semibold shadow-lg backdrop-blur-md transition-all hover:scale-105"
+                >
+                  <Navigation size={13} className="text-primary" />
+                  <span>Get Directions</span>
+                  <ExternalLink size={11} className="text-muted-foreground ml-0.5" />
+                </a>
+              </div>
+
+              {/* Store & Atelier Info Card */}
+              {showCard && (
+                <div
+                  className={`flex flex-col justify-between p-6 sm:p-8 rounded-2xl border border-border bg-card/80 backdrop-blur-sm shadow-sm ${
+                    isSplit ? 'lg:col-span-5 xl:col-span-4' : 'mt-6'
+                  }`}
+                >
+                  <div className="space-y-6">
+                    <div>
+                      <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-[11px] font-semibold mb-3">
+                        <MapPin size={12} />
+                        <span>Flagship Boutique</span>
+                      </div>
+                      <h3 className="text-lg sm:text-xl font-serif font-bold text-foreground">
+                        {data.title || 'Our Atelier & Showroom'}
+                      </h3>
+                      {data.subtitle && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {data.subtitle}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="space-y-4 text-xs">
+                      {data.address && (
+                        <div className="flex items-start gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-primary shrink-0 mt-0.5">
+                            <MapPin size={16} />
+                          </div>
+                          <div>
+                            <p className="font-semibold text-foreground">Address</p>
+                            <p className="text-muted-foreground leading-relaxed mt-0.5">
+                              {data.address}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      {data.hours && (
+                        <div className="flex items-start gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-primary shrink-0 mt-0.5">
+                            <Clock size={16} />
+                          </div>
+                          <div>
+                            <p className="font-semibold text-foreground">Visiting Hours</p>
+                            <p className="text-muted-foreground mt-0.5">{data.hours}</p>
+                          </div>
+                        </div>
+                      )}
+
+                      {data.phone && (
+                        <div className="flex items-start gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-primary shrink-0 mt-0.5">
+                            <Phone size={16} />
+                          </div>
+                          <div>
+                            <p className="font-semibold text-foreground">Telephone Concierge</p>
+                            <a
+                              href={`tel:${data.phone.replace(/\s+/g, '')}`}
+                              className="text-primary hover:underline font-mono mt-0.5 inline-block"
+                            >
+                              {data.phone}
+                            </a>
+                          </div>
+                        </div>
+                      )}
+
+                      {data.email && (
+                        <div className="flex items-start gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-primary shrink-0 mt-0.5">
+                            <Mail size={16} />
+                          </div>
+                          <div>
+                            <p className="font-semibold text-foreground">Direct Email</p>
+                            <a
+                              href={`mailto:${data.email}`}
+                              className="text-muted-foreground hover:text-primary transition mt-0.5 inline-block"
+                            >
+                              {data.email}
+                            </a>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="pt-6 border-t border-border mt-6">
+                    <a
+                      href={directionsUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full py-2.5 px-4 rounded-xl bg-primary text-primary-foreground font-semibold text-xs flex items-center justify-center gap-2 hover:bg-primary/90 transition shadow-sm"
+                    >
+                      <Navigation size={14} />
+                      <span>Open in Google Maps</span>
+                      <ExternalLink size={12} />
+                    </a>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
       );
     }
 

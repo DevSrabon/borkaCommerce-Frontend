@@ -1533,28 +1533,19 @@ export default function AdminOrderDetailPage() {
                 <p className="font-semibold text-foreground text-[11px] uppercase tracking-wider flex items-center gap-1.5">
                   <MapPin size={13} className="text-primary" /> Destination Address
                 </p>
-                {order.status === 'PENDING' ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsEditingAddress(!isEditingAddress);
-                      setAddressError(null);
-                    }}
-                    className="text-[11px] text-primary hover:underline font-semibold flex items-center gap-1 cursor-pointer"
-                  >
-                    <Pencil size={11} /> {isEditingAddress ? 'Cancel' : 'Edit Address'}
-                  </button>
-                ) : (
-                  <span
-                    className="text-[10px] bg-muted text-muted-foreground px-2 py-0.5 rounded border border-border"
-                    title="Shipping address cannot be changed after order confirmation."
-                  >
-                    Locked (Confirmed)
-                  </span>
-                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsEditingAddress(!isEditingAddress);
+                    setAddressError(null);
+                  }}
+                  className="text-[11px] text-primary hover:underline font-semibold flex items-center gap-1 cursor-pointer"
+                >
+                  <Pencil size={11} /> {isEditingAddress ? 'Cancel' : 'Edit Address'}
+                </button>
               </div>
 
-              {isEditingAddress && order.status === 'PENDING' ? (
+              {isEditingAddress ? (
                 <div className="bg-muted/40 p-3.5 rounded-lg border border-primary/30 space-y-3 animate-in fade-in">
                   <div className="text-[11px] font-bold text-foreground">
                     Edit Customer Shipping Address

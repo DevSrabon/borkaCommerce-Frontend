@@ -3,8 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { addToCart } from '../../../store/cartSlice';
-import { Check, Info, ShoppingBag, Truck, ShieldCheck, Clock, Star, Share2, Ruler, X, Play } from 'lucide-react';
+import { Check, Info, ShoppingBag, Truck, ShieldCheck, Clock, Star, Share2, Ruler, X, Play, ChevronDown, ChevronUp, FileText } from 'lucide-react';
 import { DiscountedPrice } from '../../../components/PriceDisplay';
+import { useCurrency } from '../../../context/CurrencyContext';
 import { API_BASE_URL } from '@/config/api';
 
 function getYoutubeEmbedUrl(url?: string): string {
@@ -105,12 +106,14 @@ export default function ProductClient({ product }: { product: ProductDetails }) 
     });
   });
 
+  const { formatPrice, currency } = useCurrency();
   const [selections, setSelections] = useState<Record<string, string>>({});
-  const [selectedVariant, setSelectedVariant] = useState<Variant | null>(null);
+  const [selectedVariant, setSelectedVariant] = useState<Variant | null>(product.variants?.[0] || null);
   const [activeImage, setActiveImage] = useState<string>(product.images[0] || '');
   const [activeMediaMode, setActiveMediaMode] = useState<'image' | 'video'>('image');
   const embedUrl = getYoutubeEmbedUrl(product.video_url);
   const [addedAlert, setAddedAlert] = useState(false);
+  const [descExpanded, setDescExpanded] = useState(true);
   const [shippingInfo, setShippingInfo] = useState<{
     base_fee: number;
     final_fee: number;
@@ -122,6 +125,7 @@ export default function ProductClient({ product }: { product: ProductDetails }) 
   } | null>(null);
 
   const [showSizeModal, setShowSizeModal] = useState(false);
+  const [sizeUnit, setSizeUnit] = useState<'in' | 'cm'>('in');
   const [siteSettings, setSiteSettings] = useState<Record<string, string> | null>(null);
   const [shareSuccess, setShareSuccess] = useState(false);
 
@@ -460,21 +464,21 @@ export default function ProductClient({ product }: { product: ProductDetails }) 
                   {shippingInfo && (
                     <span className={`font-bold px-2 py-0.5 rounded text-[10px] ${
                       shippingInfo.is_free
-                        ? 'bg-green-500/10 text-green-500 border border-green-500/20'
-                        : 'bg-zinc-800 text-zinc-300'
+                        ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                        : 'bg-muted border border-border text-foreground font-mono'
                     }`}>
-                      {shippingInfo.is_free ? 'FREE EXPRESS SHIPPING' : shippingInfo.display_text}
+                      {shippingInfo.is_free ? 'FREE EXPRESS SHIPPING' : `${formatPrice(shippingInfo.final_fee)} Express Delivery`}
                     </span>
                   )}
                 </div>
                 {shippingInfo?.threshold_rule && (
-                  <p className="text-[11px] text-amber-500 font-medium">
-                    ✈ {shippingInfo.threshold_rule}
+                  <p className="text-[11px] text-amber-600 dark:text-amber-400 font-medium">
+                    ✈ {shippingInfo.threshold_rule.replace(/AED\s*\d+/i, formatPrice(500))}
                   </p>
                 )}
                 {shippingInfo?.applied_rule && (
-                  <p className="text-[11px] text-green-500 font-medium">
-                    ✓ {shippingInfo.applied_rule}
+                  <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
+                    ✓ {shippingInfo.applied_rule.replace(/AED\s*\d+/i, formatPrice(shippingInfo.discount_amount || 30))}
                   </p>
                 )}
                 <p className="text-muted-foreground text-[11px]">
@@ -508,29 +512,47 @@ export default function ProductClient({ product }: { product: ProductDetails }) 
             </div>
           </div>
 
-          {/* Quick jump to full description */}
-          <div className="pt-2 text-left">
-            <a
-              href="#product-description"
-              className="text-xs text-primary hover:underline font-medium inline-flex items-center gap-1"
+          {/* Integrated Product Description (Directly accessible without scrolling down) */}
+          <div className="border border-border rounded-xl bg-card overflow-hidden shadow-xs">
+            <button
+              type="button"
+              onClick={() => setDescExpanded(!descExpanded)}
+              className="w-full p-3.5 flex items-center justify-between text-left font-serif font-bold text-xs sm:text-sm text-foreground hover:bg-muted/40 transition cursor-pointer"
             >
-              <span>Read complete craftsmanship description &amp; details</span>
-              <span>&darr;</span>
-            </a>
+              <div className="flex items-center gap-2">
+                <FileText size={15} className="text-primary" />
+                <span>Product Description &amp; Fabric Notes</span>
+              </div>
+              {descExpanded ? <ChevronUp size={15} className="text-muted-foreground" /> : <ChevronDown size={15} className="text-muted-foreground" />}
+            </button>
+
+            {descExpanded && (
+              <div className="p-3.5 pt-2 border-t border-border/60 text-xs text-muted-foreground leading-relaxed animate-in fade-in space-y-2">
+                {product.short_description && (
+                  <p className="font-medium text-foreground text-xs">
+                    {product.short_description}
+                  </p>
+                )}
+                <div
+                  className="prose prose-xs dark:prose-invert max-w-none text-xs text-muted-foreground"
+                  dangerouslySetInnerHTML={{ __html: product.description }}
+                />
+              </div>
+            )}
           </div>
         </div>
       </div>
     </div>
 
-    {/* Dedicated Full-Width Product Description Section starting from LEFT */}
-    <div id="product-description" className="border-t border-border pt-12 space-y-8 text-left scroll-mt-24">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-4 text-left">
+    {/* Dedicated Full-Width Product Description Section with tight, refined spacing */}
+    <div id="product-description" className="border-t border-border pt-8 space-y-5 text-left scroll-mt-20">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-3 text-left">
         <div className="space-y-1 text-left">
           <span className="text-[11px] font-semibold tracking-wider text-primary uppercase">
             Signature Design &amp; Details
           </span>
-          <h2 className="font-serif text-2xl sm:text-3xl font-bold tracking-tight text-foreground text-left">
-            Product Description
+          <h2 className="font-serif text-xl sm:text-2xl font-bold tracking-tight text-foreground text-left">
+            Complete Craftsmanship &amp; Story
           </h2>
         </div>
         {embedUrl && (
@@ -580,17 +602,30 @@ export default function ProductClient({ product }: { product: ProductDetails }) 
       </div>
     </div>
 
-      {/* Sizing Guide & Chart Modal - Only File Graphic */}
+      {/* Sizing Guide & Chart Modal - Restored Full Interactive Size Chart */}
       {showSizeModal && (() => {
         const chartFile = siteSettings?.size_chart_file || siteSettings?.size_chart_image;
 
+        const ABAYA_SIZES = [
+          { size: '50', height_in: "5'0\" - 5'1\"", height_cm: '152 - 155 cm', bust_in: '40"', bust_cm: '102 cm', sleeve_in: '26"', sleeve_cm: '66 cm', length_in: '50"', length_cm: '127 cm' },
+          { size: '52', height_in: "5'2\" - 5'3\"", height_cm: '157 - 160 cm', bust_in: '42"', bust_cm: '107 cm', sleeve_in: '27"', sleeve_cm: '68 cm', length_in: '52"', length_cm: '132 cm' },
+          { size: '54', height_in: "5'4\" - 5'5\"", height_cm: '162 - 165 cm', bust_in: '44"', bust_cm: '112 cm', sleeve_in: '28"', sleeve_cm: '71 cm', length_in: '54"', length_cm: '137 cm' },
+          { size: '56', height_in: "5'6\" - 5'7\"", height_cm: '167 - 170 cm', bust_in: '46"', bust_cm: '117 cm', sleeve_in: '28"', sleeve_cm: '71 cm', length_in: '56"', length_cm: '142 cm' },
+          { size: '58', height_in: "5'8\" - 5'9\"", height_cm: '172 - 175 cm', bust_in: '48"', bust_cm: '122 cm', sleeve_in: '29"', sleeve_cm: '74 cm', length_in: '58"', length_cm: '147 cm' },
+          { size: '60', height_in: "5'10\" - 6'0\"", height_cm: '177 - 183 cm', bust_in: '50"', bust_cm: '127 cm', sleeve_in: '30"', sleeve_cm: '76 cm', length_in: '60"', length_cm: '152 cm' },
+        ];
+
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 animate-in fade-in">
-            <div className="bg-card border border-border w-full max-w-2xl max-h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden text-foreground">
+            <div className="bg-card border border-border w-full max-w-2xl max-h-[92vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden text-foreground">
+              {/* Header */}
               <div className="p-4 sm:p-5 border-b border-border flex items-center justify-between bg-background">
                 <div className="flex items-center gap-2">
                   <Ruler size={18} className="text-primary" />
-                  <h2 className="font-serif text-lg font-bold">Size Chart</h2>
+                  <div>
+                    <h2 className="font-serif text-lg font-bold">Abaya Sizing Chart &amp; Guide</h2>
+                    <p className="text-[11px] text-muted-foreground">Standard Gulf &amp; International Modest Sizing</p>
+                  </div>
                 </div>
                 <button
                   type="button"
@@ -601,39 +636,132 @@ export default function ProductClient({ product }: { product: ProductDetails }) 
                 </button>
               </div>
 
-              <div className="p-4 sm:p-6 overflow-y-auto flex items-center justify-center bg-background/50 min-h-[300px]">
-                {chartFile ? (
-                  <div className="flex flex-col items-center gap-3 w-full">
+              {/* Navigation Tabs & Unit Toggle */}
+              <div className="flex items-center justify-between px-4 sm:px-6 py-2.5 border-b border-border bg-muted/20 text-xs">
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-muted-foreground">Units:</span>
+                  <div className="inline-flex rounded-lg border border-border p-0.5 bg-background">
+                    <button
+                      type="button"
+                      onClick={() => setSizeUnit('in')}
+                      className={`px-2.5 py-1 rounded text-xs font-medium transition cursor-pointer ${
+                        sizeUnit === 'in' ? 'bg-primary text-primary-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      Inches (in)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSizeUnit('cm')}
+                      className={`px-2.5 py-1 rounded text-xs font-medium transition cursor-pointer ${
+                        sizeUnit === 'cm' ? 'bg-primary text-primary-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      Centimeters (cm)
+                    </button>
+                  </div>
+                </div>
+
+                {chartFile && (
+                  <a
+                    href={chartFile}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-primary hover:underline font-medium inline-flex items-center gap-1"
+                  >
+                    View Official Document ↗
+                  </a>
+                )}
+              </div>
+
+              {/* Main Body */}
+              <div className="p-4 sm:p-6 overflow-y-auto space-y-6 bg-background/50">
+                {/* Standard Sizing Table */}
+                <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-xs">
+                  <table className="w-full text-xs text-left">
+                    <thead className="bg-muted/60 text-foreground font-semibold uppercase text-[10px] tracking-wider border-b border-border">
+                      <tr>
+                        <th className="py-3 px-3 sm:px-4">Size</th>
+                        <th className="py-3 px-3 sm:px-4">Your Height</th>
+                        <th className="py-3 px-3 sm:px-4">Abaya Length</th>
+                        <th className="py-3 px-3 sm:px-4">Bust Width</th>
+                        <th className="py-3 px-3 sm:px-4">Sleeve</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border/40">
+                      {ABAYA_SIZES.map((row) => (
+                        <tr key={row.size} className="hover:bg-muted/30 transition-colors">
+                          <td className="py-2.5 px-3 sm:px-4 font-bold text-primary font-mono">{row.size}</td>
+                          <td className="py-2.5 px-3 sm:px-4 text-foreground/90 font-medium">
+                            {sizeUnit === 'in' ? row.height_in : row.height_cm}
+                          </td>
+                          <td className="py-2.5 px-3 sm:px-4 text-foreground/80">
+                            {sizeUnit === 'in' ? row.length_in : row.length_cm}
+                          </td>
+                          <td className="py-2.5 px-3 sm:px-4 text-foreground/80">
+                            {sizeUnit === 'in' ? row.bust_in : row.bust_cm}
+                          </td>
+                          <td className="py-2.5 px-3 sm:px-4 text-foreground/80">
+                            {sizeUnit === 'in' ? row.sleeve_in : row.sleeve_cm}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Sizing & Measuring Tips */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  <div className="p-3.5 rounded-xl border border-border bg-card space-y-1.5">
+                    <h4 className="font-semibold text-foreground flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-primary" /> How To Measure Length
+                    </h4>
+                    <p className="text-muted-foreground leading-relaxed text-[11px]">
+                      Measure from the highest point of your shoulder down to your ankle or shoe level. Abaya size numbers (e.g. 54) correspond directly to length in inches.
+                    </p>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl border border-border bg-card space-y-1.5">
+                    <h4 className="font-semibold text-foreground flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-primary" /> Modest Fit Ease
+                    </h4>
+                    <p className="text-muted-foreground leading-relaxed text-[11px]">
+                      Our abayas are designed with a graceful, modest drape featuring +4 to +6 inches of ease around the bust and hips for effortless modesty and comfort.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Official Uploaded Graphic / Document File (if available) */}
+                {chartFile && (
+                  <div className="pt-2 border-t border-border space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-semibold text-xs text-foreground">Official Atelier Chart Graphic</h4>
+                      <a
+                        href={chartFile}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[11px] text-primary hover:underline font-medium"
+                      >
+                        Open full size ↗
+                      </a>
+                    </div>
                     <img
                       src={chartFile}
                       alt="Official Size Chart"
-                      className="w-full max-h-[70vh] object-contain rounded-xl border border-border bg-white p-2 shadow-sm"
+                      className="w-full max-h-80 object-contain rounded-xl border border-border bg-white p-2 shadow-xs"
                     />
-                    <a
-                      href={chartFile}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs text-primary hover:underline font-medium"
-                    >
-                      Open full resolution size chart ↗
-                    </a>
-                  </div>
-                ) : (
-                  <div className="py-12 text-center text-muted-foreground space-y-2">
-                    <Ruler size={32} className="mx-auto opacity-30" />
-                    <p className="text-sm font-medium">Standard Gulf Abaya Sizing applies (Sizes 50 - 60).</p>
-                    <p className="text-xs text-muted-foreground">Detailed size chart graphic will be updated by the store admin shortly.</p>
                   </div>
                 )}
               </div>
 
+              {/* Footer */}
               <div className="p-4 border-t border-border flex justify-end bg-background">
                 <button
                   type="button"
                   onClick={() => setShowSizeModal(false)}
                   className="px-5 py-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg text-xs transition cursor-pointer"
                 >
-                  Close
+                  Got It
                 </button>
               </div>
             </div>
