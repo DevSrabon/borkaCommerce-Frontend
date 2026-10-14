@@ -16,7 +16,7 @@ import {
   X,
   ChevronDown,
   LayoutGrid,
-  Sparkles,
+  Flame,
   ArrowRight,
   ShieldCheck,
   Tag,
@@ -374,7 +374,7 @@ export default function Navbar() {
                           onClick={() => setAllCategoriesDropdownOpen(false)}
                           className="text-amber-500 font-bold hover:underline flex items-center gap-1"
                         >
-                          <Sparkles size={12} />
+                          <Tag size={12} />
                           Special Offers & Flash Sales
                         </Link>
                         <Link
@@ -482,7 +482,7 @@ export default function Navbar() {
                     : 'text-amber-500 hover:text-amber-400 hover:bg-amber-500/10'
                 }`}
               >
-                <Sparkles size={13} className="text-amber-500 animate-pulse" />
+                <Flame size={13} className="text-amber-500 animate-pulse" />
                 <span>Offers</span>
                 <span className="text-xs bg-amber-500/20 text-amber-500 border border-amber-500/40 px-1 rounded font-mono font-bold">
                   20% OFF
@@ -977,7 +977,7 @@ export default function Navbar() {
                   className="flex items-center justify-between px-2 py-3 text-amber-500 font-bold text-sm hover:underline"
                 >
                   <span className="flex items-center gap-1.5">
-                    <Sparkles size={15} /> Flash Sale (20% OFF)
+                    <Flame size={15} /> Flash Sale (20% OFF)
                   </span>
                   <ArrowRight size={14} />
                 </Link>

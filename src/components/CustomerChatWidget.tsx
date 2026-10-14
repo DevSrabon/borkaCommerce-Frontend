@@ -9,8 +9,7 @@ import {
   MessageSquare,
   X,
   Send,
-  Sparkles,
-  Bot,
+  Headset,
   UserCheck,
   ShieldCheck,
   ChevronDown,
@@ -342,7 +341,7 @@ export default function CustomerChatWidget() {
           <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-stone-900 via-stone-900 to-amber-950/40 border-b border-stone-800 text-white">
             <div className="flex items-center gap-2.5">
               <div className="relative flex items-center justify-center w-9 h-9 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/40">
-                <Sparkles className="w-4 h-4" />
+                <Headset className="w-4 h-4" />
                 <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full ring-2 ring-stone-900" />
               </div>
               <div>
@@ -371,7 +370,7 @@ export default function CustomerChatWidget() {
           >
             {messages.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-center text-stone-500 p-6 space-y-2">
-                <Sparkles className="w-8 h-8 text-amber-500/50 animate-pulse" />
+                <Headset className="w-8 h-8 text-amber-500/50 animate-pulse" />
                 <p className="text-xs text-stone-300 font-serif">Welcome to Saba Al Wadi</p>
                 <p className="text-xs text-stone-500">
                   Our private client advisors are available to guide your bespoke abaya inquiries.
@@ -390,8 +389,8 @@ export default function CustomerChatWidget() {
                     <div className="flex items-center gap-1.5 mb-1 text-xs text-stone-500">
                       {isBot ? (
                         <>
-                          <Bot className="w-3 h-3 text-amber-400" />
-                          <span className="text-amber-400 font-medium">Concierge Bot</span>
+                          <Headset className="w-3 h-3 text-amber-400" />
+                          <span className="text-amber-400 font-medium">Customer Support</span>
                         </>
                       ) : isCustomer ? (
                         <span>You</span>

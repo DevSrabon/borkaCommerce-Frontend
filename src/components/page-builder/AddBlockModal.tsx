@@ -12,7 +12,7 @@ import {
   Megaphone,
   FileText,
   Minus,
-  Sparkles,
+  Layers,
   BookOpen,
   PhoneCall,
   MapPin,
@@ -321,7 +321,7 @@ export default function AddBlockModal({
           subtitle: 'Reach out to us through any of our channels',
           columns: 3,
           items: [
-            { icon: 'Sparkles', title: 'Live Chat', description: 'Instant answers via our website chat widget.' },
+            { icon: 'Headset', title: 'Live Chat', description: 'Instant answers via our website chat widget.' },
             { icon: 'Truck', title: 'Track Order', description: 'View real-time delivery status in your profile.' },
             { icon: 'Award', title: 'VIP Consultation', description: 'Schedule personal sizing and styling.' },
           ],
@@ -366,7 +366,7 @@ export default function AddBlockModal({
         <div className="flex items-center justify-between border-b border-border px-6 py-4 bg-background">
           <div>
             <h3 className="font-serif text-lg font-bold flex items-center gap-2">
-              <Sparkles size={18} className="text-primary" />
+              <Layers size={18} className="text-primary" />
               Add Block to Page
             </h3>
             <p className="text-xs text-muted-foreground">

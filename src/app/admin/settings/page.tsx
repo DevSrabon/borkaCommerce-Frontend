@@ -12,7 +12,8 @@ import {
   CheckCircle2,
   Upload,
   Trash2,
-  Sparkles,
+  Flame,
+  Truck,
   Cloud,
   HardDrive,
   ArrowRightLeft,
@@ -717,7 +718,7 @@ export default function SiteSettingsPage() {
               <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
                 <div className="flex items-center gap-3 px-5 py-4 border-b border-border bg-background/50">
                   <div className="h-8 w-8 rounded-md flex items-center justify-center bg-rose-500/10 text-rose-500">
-                    <Sparkles size={16} />
+                    <Flame size={16} />
                   </div>
                   <div>
                     <h2 className="text-sm font-semibold text-foreground">Flash Sale &amp; Campaigns</h2>
@@ -1008,7 +1009,7 @@ export default function SiteSettingsPage() {
                 <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
                   <div className="flex items-center gap-3 px-5 py-4 border-b border-border bg-background/50">
                     <div className="h-8 w-8 rounded-md flex items-center justify-center bg-amber-500/10 text-amber-500">
-                      <Sparkles size={16} />
+                      <Truck size={16} />
                     </div>
                     <div>
                       <h2 className="text-sm font-semibold text-foreground">Delivery &amp; Shipping Charges</h2>
@@ -1197,7 +1198,7 @@ export default function SiteSettingsPage() {
                   >
                     <div className="flex items-start justify-between">
                       <div className="w-9 h-9 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-500">
-                        <Sparkles size={18} />
+                        <Cloud size={18} />
                       </div>
                       {activeDriver === 'cloudinary' && (
                         <span className="text-xs font-bold px-2 py-0.5 bg-indigo-600 text-white rounded-full flex items-center gap-1">
@@ -1494,7 +1495,7 @@ export default function SiteSettingsPage() {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-5 py-4 border-b border-border bg-background/50">
                   <div className="flex items-center gap-3">
                     <div className="h-8 w-8 rounded-md flex items-center justify-center bg-indigo-500/10 text-indigo-500">
-                      <Sparkles size={16} />
+                      <Cloud size={16} />
                     </div>
                     <div>
                       <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
@@ -1756,7 +1757,7 @@ export default function SiteSettingsPage() {
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-bold text-foreground flex items-center gap-2">
-                      <Sparkles size={16} className="text-primary" />
+                      <RefreshCw size={16} className="text-primary" />
                       Unified System Cache Control
                     </span>
                     <span className="text-xs bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 rounded font-bold">

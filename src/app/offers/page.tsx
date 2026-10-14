@@ -2,7 +2,7 @@ import { API_BASE_URL } from '@/config/api';
 import React from 'react';
 import Link from 'next/link';
 import { PriceDisplay } from '../../components/PriceDisplay';
-import { Tag, Sparkles, Clock, Percent, ShieldCheck } from 'lucide-react';
+import { Tag, Flame, Clock, Percent, ShieldCheck } from 'lucide-react';
 
 interface OfferProduct {
   id: string;
@@ -48,7 +48,7 @@ export default async function OffersPage() {
       <div className="relative rounded-2xl overflow-hidden bg-gradient-to-r from-neutral-950 via-zinc-900 to-neutral-900 border border-border p-8 sm:p-12 text-white shadow-xl">
         <div className="relative z-10 max-w-2xl space-y-4">
           <div className="inline-flex items-center gap-2 bg-primary/20 border border-primary/40 text-primary px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
-            <Sparkles size={14} /> Active Seasonal Promotions
+            <Flame size={14} /> Active Seasonal Promotions
           </div>
           <h1 className="font-serif text-3xl sm:text-5xl font-bold tracking-tight leading-tight">
             Exclusive <span className="text-primary font-serif">Flash Sale</span> & Festive Offers

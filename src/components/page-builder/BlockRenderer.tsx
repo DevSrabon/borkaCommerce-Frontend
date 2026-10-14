@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import {
   Sparkles,
+  Headset,
   Shield,
   Truck,
   Award,
@@ -24,6 +25,7 @@ import {
 import { PageBlock } from '@/types/page-builder';
 
 const ICON_MAP: Record<string, React.ElementType> = {
+  Headset,
   Sparkles,
   Shield,
   Truck,

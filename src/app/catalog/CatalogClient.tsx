@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { PriceDisplay } from '../../components/PriceDisplay';
 import {
-  Sparkles,
+  Tag,
   SlidersHorizontal,
   X,
   RotateCcw,
@@ -423,7 +423,7 @@ export default function CatalogClient({
       <div className="space-y-2 bg-accent/30 p-3.5 rounded-xl border border-border">
         <div className="flex items-center justify-between">
           <span className="text-xs font-bold tracking-wider text-primary uppercase flex items-center gap-1.5">
-            <Sparkles size={13} /> Exclusive Deals
+            <Tag size={13} /> Exclusive Deals
           </span>
           <span className="text-xs bg-red-600 text-white font-bold px-1.5 py-0.5 rounded">
             HOT

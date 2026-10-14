@@ -504,6 +504,7 @@ function BlockForm({
                             }}
                             className="bg-background border border-border rounded px-2 py-1 text-foreground"
                           >
+                            <option value="Headset">Headset / Support Icon</option>
                             <option value="Sparkles">Sparkles Icon</option>
                             <option value="Shield">Shield Icon</option>
                             <option value="Truck">Truck Icon</option>

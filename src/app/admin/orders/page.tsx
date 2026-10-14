@@ -17,7 +17,7 @@ import {
   Filter,
   X,
   Factory,
-  Sparkles,
+  Hash,
   RotateCcw,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -560,7 +560,7 @@ export default function OrdersAdminPage() {
                           {generatingProdId === ord.id ? (
                             <RefreshCw size={10} className="animate-spin" />
                           ) : (
-                            <Sparkles size={10} />
+                            <Hash size={10} />
                           )}
                           <span>Generate</span>
                         </button>

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { API_BASE_URL } from '@/config/api';
-import { Search, Eye, Calendar, ArrowRight, BookOpen, Sparkles, TrendingUp } from 'lucide-react';
+import { Search, Eye, Calendar, ArrowRight, BookOpen, TrendingUp } from 'lucide-react';
 
 interface BlogItem {
   id: string;
@@ -346,7 +346,7 @@ export default function BlogsPage() {
               <div className="bg-card border border-border rounded-xl p-5 shadow-xs space-y-3">
                 <h2 className="text-base font-serif font-bold text-emerald-800 dark:text-emerald-400 pb-2 border-b border-border flex items-center justify-between">
                   <span>Categories</span>
-                  <Sparkles size={14} className="text-primary" />
+                  <BookOpen size={14} className="text-primary" />
                 </h2>
                 <div className="flex flex-wrap gap-1.5 pt-1">
                   <button

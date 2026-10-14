@@ -9,10 +9,9 @@ import {
   Send,
   Search,
   CheckCheck,
-  Bot,
+  Headset,
   User,
   Clock,
-  Sparkles,
   Volume2,
   VolumeX,
   ChevronDown,
@@ -599,8 +598,8 @@ export default function AdminChatPage() {
                     <div className="flex items-center gap-1.5 mb-1 text-xs text-muted-foreground">
                       {isBot ? (
                         <>
-                          <Bot className="w-3 h-3 text-primary" />
-                          <span className="text-primary font-medium">Saba Concierge Bot</span>
+                          <Headset className="w-3 h-3 text-primary" />
+                          <span className="text-primary font-medium">Auto-Assistant Support</span>
                         </>
                       ) : isCustomer ? (
                         <span className="text-muted-foreground font-medium">{m.sender_name} (Customer)</span>

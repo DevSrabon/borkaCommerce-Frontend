@@ -5,7 +5,7 @@ import ReviewSection from '../../../components/ReviewSection';
 import { PriceDisplay } from '../../../components/PriceDisplay';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { Sparkles, ArrowRight } from 'lucide-react';
+import { Crown, ArrowRight } from 'lucide-react';
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -69,7 +69,7 @@ export default async function ProductDetailsPage({ params }: PageProps) {
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 pb-3 border-b border-border">
             <div className="space-y-1">
               <span className="text-xs font-bold uppercase tracking-widest text-primary flex items-center gap-1.5">
-                <Sparkles size={13} className="text-primary" /> Curated Recommendations
+                <Crown size={13} className="text-primary" /> Curated Recommendations
               </span>
               <h2 className="font-serif text-xl sm:text-2xl font-bold tracking-tight text-foreground">
                 Related Masterpieces

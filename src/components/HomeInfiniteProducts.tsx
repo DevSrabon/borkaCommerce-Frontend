@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { API_BASE_URL } from '@/config/api';
 import { PriceDisplay } from './PriceDisplay';
-import { Sparkles, Loader2, Check, ArrowRight } from 'lucide-react';
+import { Layers, Loader2, Check, ArrowRight } from 'lucide-react';
 
 interface Product {
   id: string;
@@ -132,7 +132,7 @@ export default function HomeInfiniteProducts({
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-border pb-6">
         <div className="space-y-1">
           <span className="text-primary text-xs uppercase font-bold tracking-widest block flex items-center gap-1.5">
-            <Sparkles size={13} className="text-primary" /> Full Catalog Showcase
+            <Layers size={13} className="text-primary" /> Full Catalog Showcase
           </span>
           <h2 className="font-serif text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
             Explore All Collections
