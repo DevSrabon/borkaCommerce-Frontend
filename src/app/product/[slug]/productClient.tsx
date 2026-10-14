@@ -7,16 +7,10 @@ import { Check, Info, ShoppingBag, Truck, ShieldCheck, Clock, Star, Share2, Rule
 import { DiscountedPrice } from '../../../components/PriceDisplay';
 import { useCurrency } from '../../../context/CurrencyContext';
 import { API_BASE_URL } from '@/config/api';
+import ProductVideoPlayer, { getCleanYoutubeEmbedUrl } from '../../../components/ProductVideoPlayer';
 
 function getYoutubeEmbedUrl(url?: string): string {
-  if (!url) return '';
-  const trimmed = url.trim();
-  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=|shorts\/)([^#&?]*).*/;
-  const match = trimmed.match(regExp);
-  if (match && match[2] && match[2].length === 11) {
-    return `https://www.youtube-nocookie.com/embed/${match[2]}`;
-  }
-  return '';
+  return getCleanYoutubeEmbedUrl(url).embedUrl;
 }
 
 interface Variant {
@@ -236,13 +230,11 @@ export default function ProductClient({ product }: { product: ProductDetails }) 
         {/* Product Image / Video Section */}
         <div className="space-y-2.5">
           <div className="relative h-[22rem] sm:h-[26rem] lg:h-[30rem] w-full border border-border bg-zinc-100 dark:bg-zinc-900 rounded-lg overflow-hidden shadow-sm">
-            {activeMediaMode === 'video' && embedUrl ? (
-              <iframe
-                src={`${embedUrl}?autoplay=1`}
-                title={`${product.name} Video`}
-                className="w-full h-full border-0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
+            {activeMediaMode === 'video' && product.video_url ? (
+              <ProductVideoPlayer
+                videoUrl={product.video_url}
+                productName={product.name}
+                onBackToPhotos={() => setActiveMediaMode('image')}
               />
             ) : (
               <img

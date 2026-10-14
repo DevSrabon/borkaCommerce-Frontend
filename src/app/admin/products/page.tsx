@@ -20,7 +20,7 @@ export function getYoutubeEmbedUrl(url?: string): string {
   const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=|shorts\/)([^#&?]*).*/;
   const match = trimmed.match(regExp);
   if (match && match[2] && match[2].length === 11) {
-    return `https://www.youtube-nocookie.com/embed/${match[2]}`;
+    return `https://www.youtube-nocookie.com/embed/${match[2]}?rel=0&modestbranding=1&iv_load_policy=3&playsinline=1&color=white`;
   }
   return '';
 }

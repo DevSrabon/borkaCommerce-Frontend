@@ -514,7 +514,7 @@ export default function RichTextEditor({
     const vimeoMatch = url.match(/vimeo\.com\/(?:channels\/(?:\w+\/)?|groups\/[^\/]*\/videos\/|album\/(?:\d+\/)?video\/|video\/|)(\d+)/);
 
     if (ytMatch) {
-      embedHtml = `<div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:10px;margin:16px 0;box-shadow:0 4px 12px rgba(0,0,0,0.15);"><iframe src="https://www.youtube.com/embed/${ytMatch[1]}" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div><p></p>`;
+      embedHtml = `<div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:10px;margin:16px 0;box-shadow:0 4px 12px rgba(0,0,0,0.15);"><iframe src="https://www.youtube-nocookie.com/embed/${ytMatch[1]}?rel=0&modestbranding=1&iv_load_policy=3&playsinline=1&color=white" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div><p></p>`;
     } else if (vimeoMatch) {
       embedHtml = `<div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:10px;margin:16px 0;box-shadow:0 4px 12px rgba(0,0,0,0.15);"><iframe src="https://player.vimeo.com/video/${vimeoMatch[1]}" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;" allowfullscreen></iframe></div><p></p>`;
     } else if (url.match(/\.(mp4|webm|ogg)($|\?)/i)) {
@@ -1120,7 +1120,7 @@ export default function RichTextEditor({
                         {videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be') ? (
                           <div className="aspect-video w-full rounded overflow-hidden">
                             <iframe
-                              src={`https://www.youtube.com/embed/${videoUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/)?.[1] || ''}`}
+                              src={`https://www.youtube-nocookie.com/embed/${videoUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/)?.[1] || ''}?rel=0&modestbranding=1&iv_load_policy=3&playsinline=1&color=white`}
                               className="w-full h-full border-0"
                               allowFullScreen
                             />

@@ -119,17 +119,24 @@ export default async function HomePage() {
   const isFlashSaleEnabled = siteSettings?.flash_sale_enabled !== 'false';
 
   return (
-    <div className="flex flex-col w-full pb-16">
+    <div className="flex flex-col w-full pb-8 sm:pb-12">
       {/* Dynamic Hero Banner Slider (1920x800) */}
       <BannerSlider serverBanners={heroBanners} />
 
       {/* Promos Section */}
-      <section className="bg-card py-6 border-y border-border">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-4 text-center md:text-left text-sm font-medium">
-          <Link href="/offers" className="hover:opacity-90 transition flex items-center gap-1.5 cursor-pointer">
-            🔥 Exclusive Flash Sale Active: <span className="text-primary font-bold">Up to 25% OFF</span> selected abayas with code <span className="font-bold border border-primary/50 px-2 py-0.5 rounded text-xs bg-primary/10">WELCOME10</span> →
+      <section className="bg-card py-2.5 sm:py-3.5 border-y border-border">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-2 sm:gap-4 text-center md:text-left text-xs sm:text-sm font-medium">
+          <Link href="/offers" className="hover:opacity-90 transition block text-center md:text-left cursor-pointer leading-relaxed">
+            🔥 Exclusive Flash Sale Active:{' '}
+            <span className="text-primary font-bold">Up to 25% OFF</span> selected abayas with code{' '}
+            <span className="inline-block font-bold border border-primary/50 px-2 py-0.5 rounded text-xs bg-primary/10 mx-1">
+              WELCOME10
+            </span>{' '}
+            &rarr;
           </Link>
-          <div className="text-muted-foreground">✈ Free Express Shipping across the UAE on orders above 500 AED</div>
+          <div className="text-muted-foreground text-xs sm:text-sm">
+            ✈ Free Express Shipping across the UAE on orders above 500 AED
+          </div>
         </div>
       </section>
 
@@ -245,7 +252,7 @@ export default async function HomePage() {
       </section>
 
       {/* Featured Products Grid */}
-      <section className="mx-auto max-w-7xl px-4 py-6 sm:py-8 sm:px-6 lg:px-8 w-full space-y-6 sm:space-y-10">
+      <section className="mx-auto max-w-7xl px-4 pt-6 sm:pt-8 pb-3 sm:pb-4 sm:px-6 lg:px-8 w-full space-y-5 sm:space-y-8">
         <div className="text-center space-y-2">
           <span className="text-primary text-xs uppercase font-bold tracking-widest block">Signature Pieces</span>
           <h2 className="font-serif text-2xl sm:text-3xl font-bold tracking-tight">Featured Masterpieces</h2>

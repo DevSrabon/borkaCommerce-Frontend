@@ -127,7 +127,7 @@ export default function HomeInfiniteProducts({
   }, [loadMoreProducts, hasMore, loading, products.length]);
 
   return (
-    <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8 w-full space-y-8">
+    <section className="mx-auto max-w-7xl px-4 pt-4 sm:pt-6 pb-4 sm:pb-8 sm:px-6 lg:px-8 w-full space-y-4 sm:space-y-6">
       {/* Section Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-border pb-6">
         <div className="space-y-1">
@@ -212,7 +212,7 @@ export default function HomeInfiniteProducts({
       </div>
 
       {/* Infinite Scroll Sentinel, Loading Indicator, and Show More CTA */}
-      <div ref={observerTarget} className="py-6 flex flex-col items-center justify-center space-y-4">
+      <div ref={observerTarget} className="pt-2 pb-1 flex flex-col items-center justify-center space-y-2">
         {loading && (
           <div className="flex items-center gap-2.5 px-4 py-2 rounded-full bg-accent/60 border border-border text-xs text-muted-foreground animate-pulse">
             <Loader2 size={16} className="animate-spin text-primary" />
@@ -222,31 +222,31 @@ export default function HomeInfiniteProducts({
 
         {/* When reaching the 24-product homepage limit, show the "Show More" Button linking to /catalog */}
         {products.length >= MAX_HOME_PRODUCTS && (
-          <div className="flex flex-col items-center gap-3 text-center py-4">
+          <div className="flex flex-col items-center gap-2 text-center py-1">
             <Link
               href="/catalog"
-              className="btn-luxury px-8 py-3.5 rounded-xl text-sm font-bold uppercase tracking-wider flex items-center gap-2.5 shadow-md hover:shadow-xl hover:scale-105 transition-all duration-300"
+              className="btn-luxury px-6 sm:px-8 py-3 sm:py-3.5 rounded-xl text-xs sm:text-sm font-bold uppercase tracking-wider flex items-center gap-2 shadow-md hover:shadow-xl hover:scale-105 transition-all duration-300"
             >
               <span>Show More &amp; Explore Full Catalog</span>
               <ArrowRight size={16} />
             </Link>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground max-w-md">
               Showing top {products.length} featured abayas on homepage. Click above to view our entire collection in the catalog.
             </p>
           </div>
         )}
 
         {!hasMore && products.length < MAX_HOME_PRODUCTS && products.length > 0 && (
-          <div className="flex flex-col items-center gap-2 text-center py-4 text-muted-foreground">
-            <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center">
-              <Check size={16} />
+          <div className="flex flex-col items-center gap-1.5 text-center py-2 text-muted-foreground">
+            <div className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+              <Check size={14} />
             </div>
             <p className="text-xs font-semibold text-foreground">
               You&apos;ve viewed all available products
             </p>
             <Link
               href="/catalog"
-              className="text-xs font-semibold text-primary hover:underline flex items-center gap-1 mt-1"
+              className="text-xs font-semibold text-primary hover:underline flex items-center gap-1 mt-0.5"
             >
               <span>Browse Catalog by Category &rarr;</span>
             </Link>

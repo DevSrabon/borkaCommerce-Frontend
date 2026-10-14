@@ -21,6 +21,8 @@ import {
   ExternalLink,
   Loader2,
   X,
+  Mail,
+  Check,
 } from 'lucide-react';
 
 interface ChatSession {
@@ -92,6 +94,8 @@ export default function AdminChatPage() {
   const [sending, setSending] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [showScrollBottomBtn, setShowScrollBottomBtn] = useState(false);
+  // Email dispatch option (default OFF as required)
+  const [sendEmailCopy, setSendEmailCopy] = useState<boolean>(false);
 
   // Admin attachment state
   const [adminPendingFile, setAdminPendingFile] = useState<{
@@ -364,6 +368,7 @@ export default function AdminChatPage() {
           attachment_url: attachmentUrl || undefined,
           attachment_type: attachmentType || undefined,
           attachment_name: attachmentName || undefined,
+          send_email: sendEmailCopy,
         }),
       });
 
@@ -725,6 +730,36 @@ export default function AdminChatPage() {
                 </button>
               </div>
             )}
+
+            {/* Send Email Copy Option (Default OFF) */}
+            <div className="px-4 py-2 bg-muted/30 border-t border-border flex items-center justify-between text-xs">
+              <label className="flex items-center gap-2 cursor-pointer select-none text-muted-foreground hover:text-foreground">
+                <input
+                  type="checkbox"
+                  checked={sendEmailCopy}
+                  onChange={(e) => setSendEmailCopy(e.target.checked)}
+                  className="w-3.5 h-3.5 rounded border-border accent-primary cursor-pointer"
+                />
+                <span className="flex items-center gap-1.5 font-medium">
+                  <Mail size={13} className={sendEmailCopy ? 'text-primary' : 'text-muted-foreground'} />
+                  <span>Send email copy to customer</span>
+                </span>
+                {activeSession?.customer_email ? (
+                  <span className="text-[11px] text-primary/80 font-mono">
+                    ({activeSession.customer_email})
+                  </span>
+                ) : (
+                  <span className="text-[11px] text-muted-foreground/60 italic">
+                    (No email on file)
+                  </span>
+                )}
+              </label>
+              {sendEmailCopy && activeSession?.customer_email && (
+                <span className="text-[11px] text-emerald-500 font-semibold flex items-center gap-1">
+                  <Check size={12} /> Email copy will be sent
+                </span>
+              )}
+            </div>
 
             {/* Admin Input Bar */}
             <form
