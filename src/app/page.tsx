@@ -4,6 +4,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { PriceDisplay } from '../components/PriceDisplay';
 import BannerSlider from '../components/BannerSlider';
+import FlashSaleSpotlight from '../components/FlashSaleSpotlight';
+import HomeInfiniteProducts from '../components/HomeInfiniteProducts';
 
 interface Banner {
   id: string;
@@ -16,16 +18,6 @@ interface Banner {
   size_description?: string | null;
 }
 
-interface Variant {
-  id: string;
-  sku: string;
-  price: number;
-  compare_price: number | null;
-  discounted_price: number;
-  available_stock: number;
-  offer: { name: string; discount_value: number } | null;
-}
-
 interface Product {
   id: string;
   name: string;
@@ -36,6 +28,15 @@ interface Product {
   min_original_price: number;
   average_rating?: number;
   review_count?: number;
+}
+
+interface Category {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  image: string | null;
+  show_on_homepage?: boolean;
 }
 
 async function getBanners(): Promise<Banner[]> {
@@ -56,24 +57,65 @@ async function getFeaturedProducts(): Promise<Product[]> {
     if (res.ok) {
       return await res.json();
     }
-  } catch (err) {}
+  } catch (_) {}
   return [];
 }
 
+async function getCategories(): Promise<Category[]> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/ecommerce/categories`, {
+      next: { revalidate: 60 },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        return data;
+      }
+    }
+  } catch (_) {}
+  return [];
+}
+
+async function getPromotions(): Promise<any> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/ecommerce/promotions/active`, {
+      next: { revalidate: 30 },
+    });
+    if (res.ok) return await res.json();
+  } catch (_) {}
+  return { offers: [], coupons: [] };
+}
+
+async function getSiteSettings(): Promise<Record<string, string>> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/ecommerce/site-settings`, {
+      next: { revalidate: 60 },
+    });
+    if (res.ok) return await res.json();
+  } catch (_) {}
+  return {};
+}
+
 export default async function HomePage() {
-  const [products, banners] = await Promise.all([
+  const [products, banners, allCategories, promotions, siteSettings] = await Promise.all([
     getFeaturedProducts(),
     getBanners(),
+    getCategories(),
+    getPromotions(),
+    getSiteSettings(),
   ]);
 
   const heroBanners = banners.filter((b) => (b.size_type || 'HERO') === 'HERO');
   const smallBanners = banners.filter((b) => b.size_type === 'SMALL');
 
-  const categories = [
-    { name: 'Abayas', slug: 'abaya', desc: 'Premium UAE Designs', img: 'https://images.unsplash.com/photo-1585487000160-6ebcfceb0d03?auto=format&fit=crop&q=80&w=400' },
-    { name: 'Shaylas', slug: 'shayla', desc: 'Flowing Silk & Chiffon', img: 'https://images.unsplash.com/photo-1609357605129-26f69add5d6e?auto=format&fit=crop&q=80&w=400' },
-    { name: 'Niqabs', slug: 'niqab', desc: 'Comfort & Elegance', img: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&q=80&w=400' },
-  ];
+  // Filter categories managed by Admin for Homepage "Shop by Category"
+  let homepageCategories = allCategories.filter((c) => c.show_on_homepage === true);
+  if (homepageCategories.length === 0) {
+    // Fallback: take top active categories with images
+    homepageCategories = allCategories.slice(0, 6);
+  }
+
+  const isFlashSaleEnabled = siteSettings?.flash_sale_enabled !== 'false';
 
   return (
     <div className="flex flex-col w-full pb-16">
@@ -84,15 +126,22 @@ export default async function HomePage() {
       <section className="bg-card py-6 border-y border-border">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-4 text-center md:text-left text-sm font-medium">
           <Link href="/offers" className="hover:opacity-90 transition flex items-center gap-1.5 cursor-pointer">
-            🔥 Flash Sale Active: <span className="text-primary font-bold">20% OFF</span> selected abayas with code <span className="font-bold border border-primary/50 px-2 py-0.5 rounded text-xs bg-primary/10">WELCOME10</span> →
+            🔥 Exclusive Flash Sale Active: <span className="text-primary font-bold">Up to 25% OFF</span> selected abayas with code <span className="font-bold border border-primary/50 px-2 py-0.5 rounded text-xs bg-primary/10">WELCOME10</span> →
           </Link>
           <div className="text-muted-foreground">✈ Free Express Shipping across the UAE on orders above 500 AED</div>
         </div>
       </section>
 
+      {/* Real-time Flash Sale Countdown Spotlight Component */}
+      <FlashSaleSpotlight
+        initialOffers={promotions.offers || []}
+        initialProducts={products}
+        enabled={isFlashSaleEnabled}
+      />
+
       {/* Small Size Banners Spotlight Grid */}
       {smallBanners.length > 0 && (
-        <section className="mx-auto max-w-7xl px-4 pt-12 pb-4 sm:px-6 lg:px-8 w-full">
+        <section className="mx-auto max-w-7xl px-4 pt-8 pb-4 sm:px-6 lg:px-8 w-full">
           <div className="flex items-center justify-between mb-6">
             <div>
               <span className="text-primary text-[10px] uppercase font-bold tracking-widest block">Limited Seasonal Offers</span>
@@ -156,48 +205,58 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* Categories Grid */}
+      {/* Dynamic Shop by Category Grid (Managed from Admin Panel) */}
       <section className="mx-auto max-w-7xl px-4 py-10 sm:py-16 sm:px-6 lg:px-8 w-full space-y-6 sm:space-y-10">
         <div className="text-center space-y-2">
+          <span className="text-primary text-[10px] uppercase font-bold tracking-widest block">Curated Collections</span>
           <h2 className="font-serif text-2xl sm:text-3xl font-bold tracking-tight">Shop by Category</h2>
           <div className="h-0.5 w-16 bg-primary mx-auto"></div>
-          <p className="text-xs sm:text-sm text-muted">Browse our premium custom items</p>
+          <p className="text-xs sm:text-sm text-muted-foreground">Browse handcrafted abayas, festive collections, and matching shaylas</p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
-          {categories.map((cat) => (
-            <Link key={cat.name} href={`/catalog?category=${cat.slug}`} className="group relative h-60 sm:h-80 md:h-96 overflow-hidden rounded-md border border-border shadow-sm flex items-end">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
+          {homepageCategories.map((cat) => (
+            <Link
+              key={cat.id || cat.name}
+              href={`/catalog?category=${cat.slug}`}
+              className="group relative h-60 sm:h-80 md:h-96 overflow-hidden rounded-xl border border-border shadow-sm flex items-end"
+            >
               <img
-                src={cat.img}
+                src={cat.image || 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&q=80&w=600'}
                 alt={cat.name}
                 className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 brightness-75 group-hover:brightness-90"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent"></div>
-              <div className="relative z-10 p-4 sm:p-6 text-white w-full flex items-center justify-between">
+              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent"></div>
+              <div className="relative z-10 p-5 sm:p-6 text-white w-full flex items-center justify-between">
                 <div>
                   <h3 className="font-serif text-lg sm:text-2xl font-bold">{cat.name}</h3>
-                  <p className="text-[11px] sm:text-xs text-zinc-300 font-light">{cat.desc}</p>
+                  {cat.description && (
+                    <p className="text-[11px] sm:text-xs text-zinc-300 font-light line-clamp-1">{cat.description}</p>
+                  )}
                 </div>
-                <span className="text-xs sm:text-sm border-b border-primary text-primary font-medium tracking-wider group-hover:pl-2 transition-all">Shop Now &rarr;</span>
+                <span className="text-xs sm:text-sm border-b border-primary text-primary font-medium tracking-wider group-hover:pl-2 transition-all">
+                  Shop Now &rarr;
+                </span>
               </div>
             </Link>
           ))}
         </div>
       </section>
 
-      {/* Featured Products Grid - 2 columns on mobile for modern eCommerce experience */}
+      {/* Featured Products Grid */}
       <section className="mx-auto max-w-7xl px-4 py-6 sm:py-8 sm:px-6 lg:px-8 w-full space-y-6 sm:space-y-10">
         <div className="text-center space-y-2">
+          <span className="text-primary text-[10px] uppercase font-bold tracking-widest block">Signature Pieces</span>
           <h2 className="font-serif text-2xl sm:text-3xl font-bold tracking-tight">Featured Masterpieces</h2>
           <div className="h-0.5 w-16 bg-primary mx-auto"></div>
-          <p className="text-xs sm:text-sm text-muted">Curated selections of our finest work</p>
+          <p className="text-xs sm:text-sm text-muted-foreground">Curated selections of our finest work</p>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 lg:gap-8">
           {products.map((prod) => (
-            <div key={prod.id} className="group flex flex-col border border-border bg-card rounded-md overflow-hidden relative shadow-xs hover:shadow-md transition">
+            <div key={prod.id} className="group flex flex-col border border-border bg-card rounded-xl overflow-hidden relative shadow-xs hover:shadow-md transition">
               {/* Product Image */}
-              <Link href={`/product/${prod.slug}`} className="relative h-44 sm:h-64 md:h-[22rem] overflow-hidden bg-zinc-100 flex items-center justify-center">
+              <Link href={`/product/${prod.slug}`} className="relative h-44 sm:h-64 md:h-[22rem] overflow-hidden bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center">
                 <img
                   src={prod.thumbnail}
                   alt={prod.name}
@@ -216,7 +275,9 @@ export default async function HomePage() {
                   <h3 className="font-medium text-xs sm:text-sm text-foreground line-clamp-1 group-hover:text-primary transition">
                     <Link href={`/product/${prod.slug}`}>{prod.name}</Link>
                   </h3>
-                  <p className="text-[11px] sm:text-xs text-muted line-clamp-2 leading-relaxed font-light hidden sm:block">{prod.short_description}</p>
+                  <p className="text-[11px] sm:text-xs text-muted-foreground line-clamp-2 leading-relaxed font-light hidden sm:block">
+                    {prod.short_description}
+                  </p>
                 </div>
 
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2 pt-1 border-t border-border/40">
@@ -224,7 +285,10 @@ export default async function HomePage() {
                     aedPrice={prod.min_price}
                     aedCompare={prod.min_price < prod.min_original_price ? prod.min_original_price : null}
                   />
-                  <Link href={`/product/${prod.slug}`} className="text-[11px] sm:text-xs text-primary font-medium hover:text-foreground transition underline sm:no-underline sm:border-b sm:border-primary">
+                  <Link
+                    href={`/product/${prod.slug}`}
+                    className="text-[11px] sm:text-xs text-primary font-medium hover:text-foreground transition underline sm:no-underline sm:border-b sm:border-primary"
+                  >
                     Details &rarr;
                   </Link>
                 </div>
@@ -233,6 +297,9 @@ export default async function HomePage() {
           ))}
         </div>
       </section>
+
+      {/* Infinite Scroll All Products Collection */}
+      <HomeInfiniteProducts initialProducts={products.slice(0, 8)} />
     </div>
   );
 }

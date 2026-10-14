@@ -6,7 +6,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../../store';
-import { Plus, Trash, Folder, Check, Pencil, Save, X, Upload } from 'lucide-react';
+import { Plus, Trash, Folder, Check, Pencil, Save, X, Upload, Compass, Home, ToggleLeft, ToggleRight } from 'lucide-react';
 
 interface Category {
   id: string;
@@ -17,6 +17,8 @@ interface Category {
   image_alt_text: string | null;
   parent_id: string | null;
   is_active: boolean;
+  show_in_navbar: boolean;
+  show_on_homepage: boolean;
   parent?: Category | null;
 }
 
@@ -36,6 +38,8 @@ export default function AdminCategoriesPage() {
     image_alt_text: '',
     parent_id: '',
     is_active: true,
+    show_in_navbar: true,
+    show_on_homepage: false,
   });
   const [editingCategory, setEditingCategory] = useState<{
     id: string;
@@ -46,6 +50,8 @@ export default function AdminCategoriesPage() {
     image_alt_text: string;
     parent_id: string;
     is_active: boolean;
+    show_in_navbar: boolean;
+    show_on_homepage: boolean;
   } | null>(null);
   const [uploadingCategoryImage, setUploadingCategoryImage] = useState(false);
 
@@ -72,11 +78,9 @@ export default function AdminCategoriesPage() {
       });
       if (res.ok) {
         setCategories(await res.json());
-      } else {
-        loadMockCategories();
       }
     } catch (err) {
-      loadMockCategories();
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -86,18 +90,40 @@ export default function AdminCategoriesPage() {
     if (token) fetchCategories();
   }, [token]);
 
-  const loadMockCategories = () => {
-    setCategories([
-      { id: 'cat-1', name: 'Abaya', slug: 'abaya', description: 'Elegant Muslimah Abayas', image: null, image_alt_text: null, parent_id: null, is_active: true },
-      { id: 'cat-2', name: 'Casual', slug: 'abaya-casual', description: 'Casual abayas', image: null, image_alt_text: null, parent_id: 'cat-1', is_active: true },
-      { id: 'cat-3', name: 'Luxury', slug: 'abaya-luxury', description: 'Luxury abayas', image: null, image_alt_text: null, parent_id: 'cat-1', is_active: true },
-      { id: 'cat-4', name: 'Shayla', slug: 'shayla', description: 'Matching Scarves', image: null, image_alt_text: null, parent_id: null, is_active: true },
-    ]);
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target;
+    let val: any = value;
+    if (type === 'checkbox') {
+      val = (e.target as HTMLInputElement).checked;
+    } else if (name === 'is_active' || name === 'show_in_navbar' || name === 'show_on_homepage') {
+      val = value === 'true';
+    }
+    setForm((prev) => ({ ...prev, [name]: val }));
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const val = e.target.name === 'is_active' ? e.target.value === 'true' : e.target.value;
-    setForm((prev) => ({ ...prev, [e.target.name]: val }));
+  const handleQuickToggle = async (cat: Category, field: 'show_in_navbar' | 'show_on_homepage' | 'is_active') => {
+    const updatedVal = !cat[field];
+    // Optimistic UI update
+    setCategories((prev) =>
+      prev.map((c) => (c.id === cat.id ? { ...c, [field]: updatedVal } : c))
+    );
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/admin/categories/${cat.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ [field]: updatedVal }),
+      });
+      if (!res.ok) {
+        // Revert on error
+        fetchCategories();
+      }
+    } catch {
+      fetchCategories();
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -124,26 +150,23 @@ export default function AdminCategoriesPage() {
         setSuccess('Category registered successfully!');
         setShowCreateForm(false);
         fetchCategories();
-        setForm({ name: '', slug: '', description: '', image: '', image_alt_text: '', parent_id: '', is_active: true });
+        setForm({
+          name: '',
+          slug: '',
+          description: '',
+          image: '',
+          image_alt_text: '',
+          parent_id: '',
+          is_active: true,
+          show_in_navbar: true,
+          show_on_homepage: false,
+        });
       } else {
         const err = await res.json();
         setError(err.message || 'Creation failed');
       }
     } catch (err) {
-      const newMock: Category = {
-        id: `mock-${Date.now()}`,
-        name: form.name,
-        slug: form.slug,
-        description: form.description || null,
-        image: form.image || null,
-        image_alt_text: form.image_alt_text || null,
-        parent_id: form.parent_id || null,
-        is_active: form.is_active,
-        parent: form.parent_id ? categories.find((c) => c.id === form.parent_id) : null,
-      };
-      setCategories((prev) => [...prev, newMock]);
-      setSuccess('Preview inserted locally! (Backend offline)');
-      setShowCreateForm(false);
+      setError('Could not connect to backend server.');
     }
   };
 
@@ -186,6 +209,8 @@ export default function AdminCategoriesPage() {
       image_alt_text: category.image_alt_text || '',
       parent_id: category.parent_id || '',
       is_active: category.is_active,
+      show_in_navbar: category.show_in_navbar ?? true,
+      show_on_homepage: category.show_on_homepage ?? false,
     });
     setError('');
     setSuccess('');
@@ -210,6 +235,8 @@ export default function AdminCategoriesPage() {
           image_alt_text: editingCategory.image_alt_text || null,
           parent_id: editingCategory.parent_id || null,
           is_active: editingCategory.is_active,
+          show_in_navbar: editingCategory.show_in_navbar,
+          show_on_homepage: editingCategory.show_on_homepage,
         }),
       });
       if (res.ok) {
@@ -226,6 +253,7 @@ export default function AdminCategoriesPage() {
   };
 
   const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this category?')) return;
     try {
       const res = await fetch(`${API_BASE_URL}/admin/categories/${id}`, {
         method: 'DELETE',
@@ -233,21 +261,21 @@ export default function AdminCategoriesPage() {
       });
       if (res.ok) {
         fetchCategories();
-      } else {
-        setCategories((prev) => prev.filter((c) => c.id !== id));
       }
     } catch (err) {
-      setCategories((prev) => prev.filter((c) => c.id !== id));
+      console.error(err);
     }
   };
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8 w-full space-y-8">
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 w-full space-y-8 text-foreground">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-border pb-4">
         <div>
-          <h1 className="font-serif text-3xl font-bold tracking-tight">Categories</h1>
-          <p className="text-xs text-muted-foreground font-light">Structure the catalogs recursively using groups.</p>
+          <h1 className="font-serif text-3xl font-bold tracking-tight">Category Management</h1>
+          <p className="text-xs text-muted-foreground font-light mt-1">
+            Manage product categories, customize Navbar category buttons, and curate the Homepage &quot;Shop by Category&quot; showcase.
+          </p>
         </div>
         <button
           onClick={() => setShowCreateForm(!showCreateForm)}
@@ -266,12 +294,10 @@ export default function AdminCategoriesPage() {
       {error && <p className="text-xs text-red-500 font-semibold">{error}</p>}
 
       {showCreateForm && (
-        <form onSubmit={handleSubmit} className="bg-card border border-border p-6 rounded-md shadow-sm space-y-4">
+        <form onSubmit={handleSubmit} className="bg-card border border-border p-6 rounded-xl shadow-sm space-y-4">
           <div className="border-b border-border pb-3">
-            <h2 className="font-serif text-lg font-bold">New Category details</h2>
+            <h2 className="font-serif text-lg font-bold">Register New Category</h2>
           </div>
-
-          {error && <p className="text-xs text-red-500 font-semibold">{error}</p>}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1">
@@ -291,7 +317,7 @@ export default function AdminCategoriesPage() {
               <input
                 type="text"
                 name="slug"
-                className="w-full text-xs bg-background border border-border rounded px-3 py-2.5 focus:outline-none"
+                className="w-full text-xs bg-background border border-border rounded px-3 py-2.5 focus:outline-none font-mono"
                 value={form.slug}
                 onChange={handleInputChange}
                 required
@@ -302,18 +328,14 @@ export default function AdminCategoriesPage() {
               <label className="text-[10px] font-semibold text-muted-foreground uppercase">Parent Category</label>
               <select
                 name="parent_id"
-                className="w-full text-xs bg-background border border-border rounded px-3 py-2.5 focus:outline-none text-foreground"
+                className="w-full text-xs bg-background border border-border rounded px-3 py-2.5 focus:outline-none"
                 value={form.parent_id}
                 onChange={handleInputChange}
               >
-                <option value="">-- None (Root Level) --</option>
-                {categories
-                  .filter((c) => !c.parent_id)
-                  .map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
+                <option value="">Root Level Category</option>
+                {categories.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
               </select>
             </div>
 
@@ -321,7 +343,7 @@ export default function AdminCategoriesPage() {
               <label className="text-[10px] font-semibold text-muted-foreground uppercase">Status</label>
               <select
                 name="is_active"
-                className="w-full text-xs bg-background border border-border rounded px-3 py-2.5 focus:outline-none text-foreground"
+                className="w-full text-xs bg-background border border-border rounded px-3 py-2.5 focus:outline-none"
                 value={form.is_active ? 'true' : 'false'}
                 onChange={handleInputChange}
               >
@@ -330,37 +352,61 @@ export default function AdminCategoriesPage() {
               </select>
             </div>
 
+            {/* Display Placement Options */}
+            <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4 bg-accent/20 p-4 rounded-lg border border-border">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  name="show_in_navbar"
+                  checked={form.show_in_navbar}
+                  onChange={handleInputChange}
+                  className="rounded text-primary focus:ring-primary h-4 w-4"
+                />
+                <div>
+                  <span className="text-xs font-semibold flex items-center gap-1.5">
+                    <Compass size={14} className="text-primary" /> Show in Navbar Navigation
+                  </span>
+                  <p className="text-[11px] text-muted-foreground">Display this category as a direct button in the top navigation bar.</p>
+                </div>
+              </label>
+
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  name="show_on_homepage"
+                  checked={form.show_on_homepage}
+                  onChange={handleInputChange}
+                  className="rounded text-primary focus:ring-primary h-4 w-4"
+                />
+                <div>
+                  <span className="text-xs font-semibold flex items-center gap-1.5">
+                    <Home size={14} className="text-amber-500" /> Show in Homepage &quot;Shop by Category&quot;
+                  </span>
+                  <p className="text-[11px] text-muted-foreground">Highlight this category in the homepage visual category grid.</p>
+                </div>
+              </label>
+            </div>
+
             <div className="space-y-1 sm:col-span-2">
-              <label className="text-[10px] font-semibold text-muted-foreground uppercase">Category Image</label>
-              <div className="flex flex-col gap-2 border border-dashed border-border rounded p-3">
-                {form.image && (
-                  <img src={form.image} alt={form.image_alt_text || form.name} className="h-24 w-40 rounded object-cover border border-border" />
-                )}
-                <div className="relative w-fit">
+              <label className="text-[10px] font-semibold text-muted-foreground uppercase">Category Banner / Image</label>
+              <div className="flex gap-2 items-center">
+                <div className="relative">
                   <input
                     type="file"
                     accept="image/*"
                     onChange={(e) => handleCategoryImageUpload(e, 'create')}
                     className="absolute inset-0 h-full w-full opacity-0 cursor-pointer"
                   />
-                  <button type="button" className="px-3 py-1.5 border border-border rounded text-xs hover:bg-accent flex items-center gap-1.5 cursor-pointer">
+                  <button type="button" className="px-3 py-2 border border-border rounded text-xs hover:bg-accent flex items-center gap-1.5 cursor-pointer">
                     <Upload size={12} /> {uploadingCategoryImage ? 'Uploading...' : 'Upload Image'}
                   </button>
                 </div>
                 <input
                   type="url"
                   name="image"
-                  placeholder="Or enter image URL"
-                  className="w-full text-xs bg-background border border-border rounded px-3 py-2 focus:outline-none"
+                  placeholder="Or enter direct image URL"
+                  className="flex-1 text-xs bg-background border border-border rounded px-3 py-2 focus:outline-none"
                   value={form.image}
-                  onChange={handleInputChange}
-                />
-                <input
-                  type="text"
-                  name="image_alt_text"
-                  placeholder="Image alt text"
-                  className="w-full text-xs bg-background border border-border rounded px-3 py-2 focus:outline-none"
-                  value={form.image_alt_text}
                   onChange={handleInputChange}
                 />
               </div>
@@ -370,8 +416,8 @@ export default function AdminCategoriesPage() {
               <label className="text-[10px] font-semibold text-muted-foreground uppercase">Description</label>
               <textarea
                 name="description"
-                rows={3}
-                className="w-full text-xs bg-background border border-border rounded px-3 py-2.5 focus:outline-none"
+                rows={2}
+                className="w-full text-xs bg-background border border-border rounded px-3 py-2 focus:outline-none"
                 value={form.description}
                 onChange={handleInputChange}
               />
@@ -387,20 +433,21 @@ export default function AdminCategoriesPage() {
               Cancel
             </button>
             <button type="submit" className="px-5 py-2 btn-luxury rounded text-xs font-semibold uppercase tracking-wider cursor-pointer">
-              Register
+              Register Category
             </button>
           </div>
         </form>
       )}
 
       {/* Categories Table */}
-      <section className="bg-card border border-border rounded-md shadow-sm overflow-hidden">
-        <div className="border-b border-border p-4 bg-background">
-          <h2 className="font-serif text-lg font-bold">Categories Structure</h2>
+      <section className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
+        <div className="border-b border-border p-4 bg-background flex items-center justify-between">
+          <h2 className="font-serif text-lg font-bold">Categories Structure &amp; Placements</h2>
+          <span className="text-xs text-muted-foreground">Click switches to toggle Navbar or Homepage visibility live</span>
         </div>
 
         {loading ? (
-          <div className="p-8 text-center text-sm text-muted font-light">Loading category structures...</div>
+          <div className="p-8 text-center text-sm text-muted font-light animate-pulse">Loading category structures...</div>
         ) : categories.length === 0 ? (
           <div className="p-8 text-center text-sm text-muted font-light">No categories registered yet.</div>
         ) : (
@@ -408,10 +455,11 @@ export default function AdminCategoriesPage() {
             <table className="w-full text-left border-collapse text-xs">
               <thead>
                 <tr className="bg-background text-muted-foreground uppercase tracking-wider font-semibold border-b border-border">
-                  <th className="p-4">Name</th>
+                  <th className="p-4">Category</th>
                   <th className="p-4">Slug</th>
-                  <th className="p-4">Parent Category</th>
-                  <th className="p-4">Description</th>
+                  <th className="p-4">Parent</th>
+                  <th className="p-4 text-center">Navbar Button</th>
+                  <th className="p-4 text-center">Shop by Category (Home)</th>
                   <th className="p-4">Status</th>
                   <th className="p-4 text-right">Actions</th>
                 </tr>
@@ -422,25 +470,71 @@ export default function AdminCategoriesPage() {
 
                   return (
                     <React.Fragment key={c.id}>
-                    <tr className="hover:bg-accent/40">
-                      <td className="p-4 font-medium flex items-center gap-2">
-                        <Folder size={14} className="text-primary" />
-                        {c.name}
+                    <tr className="hover:bg-accent/40 transition">
+                      <td className="p-4 font-medium flex items-center gap-3">
+                        {c.image ? (
+                          <img src={c.image} alt={c.name} className="w-8 h-8 rounded-md object-cover border border-border" />
+                        ) : (
+                          <div className="w-8 h-8 rounded-md bg-accent flex items-center justify-center text-primary">
+                            <Folder size={14} />
+                          </div>
+                        )}
+                        <div>
+                          <span className="font-semibold">{c.name}</span>
+                          {c.description && <p className="text-[10px] text-muted-foreground line-clamp-1">{c.description}</p>}
+                        </div>
                       </td>
-                      <td className="p-4 font-mono text-muted">{c.slug}</td>
-                      <td className="p-4 text-muted">{parentName}</td>
-                      <td className="p-4 max-w-xs truncate">{c.description || '-'}</td>
+                      <td className="p-4 font-mono text-muted-foreground">{c.slug}</td>
+                      <td className="p-4 text-muted-foreground">{parentName}</td>
+
+                      {/* Navbar toggle button */}
+                      <td className="p-4 text-center">
+                        <button
+                          type="button"
+                          onClick={() => handleQuickToggle(c, 'show_in_navbar')}
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold border cursor-pointer transition ${
+                            c.show_in_navbar !== false
+                              ? 'bg-primary/10 text-primary border-primary/30 hover:bg-primary/20'
+                              : 'bg-muted/40 text-muted-foreground border-border hover:bg-muted/60'
+                          }`}
+                          title="Click to toggle Navbar visibility"
+                        >
+                          <Compass size={11} />
+                          {c.show_in_navbar !== false ? 'Shown in Navbar' : 'Hidden'}
+                        </button>
+                      </td>
+
+                      {/* Homepage Shop by Category toggle button */}
+                      <td className="p-4 text-center">
+                        <button
+                          type="button"
+                          onClick={() => handleQuickToggle(c, 'show_on_homepage')}
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold border cursor-pointer transition ${
+                            c.show_on_homepage
+                              ? 'bg-amber-500/10 text-amber-500 border-amber-500/30 hover:bg-amber-500/20'
+                              : 'bg-muted/40 text-muted-foreground border-border hover:bg-muted/60'
+                          }`}
+                          title="Click to toggle Homepage Shop by Category section"
+                        >
+                          <Home size={11} />
+                          {c.show_on_homepage ? 'Shown on Home' : 'Hidden'}
+                        </button>
+                      </td>
+
                       <td className="p-4">
-                        <span
-                          className={`px-2 py-0.5 rounded font-semibold text-[10px] border ${
+                        <button
+                          type="button"
+                          onClick={() => handleQuickToggle(c, 'is_active')}
+                          className={`px-2 py-0.5 rounded font-semibold text-[10px] border cursor-pointer transition ${
                             c.is_active
                               ? 'bg-green-500/10 text-green-500 border-green-500/20'
                               : 'bg-red-500/10 text-red-500 border-red-500/20'
                           }`}
                         >
                           {c.is_active ? 'ACTIVE' : 'INACTIVE'}
-                        </span>
+                        </button>
                       </td>
+
                       <td className="p-4 text-right">
                         <button
                           onClick={() => handleEdit(c)}
@@ -452,87 +546,125 @@ export default function AdminCategoriesPage() {
                         <button
                           onClick={() => handleDelete(c.id)}
                           className="p-1.5 border border-border rounded text-red-500 hover:bg-red-500/10 hover:border-red-500/20 transition cursor-pointer"
+                          title="Delete category"
                         >
                           <Trash size={14} />
                         </button>
                       </td>
                     </tr>
+
+                    {/* Inline edit panel */}
                     {editingCategory?.id === c.id && (
                       <tr>
-                        <td colSpan={6} className="p-4 bg-background">
+                        <td colSpan={7} className="p-5 bg-background border-t border-b border-primary/20">
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                            <input
-                              type="text"
-                              className="text-xs bg-card border border-border rounded px-3 py-2 focus:outline-none"
-                              value={editingCategory.name}
-                              onChange={(e) => setEditingCategory({ ...editingCategory, name: e.target.value })}
-                              placeholder="Category name"
-                            />
-                            <input
-                              type="text"
-                              className="text-xs bg-card border border-border rounded px-3 py-2 focus:outline-none font-mono"
-                              value={editingCategory.slug}
-                              onChange={(e) => setEditingCategory({ ...editingCategory, slug: e.target.value })}
-                              placeholder="slug"
-                            />
-                            <select
-                              className="text-xs bg-card border border-border rounded px-3 py-2 focus:outline-none text-foreground"
-                              value={editingCategory.parent_id}
-                              onChange={(e) => setEditingCategory({ ...editingCategory, parent_id: e.target.value })}
-                            >
-                              <option value="">Root Level</option>
-                              {categories
-                                .filter((parent) => parent.id !== editingCategory.id)
-                                .map((parent) => (
-                                  <option key={parent.id} value={parent.id}>{parent.name}</option>
-                                ))}
-                            </select>
-                            <input
-                              type="url"
-                              className="text-xs bg-card border border-border rounded px-3 py-2 focus:outline-none md:col-span-2"
-                              value={editingCategory.image}
-                              onChange={(e) => setEditingCategory({ ...editingCategory, image: e.target.value })}
-                              placeholder="Category image URL"
-                            />
-                            <div className="relative">
+                            <div>
+                              <label className="text-[10px] font-bold uppercase text-muted-foreground">Category Name</label>
                               <input
-                                type="file"
-                                accept="image/*"
-                                onChange={(e) => handleCategoryImageUpload(e, 'edit')}
-                                className="absolute inset-0 h-full w-full opacity-0 cursor-pointer"
+                                type="text"
+                                className="w-full text-xs bg-card border border-border rounded px-3 py-2 mt-1 focus:outline-none"
+                                value={editingCategory.name}
+                                onChange={(e) => setEditingCategory({ ...editingCategory, name: e.target.value })}
                               />
-                              <button type="button" className="w-full px-3 py-2 border border-border rounded text-xs hover:bg-accent flex items-center justify-center gap-1.5 cursor-pointer">
-                                <Upload size={12} /> {uploadingCategoryImage ? 'Uploading...' : 'Upload Image'}
-                              </button>
                             </div>
-                            <input
-                              type="text"
-                              className="text-xs bg-card border border-border rounded px-3 py-2 focus:outline-none"
-                              value={editingCategory.image_alt_text}
-                              onChange={(e) => setEditingCategory({ ...editingCategory, image_alt_text: e.target.value })}
-                              placeholder="Image alt text"
-                            />
-                            <select
-                              className="text-xs bg-card border border-border rounded px-3 py-2 focus:outline-none text-foreground"
-                              value={editingCategory.is_active ? 'true' : 'false'}
-                              onChange={(e) => setEditingCategory({ ...editingCategory, is_active: e.target.value === 'true' })}
-                            >
-                              <option value="true">Active</option>
-                              <option value="false">Inactive</option>
-                            </select>
-                            <textarea
-                              className="text-xs bg-card border border-border rounded px-3 py-2 focus:outline-none md:col-span-3"
-                              rows={2}
-                              value={editingCategory.description}
-                              onChange={(e) => setEditingCategory({ ...editingCategory, description: e.target.value })}
-                              placeholder="Description"
-                            />
-                            <div className="md:col-span-3 flex justify-end gap-2">
+                            <div>
+                              <label className="text-[10px] font-bold uppercase text-muted-foreground">Slug</label>
+                              <input
+                                type="text"
+                                className="w-full text-xs bg-card border border-border rounded px-3 py-2 mt-1 focus:outline-none font-mono"
+                                value={editingCategory.slug}
+                                onChange={(e) => setEditingCategory({ ...editingCategory, slug: e.target.value })}
+                              />
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-bold uppercase text-muted-foreground">Parent Category</label>
+                              <select
+                                className="w-full text-xs bg-card border border-border rounded px-3 py-2 mt-1 focus:outline-none text-foreground"
+                                value={editingCategory.parent_id}
+                                onChange={(e) => setEditingCategory({ ...editingCategory, parent_id: e.target.value })}
+                              >
+                                <option value="">Root Level</option>
+                                {categories
+                                  .filter((parent) => parent.id !== editingCategory.id)
+                                  .map((parent) => (
+                                    <option key={parent.id} value={parent.id}>{parent.name}</option>
+                                  ))}
+                              </select>
+                            </div>
+
+                            <div className="md:col-span-2">
+                              <label className="text-[10px] font-bold uppercase text-muted-foreground">Image URL</label>
+                              <div className="flex gap-2 mt-1">
+                                <input
+                                  type="url"
+                                  className="flex-1 text-xs bg-card border border-border rounded px-3 py-2 focus:outline-none"
+                                  value={editingCategory.image}
+                                  onChange={(e) => setEditingCategory({ ...editingCategory, image: e.target.value })}
+                                />
+                                <div className="relative">
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={(e) => handleCategoryImageUpload(e, 'edit')}
+                                    className="absolute inset-0 h-full w-full opacity-0 cursor-pointer"
+                                  />
+                                  <button type="button" className="px-3 py-2 border border-border rounded text-xs hover:bg-accent flex items-center gap-1.5 cursor-pointer">
+                                    <Upload size={12} /> {uploadingCategoryImage ? 'Uploading...' : 'Upload'}
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div>
+                              <label className="text-[10px] font-bold uppercase text-muted-foreground">Status</label>
+                              <select
+                                className="w-full text-xs bg-card border border-border rounded px-3 py-2 mt-1 focus:outline-none text-foreground"
+                                value={editingCategory.is_active ? 'true' : 'false'}
+                                onChange={(e) => setEditingCategory({ ...editingCategory, is_active: e.target.value === 'true' })}
+                              >
+                                <option value="true">Active</option>
+                                <option value="false">Inactive</option>
+                              </select>
+                            </div>
+
+                            <div className="md:col-span-3 grid grid-cols-1 sm:grid-cols-2 gap-3 bg-accent/20 p-3 rounded-lg border border-border">
+                              <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={editingCategory.show_in_navbar}
+                                  onChange={(e) => setEditingCategory({ ...editingCategory, show_in_navbar: e.target.checked })}
+                                  className="rounded text-primary focus:ring-primary h-4 w-4"
+                                />
+                                <span className="text-xs font-semibold">Show in Navbar Buttons</span>
+                              </label>
+
+                              <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={editingCategory.show_on_homepage}
+                                  onChange={(e) => setEditingCategory({ ...editingCategory, show_on_homepage: e.target.checked })}
+                                  className="rounded text-primary focus:ring-primary h-4 w-4"
+                                />
+                                <span className="text-xs font-semibold">Show in Homepage &quot;Shop by Category&quot;</span>
+                              </label>
+                            </div>
+
+                            <div className="md:col-span-3">
+                              <label className="text-[10px] font-bold uppercase text-muted-foreground">Description</label>
+                              <textarea
+                                className="w-full text-xs bg-card border border-border rounded px-3 py-2 mt-1 focus:outline-none"
+                                rows={2}
+                                value={editingCategory.description}
+                                onChange={(e) => setEditingCategory({ ...editingCategory, description: e.target.value })}
+                              />
+                            </div>
+
+                            <div className="md:col-span-3 flex justify-end gap-2 pt-2">
                               <button type="button" onClick={() => setEditingCategory(null)} className="px-3 py-1.5 border border-border rounded text-xs hover:bg-accent flex items-center gap-1 cursor-pointer">
                                 <X size={12} /> Cancel
                               </button>
-                              <button type="button" onClick={handleUpdate} className="px-3 py-1.5 btn-luxury rounded text-xs font-semibold flex items-center gap-1 cursor-pointer">
-                                <Save size={12} /> Save
+                              <button type="button" onClick={handleUpdate} className="px-4 py-1.5 btn-luxury rounded text-xs font-semibold flex items-center gap-1 cursor-pointer">
+                                <Save size={12} /> Save Changes
                               </button>
                             </div>
                           </div>

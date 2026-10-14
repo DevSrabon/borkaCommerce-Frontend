@@ -4,7 +4,22 @@ import { API_BASE_URL } from '@/config/api';
 
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
-import { Save, Globe, Search, Image, RefreshCw, CheckCircle2, Upload, Trash2, Sparkles } from 'lucide-react';
+import {
+  Save,
+  Globe,
+  Search,
+  Image,
+  RefreshCw,
+  CheckCircle2,
+  Upload,
+  Trash2,
+  Sparkles,
+  Cloud,
+  HardDrive,
+  ArrowRightLeft,
+  AlertCircle,
+  FileText,
+} from 'lucide-react';
 
 const SETTING_GROUPS = [
   {
@@ -30,13 +45,91 @@ const SETTING_GROUPS = [
     ],
   },
   {
-    title: 'Icons & Images',
+    title: 'Icons & Media Assets',
     icon: Image,
     color: 'text-yellow-500',
     bg: 'bg-yellow-500/10',
     fields: [
       { key: 'favicon_url',  label: 'Favicon URL',    placeholder: 'https://cdn.example.com/favicon.ico', type: 'url' },
       { key: 'og_image_url', label: 'OG Image URL',   placeholder: 'https://cdn.example.com/og.jpg',      type: 'url' },
+    ],
+  },
+  {
+    title: 'Asset Storage Driver & Cloudinary',
+    icon: Cloud,
+    color: 'text-indigo-500',
+    bg: 'bg-indigo-500/10',
+    fields: [
+      {
+        key: 'STORAGE_DRIVER',
+        label: 'Active Media Storage Driver (local or cloudinary)',
+        placeholder: 'local',
+        type: 'select',
+        options: [
+          { value: 'local', label: 'Internal Server Storage (/uploads)' },
+          { value: 'cloudinary', label: 'Cloudinary Cloud CDN (Fast Global Delivery)' },
+        ],
+      },
+      { key: 'CLOUDINARY_CLOUD_NAME', label: 'Cloudinary Cloud Name', placeholder: 'e.g. dxyz1234',       type: 'text' },
+      { key: 'CLOUDINARY_API_KEY',    label: 'Cloudinary API Key',    placeholder: 'e.g. 123456789012345', type: 'text' },
+      { key: 'CLOUDINARY_API_SECRET', label: 'Cloudinary API Secret', placeholder: '••••••••••••••••••••', type: 'password' },
+      { key: 'CLOUDINARY_FOLDER',     label: 'Cloudinary Root Folder', placeholder: 'borkacommerce',        type: 'text' },
+    ],
+  },
+  {
+    title: 'Flash Sale & Campaign Spotlight',
+    icon: Sparkles,
+    color: 'text-rose-500',
+    bg: 'bg-rose-500/10',
+    fields: [
+      {
+        key: 'flash_sale_enabled',
+        label: 'Display Flash Sale Banner & Countdown on Homepage',
+        placeholder: 'true',
+        type: 'select',
+        options: [
+          { value: 'true', label: 'Enabled (Show active Flash Sale with Real-time Countdown)' },
+          { value: 'false', label: 'Disabled (Hide Flash Sale section)' },
+        ],
+      },
+    ],
+  },
+  {
+    title: 'Size Chart Configuration',
+    icon: FileText,
+    color: 'text-violet-500',
+    bg: 'bg-violet-500/10',
+    fields: [
+      {
+        key: 'size_chart_file',
+        label: 'Size Chart Graphic Image / Document File',
+        placeholder: 'Upload or paste image URL of the official size chart',
+        type: 'url',
+      },
+    ],
+  },
+  {
+    title: 'Dynamic Footer & Store Contact Information',
+    icon: Globe,
+    color: 'text-amber-500',
+    bg: 'bg-amber-500/10',
+    fields: [
+      { key: 'footer_about_text',    label: 'Brand Description (Column 1)', placeholder: 'Saba Al Wadi is an online business specializing in selling high-quality Abayas...', type: 'textarea' },
+      { key: 'footer_phone_1',       label: 'Help Line 1 (Tel)',           placeholder: 'Tel: +971 55 642 4758',                                                  type: 'text' },
+      { key: 'footer_phone_2',       label: 'Help Line 2 (Mob)',           placeholder: 'Mob: +971 55 79 17 409',                                                 type: 'text' },
+      { key: 'footer_phone_3',       label: 'Help Line 3 (Mob)',           placeholder: 'Mob: +971 50 93 75 919',                                                 type: 'text' },
+      { key: 'footer_phone_4',       label: 'Help Line 4 / Branch Contact', placeholder: 'Mob: +971 55 467 5285 (Suit No: M-16 Contact Number)',                  type: 'text' },
+      { key: 'footer_email',         label: 'Public Contact Email',        placeholder: 'contact@sabaalwadi.com',                                                 type: 'text' },
+      { key: 'footer_hours_sat_thu', label: 'Business Hours (Sat-Thu)',     placeholder: 'Sat-Thu: 09:00am-11:00pm',                                               type: 'text' },
+      { key: 'footer_hours_fri',     label: 'Business Hours (Friday)',      placeholder: 'Friday: 04:00pm-10:00pm',                                                type: 'text' },
+      { key: 'footer_address_1',     label: 'Branch Address 1',            placeholder: 'Suit No: M-49, 2nd Floor, Al Habtoor Building...',                      type: 'text' },
+      { key: 'footer_address_2',     label: 'Branch Address 2',            placeholder: 'Suit No: M-104, 2nd Floor, Al Habtoor Building...',                     type: 'text' },
+      { key: 'footer_address_3',     label: 'Branch Address 3',            placeholder: 'Suit No: M-16, 2nd Floor, Al Habtoor Building...',                      type: 'text' },
+      { key: 'social_facebook',      label: 'Facebook Page URL',           placeholder: 'https://facebook.com/sabaalwadi',                                        type: 'url' },
+      { key: 'social_instagram',     label: 'Instagram Page URL',          placeholder: 'https://instagram.com/sabaalwadi',                                       type: 'url' },
+      { key: 'social_youtube',       label: 'YouTube Channel URL',         placeholder: 'https://youtube.com/@sabaalwadi',                                        type: 'url' },
+      { key: 'social_pinterest',     label: 'Pinterest Profile URL',       placeholder: 'https://pinterest.com/sabaalwadi',                                       type: 'url' },
+      { key: 'social_tiktok',        label: 'TikTok Profile URL',          placeholder: 'https://tiktok.com/@sabaalwadi',                                        type: 'url' },
     ],
   },
   {
@@ -129,17 +222,6 @@ const SETTING_GROUPS = [
       { key: 'ADMIN_EMAIL',  label: 'Admin Notification Email (Order Alerts)',   placeholder: 'admin@sabaalwadi.ae',                   type: 'text' },
     ],
   },
-  {
-    title: 'Size Chart & Sizing Guide',
-    icon: Sparkles,
-    color: 'text-violet-500',
-    bg: 'bg-violet-500/10',
-    fields: [
-      { key: 'size_chart_guide_text', label: 'Size Guide Notice / Instructions', placeholder: 'Abaya lengths are standard shoulder-to-hem measurements in inches...', type: 'textarea' },
-      { key: 'size_chart_image', label: 'Size Chart Graphic Image URL (Optional)', placeholder: 'https://cdn.example.com/size-guide.jpg', type: 'url' },
-      { key: 'size_chart_table', label: 'Size Measurements Table (JSON format)', placeholder: '[{"size":"50","height":"5\'0\\" - 5\'1\\"","length":"50 in","bust":"40 in","sleeve":"26 in"},...]', type: 'textarea' },
-    ],
-  },
 ];
 
 export default function SiteSettingsPage() {
@@ -152,6 +234,11 @@ export default function SiteSettingsPage() {
   const [clearingCache, setClearingCache] = useState(false);
   const [cacheClearMessage, setCacheClearMessage] = useState('');
 
+  // Storage Status and Migration
+  const [storageStatus, setStorageStatus] = useState<any>(null);
+  const [migrating, setMigrating] = useState(false);
+  const [migrationMessage, setMigrationMessage] = useState('');
+
   const fetchSettings = async () => {
     setLoading(true);
     try {
@@ -161,7 +248,23 @@ export default function SiteSettingsPage() {
     finally { setLoading(false); }
   };
 
-  useEffect(() => { fetchSettings(); }, []);
+  const fetchStorageStatus = async () => {
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_BASE_URL}/admin/media/storage-status`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setStorageStatus(data);
+      }
+    } catch (_) {}
+  };
+
+  useEffect(() => {
+    fetchSettings();
+    fetchStorageStatus();
+  }, [token]);
 
   const handleChange = (key: string, value: string) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
@@ -207,6 +310,7 @@ export default function SiteSettingsPage() {
       if (res.ok) {
         setSaved(true);
         setTimeout(() => setSaved(false), 3000);
+        fetchStorageStatus();
       } else {
         setError('Failed to save settings.');
       }
@@ -226,7 +330,6 @@ export default function SiteSettingsPage() {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       });
-      // Purge frontend browser storage caches
       try {
         if (typeof window !== 'undefined') {
           const keysToRemove: string[] = [];
@@ -254,21 +357,154 @@ export default function SiteSettingsPage() {
     }
   };
 
+  const handleMigrate = async (direction: 'cloudinary' | 'local') => {
+    if (!token) return;
+    const confirmText = direction === 'cloudinary'
+      ? 'This will upload all local image files to Cloudinary and update all image URLs in the database to Cloudinary HTTPS links. Proceed?'
+      : 'This will download all Cloudinary assets to the local internal server storage (/uploads/migrated/) and update database URLs to local paths. Proceed?';
+    
+    if (!confirm(confirmText)) return;
+
+    setMigrating(true);
+    setMigrationMessage('');
+    setError('');
+
+    try {
+      const endpoint = direction === 'cloudinary'
+        ? `${API_BASE_URL}/admin/media/migrate-to-cloudinary`
+        : `${API_BASE_URL}/admin/media/migrate-to-local`;
+
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setMigrationMessage(data.message || `Migration completed! ${data.migratedCount} assets processed.`);
+        fetchStorageStatus();
+        fetchSettings();
+      } else {
+        setError(data.message || 'Migration encountered an error.');
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Migration failed: Network error.');
+    } finally {
+      setMigrating(false);
+    }
+  };
+
   return (
-    <div className="space-y-6 max-w-3xl text-foreground">
+    <div className="space-y-6 max-w-4xl text-foreground pb-12">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-serif text-2xl font-bold">Site Settings</h1>
-          <p className="text-xs text-muted-foreground mt-0.5">Manage SEO, branding, sizing guide, delivery and system configuration.</p>
+          <h1 className="font-serif text-2xl font-bold">Site & Asset Settings</h1>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Configure branding, cloud vs internal asset storage, size charts, dynamic delivery, and campaigns.
+          </p>
         </div>
         <button
-          onClick={fetchSettings}
+          onClick={() => { fetchSettings(); fetchStorageStatus(); }}
           className="p-2 border border-border rounded-md hover:bg-accent transition cursor-pointer text-muted-foreground hover:text-foreground"
           title="Refresh Settings"
         >
           <RefreshCw size={15} />
         </button>
+      </div>
+
+      {/* Asset Storage & Live Migration Card */}
+      <div className="bg-gradient-to-br from-card via-card to-accent/30 border border-border rounded-xl p-5 shadow-sm space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-500">
+              <Cloud size={20} />
+            </div>
+            <div>
+              <h2 className="text-sm font-bold flex items-center gap-2">
+                Asset Storage & Bi-directional Migration
+                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${
+                  (settings.STORAGE_DRIVER || 'local') === 'cloudinary'
+                    ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
+                    : 'bg-primary/10 text-primary border border-primary/20'
+                }`}>
+                  Active: {settings.STORAGE_DRIVER || 'local'}
+                </span>
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                Seamlessly store files locally or on Cloudinary CDN, and migrate all existing DB assets with 1 click.
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={fetchStorageStatus}
+            className="text-[11px] text-muted-foreground hover:text-foreground flex items-center gap-1 self-start sm:self-auto cursor-pointer"
+          >
+            <RefreshCw size={12} /> Refresh counts
+          </button>
+        </div>
+
+        {/* Live Asset Counts */}
+        {storageStatus && (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+            <div className="bg-background/80 border border-border p-3 rounded-lg">
+              <div className="flex items-center gap-2 text-muted-foreground text-[11px] font-semibold">
+                <HardDrive size={13} className="text-amber-500" /> Local Server Assets
+              </div>
+              <div className="text-lg font-bold mt-1 text-foreground">{storageStatus.localAssets}</div>
+            </div>
+            <div className="bg-background/80 border border-border p-3 rounded-lg">
+              <div className="flex items-center gap-2 text-muted-foreground text-[11px] font-semibold">
+                <Cloud size={13} className="text-indigo-500" /> Cloudinary CDN Assets
+              </div>
+              <div className="text-lg font-bold mt-1 text-foreground">{storageStatus.cloudinaryAssets}</div>
+            </div>
+            <div className="bg-background/80 border border-border p-3 rounded-lg">
+              <div className="flex items-center gap-2 text-muted-foreground text-[11px] font-semibold">
+                <Globe size={13} className="text-blue-500" /> External / Unsplash
+              </div>
+              <div className="text-lg font-bold mt-1 text-foreground">{storageStatus.externalAssets}</div>
+            </div>
+            <div className="bg-background/80 border border-border p-3 rounded-lg">
+              <div className="flex items-center gap-2 text-muted-foreground text-[11px] font-semibold">
+                <Sparkles size={13} className="text-emerald-500" /> Total Media Records
+              </div>
+              <div className="text-lg font-bold mt-1 text-foreground">{storageStatus.totalAssets}</div>
+            </div>
+          </div>
+        )}
+
+        {/* Migration Action Buttons */}
+        <div className="flex flex-wrap items-center gap-3 pt-2">
+          <button
+            type="button"
+            onClick={() => handleMigrate('cloudinary')}
+            disabled={migrating}
+            className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold flex items-center gap-2 transition cursor-pointer shadow-sm disabled:opacity-50"
+          >
+            <ArrowRightLeft size={14} />
+            <span>{migrating ? 'Migrating assets...' : 'Migrate Internal ➔ Cloudinary'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleMigrate('local')}
+            disabled={migrating}
+            className="px-4 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg text-xs font-semibold flex items-center gap-2 transition cursor-pointer shadow-sm disabled:opacity-50"
+          >
+            <ArrowRightLeft size={14} />
+            <span>{migrating ? 'Migrating assets...' : 'Migrate Cloudinary ➔ Internal Storage'}</span>
+          </button>
+        </div>
+
+        {migrationMessage && (
+          <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 rounded-lg text-xs font-medium flex items-center gap-2">
+            <CheckCircle2 size={14} />
+            <span>{migrationMessage}</span>
+          </div>
+        )}
       </div>
 
       {/* Global Cache Clearing Action Card */}
@@ -321,66 +557,99 @@ export default function SiteSettingsPage() {
 
               {/* Fields */}
               <div className="p-5 space-y-4">
-                {fields.map(({ key, label, placeholder, type }) => (
-                  <div key={key} className="space-y-1.5">
-                    <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                      {label}
-                    </label>
-                    {type === 'textarea' ? (
-                      <textarea
-                        rows={3}
-                        placeholder={placeholder}
-                        className="w-full text-sm bg-background border border-border rounded-md px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-primary resize-none leading-relaxed"
-                        value={settings[key] || ''}
-                        onChange={(e) => handleChange(key, e.target.value)}
-                      />
-                    ) : (
-                      <div className="flex flex-col gap-2">
-                        <input
-                          type={type}
+                {fields.map((field: any) => {
+                  const { key, label, placeholder, type, options } = field;
+                  const isImageField = key === 'logo_url' || key === 'og_image_url' || key === 'favicon_url' || key === 'size_chart_file';
+
+                  return (
+                    <div key={key} className="space-y-1.5">
+                      <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        {label}
+                      </label>
+
+                      {type === 'select' ? (
+                        <select
+                          className="w-full text-sm bg-background border border-border rounded-md px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
+                          value={settings[key] || (options?.[0]?.value ?? '')}
+                          onChange={(e) => handleChange(key, e.target.value)}
+                        >
+                          {options?.map((opt: any) => (
+                            <option key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </option>
+                          ))}
+                        </select>
+                      ) : type === 'textarea' ? (
+                        <textarea
+                          rows={3}
                           placeholder={placeholder}
-                          className="w-full text-sm bg-background border border-border rounded-md px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-primary"
+                          className="w-full text-sm bg-background border border-border rounded-md px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-primary resize-none leading-relaxed"
                           value={settings[key] || ''}
                           onChange={(e) => handleChange(key, e.target.value)}
                         />
-                        {(key === 'logo_url' || key === 'og_image_url' || key === 'favicon_url' || key === 'size_chart_image') && (
-                          <div className="relative w-fit">
-                            <input
-                              type="file"
-                              accept="image/*"
-                              onChange={(e) => handleSettingsImageUpload(e, key)}
-                              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                            />
-                            <button
-                              type="button"
-                              className="px-3 py-1.5 border border-border rounded text-[10px] uppercase font-semibold tracking-wider hover:bg-accent flex items-center gap-1.5 text-foreground cursor-pointer"
-                            >
-                              <Upload size={12} /> Upload Image File
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    )}
+                      ) : (
+                        <div className="flex flex-col gap-2">
+                          <input
+                            type={type}
+                            placeholder={placeholder}
+                            className="w-full text-sm bg-background border border-border rounded-md px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-primary"
+                            value={settings[key] || ''}
+                            onChange={(e) => handleChange(key, e.target.value)}
+                          />
 
-                    {/* Inline previews for image URLs */}
-                    {(key === 'logo_url' || key === 'og_image_url' || key === 'favicon_url' || key === 'size_chart_image') && settings[key] && (
-                      <img
-                        src={settings[key]}
-                        alt={`${label} preview`}
-                        className="mt-1 max-h-24 rounded border border-border object-contain bg-zinc-900 p-1"
-                        onError={(e) => (e.currentTarget.style.display = 'none')}
-                      />
-                    )}
-                  </div>
-                ))}
+                          {isImageField && (
+                            <div className="relative w-fit">
+                              <input
+                                type="file"
+                                accept="image/*,.pdf"
+                                onChange={(e) => handleSettingsImageUpload(e, key)}
+                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                              />
+                              <button
+                                type="button"
+                                className="px-3 py-1.5 border border-border rounded text-[10px] uppercase font-semibold tracking-wider hover:bg-accent flex items-center gap-1.5 text-foreground cursor-pointer"
+                              >
+                                <Upload size={12} /> Upload File ({key === 'size_chart_file' ? 'Chart Graphic' : 'Image'})
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Inline preview for image/file URLs */}
+                      {isImageField && settings[key] && (
+                        <div className="mt-2 flex items-center gap-3">
+                          <img
+                            src={settings[key]}
+                            alt={`${label} preview`}
+                            className="max-h-28 rounded-lg border border-border object-contain bg-zinc-950 p-1.5 shadow-sm"
+                            onError={(e) => (e.currentTarget.style.display = 'none')}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleChange(key, '')}
+                            className="text-xs text-red-500 hover:text-red-700 flex items-center gap-1 cursor-pointer"
+                          >
+                            <Trash2 size={12} /> Remove
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           ))}
 
-          {error && <p className="text-xs text-red-500 font-semibold">{error}</p>}
+          {error && (
+            <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-500 rounded-lg text-xs font-semibold flex items-center gap-2">
+              <AlertCircle size={14} />
+              <span>{error}</span>
+            </div>
+          )}
 
           {/* Save button */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 pt-2">
             <button
               type="submit"
               disabled={saving}

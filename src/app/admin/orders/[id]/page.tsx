@@ -104,6 +104,12 @@ interface OrderDetail {
     building?: string;
     area?: string;
   };
+  shipping_country?: string;
+  shipping_city?: string;
+  shipping_area?: string;
+  shipping_street?: string;
+  shipping_building?: string;
+  shipping_postal_code?: string;
   items: OrderItem[];
   payments?: {
     id: string;
@@ -191,6 +197,19 @@ export default function AdminOrderDetailPage() {
   const [addingPartner, setAddingPartner] = useState(false);
   const [partnerMsg, setPartnerMsg] = useState('');
 
+  // Shipping Address Edit State (Allowed only when order.status === 'PENDING')
+  const [isEditingAddress, setIsEditingAddress] = useState(false);
+  const [addressForm, setAddressForm] = useState({
+    country: 'United Arab Emirates',
+    city: '',
+    area: '',
+    street: '',
+    building: '',
+    postal_code: '',
+  });
+  const [savingAddress, setSavingAddress] = useState(false);
+  const [addressError, setAddressError] = useState<string | null>(null);
+
   // Load delivery partners list
   useEffect(() => {
     if (!token) return;
@@ -232,6 +251,22 @@ export default function AdminOrderDetailPage() {
         setTrackingNumber(data.tracking_number || '');
         setTrackingUrl(data.tracking_url || '');
         setDeliveryNotes(data.delivery_notes || '');
+
+        const resolvedCountry = data.shipping_country || data.address?.country || (data.customer as any)?.addresses?.[0]?.country || 'United Arab Emirates';
+        const resolvedCity = data.shipping_city || data.address?.city || (data.customer as any)?.addresses?.[0]?.city || '';
+        const resolvedArea = data.shipping_area || data.address?.area || (data.customer as any)?.addresses?.[0]?.area || '';
+        const resolvedStreet = data.shipping_street || data.address?.street || (data.customer as any)?.addresses?.[0]?.street || '';
+        const resolvedBuilding = data.shipping_building || data.address?.building || (data.customer as any)?.addresses?.[0]?.building || '';
+        const resolvedPostal = data.shipping_postal_code || data.address?.postal_code || (data.customer as any)?.addresses?.[0]?.postal_code || '';
+
+        setAddressForm({
+          country: resolvedCountry,
+          city: resolvedCity,
+          area: resolvedArea,
+          street: resolvedStreet,
+          building: resolvedBuilding,
+          postal_code: resolvedPostal,
+        });
       } catch (err: any) {
         setError(err.message || 'Failed to load order');
       } finally {
@@ -241,6 +276,67 @@ export default function AdminOrderDetailPage() {
 
     fetchOrder();
   }, [orderId, token, router]);
+
+  const COUNTRIES_LIST = [
+    'United Arab Emirates',
+    'Saudi Arabia',
+    'Qatar',
+    'Kuwait',
+    'Bahrain',
+    'Oman',
+    'United Kingdom',
+    'United States',
+    'Canada',
+    'Australia',
+    'Germany',
+    'France',
+    'Malaysia',
+    'Singapore',
+    'Bangladesh',
+    'India',
+    'Pakistan',
+    'Egypt',
+    'Jordan',
+    'Lebanon',
+    'Turkey',
+  ];
+
+  const handleSaveAddress = async () => {
+    if (!order || !token) return;
+    if (order.status !== 'PENDING') {
+      setAddressError('Address can only be updated before order confirmation (status must be PENDING).');
+      return;
+    }
+
+    setSavingAddress(true);
+    setAddressError(null);
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/admin/orders/${order.id}/address`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(addressForm),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || 'Failed to update address');
+      }
+
+      const updated = await res.json();
+      setOrder(updated);
+      setIsEditingAddress(false);
+      setSuccessMsg('Shipping address updated successfully!');
+      setTimeout(() => setSuccessMsg(null), 4000);
+    } catch (err: any) {
+      setAddressError(err.message || 'Error updating address');
+    } finally {
+      setSavingAddress(false);
+    }
+  };
 
   const generateLiveTrackingUrl = (partner: string, num: string) => {
     if (!num.trim()) return '';
@@ -1431,25 +1527,171 @@ export default function AdminOrderDetailPage() {
               )}
             </div>
 
-            {/* Delivery Address */}
-            <div className="text-xs space-y-2 text-muted-foreground">
-              <p className="font-semibold text-foreground text-[11px] uppercase tracking-wider">
-                Destination Address
-              </p>
-              {(() => {
-                const addr = order.address || (order.customer as any)?.addresses?.[0];
-                return addr ? (
-                  <div className="bg-muted/30 p-3 rounded border border-border leading-relaxed text-foreground">
-                    {addr.building && <p>{addr.building}</p>}
-                    <p>{addr.street}</p>
-                    {addr.area && <p>{addr.area}</p>}
-                    <p>{addr.city}, {addr.country}</p>
-                    {addr.postal_code && <p className="font-mono text-[10px] text-muted-foreground">Postal: {addr.postal_code}</p>}
-                  </div>
+            {/* Destination Shipping Address (Admin can edit before confirmation) */}
+            <div className="text-xs space-y-3 pt-2 border-t border-border">
+              <div className="flex items-center justify-between">
+                <p className="font-semibold text-foreground text-[11px] uppercase tracking-wider flex items-center gap-1.5">
+                  <MapPin size={13} className="text-primary" /> Destination Address
+                </p>
+                {order.status === 'PENDING' ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsEditingAddress(!isEditingAddress);
+                      setAddressError(null);
+                    }}
+                    className="text-[11px] text-primary hover:underline font-semibold flex items-center gap-1 cursor-pointer"
+                  >
+                    <Pencil size={11} /> {isEditingAddress ? 'Cancel' : 'Edit Address'}
+                  </button>
                 ) : (
-                  <p className="text-muted italic">Delivery address linked to customer account.</p>
-                );
-              })()}
+                  <span
+                    className="text-[10px] bg-muted text-muted-foreground px-2 py-0.5 rounded border border-border"
+                    title="Shipping address cannot be changed after order confirmation."
+                  >
+                    Locked (Confirmed)
+                  </span>
+                )}
+              </div>
+
+              {isEditingAddress && order.status === 'PENDING' ? (
+                <div className="bg-muted/40 p-3.5 rounded-lg border border-primary/30 space-y-3 animate-in fade-in">
+                  <div className="text-[11px] font-bold text-foreground">
+                    Edit Customer Shipping Address
+                  </div>
+
+                  {addressError && (
+                    <div className="p-2 bg-red-500/10 border border-red-500/30 text-red-500 rounded text-[11px] flex items-center gap-1.5 font-medium">
+                      <AlertCircle size={13} />
+                      <span>{addressError}</span>
+                    </div>
+                  )}
+
+                  {/* Country Dropdown */}
+                  <div>
+                    <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">
+                      Country * (Select Dropdown)
+                    </label>
+                    <select
+                      value={addressForm.country}
+                      onChange={(e) => setAddressForm({ ...addressForm, country: e.target.value })}
+                      className="w-full text-xs bg-background border border-border rounded px-2.5 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
+                    >
+                      {COUNTRIES_LIST.map((c) => (
+                        <option key={c} value={c}>
+                          {c}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">
+                        City *
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Dubai"
+                        value={addressForm.city}
+                        onChange={(e) => setAddressForm({ ...addressForm, city: e.target.value })}
+                        className="w-full text-xs bg-background border border-border rounded px-2.5 py-1.5 text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">
+                        Area / State
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Downtown / Deira"
+                        value={addressForm.area}
+                        onChange={(e) => setAddressForm({ ...addressForm, area: e.target.value })}
+                        className="w-full text-xs bg-background border border-border rounded px-2.5 py-1.5 text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">
+                      Street Address *
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Al Wasl Road, Street 24B"
+                      value={addressForm.street}
+                      onChange={(e) => setAddressForm({ ...addressForm, street: e.target.value })}
+                      className="w-full text-xs bg-background border border-border rounded px-2.5 py-1.5 text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">
+                        Building / Villa / Apt
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Villa 14, Tower A"
+                        value={addressForm.building}
+                        onChange={(e) => setAddressForm({ ...addressForm, building: e.target.value })}
+                        className="w-full text-xs bg-background border border-border rounded px-2.5 py-1.5 text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">
+                        Postal Code
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. 00000"
+                        value={addressForm.postal_code}
+                        onChange={(e) => setAddressForm({ ...addressForm, postal_code: e.target.value })}
+                        className="w-full text-xs bg-background border border-border rounded px-2.5 py-1.5 text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-2 pt-1 border-t border-border">
+                    <button
+                      type="button"
+                      disabled={savingAddress}
+                      onClick={() => setIsEditingAddress(false)}
+                      className="px-3 py-1.5 border border-border rounded text-xs text-muted-foreground hover:bg-accent cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      disabled={savingAddress}
+                      onClick={handleSaveAddress}
+                      className="px-4 py-1.5 bg-primary text-primary-foreground font-semibold rounded text-xs hover:bg-primary/90 transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                    >
+                      <Save size={12} />
+                      {savingAddress ? 'Saving...' : 'Save Address'}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                (() => {
+                  const country = order.shipping_country || order.address?.country || (order.customer as any)?.addresses?.[0]?.country || 'United Arab Emirates';
+                  const city = order.shipping_city || order.address?.city || (order.customer as any)?.addresses?.[0]?.city;
+                  const area = order.shipping_area || order.address?.area || (order.customer as any)?.addresses?.[0]?.area;
+                  const street = order.shipping_street || order.address?.street || (order.customer as any)?.addresses?.[0]?.street;
+                  const building = order.shipping_building || order.address?.building || (order.customer as any)?.addresses?.[0]?.building;
+                  const postal = order.shipping_postal_code || order.address?.postal_code || (order.customer as any)?.addresses?.[0]?.postal_code;
+
+                  return (
+                    <div className="bg-muted/30 p-3 rounded-lg border border-border leading-relaxed text-foreground space-y-1">
+                      {building && <p className="font-medium">{building}</p>}
+                      {street && <p>{street}</p>}
+                      {area && <p>{area}</p>}
+                      <p className="font-semibold text-primary">{city ? `${city}, ` : ''}{country}</p>
+                      {postal && <p className="font-mono text-[10px] text-muted-foreground">Postal Code: {postal}</p>}
+                    </div>
+                  );
+                })()
+              )}
             </div>
           </div>
         </div>

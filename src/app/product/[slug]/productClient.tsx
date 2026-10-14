@@ -580,31 +580,17 @@ export default function ProductClient({ product }: { product: ProductDetails }) 
       </div>
     </div>
 
-      {/* Sizing Guide & Chart Modal */}
+      {/* Sizing Guide & Chart Modal - Only File Graphic */}
       {showSizeModal && (() => {
-        const defaultSizes = [
-          { size: '50', height: "5'0\" - 5'1\"", length: '50 in', bust: '40 in', sleeve: '26 in' },
-          { size: '52', height: "5'2\" - 5'3\"", length: '52 in', bust: '42 in', sleeve: '27 in' },
-          { size: '54', height: "5'4\" - 5'5\"", length: '54 in', bust: '44 in', sleeve: '28 in' },
-          { size: '56', height: "5'6\" - 5'7\"", length: '56 in', bust: '46 in', sleeve: '29 in' },
-          { size: '58', height: "5'8\" - 5'9\"", length: '58 in', bust: '48 in', sleeve: '30 in' },
-          { size: '60', height: "5'10\"+", length: '60 in', bust: '50 in', sleeve: '31 in' },
-        ];
-        let sizeRows = defaultSizes;
-        if (siteSettings?.size_chart_table) {
-          try {
-            const parsed = JSON.parse(siteSettings.size_chart_table);
-            if (Array.isArray(parsed) && parsed.length > 0) sizeRows = parsed;
-          } catch (_) {}
-        }
+        const chartFile = siteSettings?.size_chart_file || siteSettings?.size_chart_image;
 
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 animate-in fade-in">
-            <div className="bg-card border border-border w-full max-w-lg max-h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden text-foreground">
+            <div className="bg-card border border-border w-full max-w-2xl max-h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden text-foreground">
               <div className="p-4 sm:p-5 border-b border-border flex items-center justify-between bg-background">
                 <div className="flex items-center gap-2">
                   <Ruler size={18} className="text-primary" />
-                  <h2 className="font-serif text-lg font-bold">Abaya Sizing Guide &amp; Chart</h2>
+                  <h2 className="font-serif text-lg font-bold">Size Chart</h2>
                 </div>
                 <button
                   type="button"
@@ -615,42 +601,30 @@ export default function ProductClient({ product }: { product: ProductDetails }) 
                 </button>
               </div>
 
-              <div className="p-4 sm:p-5 overflow-y-auto space-y-4 text-xs">
-                <p className="text-muted-foreground leading-relaxed bg-accent/30 p-3 rounded-lg border border-border">
-                  {siteSettings?.size_chart_guide_text ||
-                    'Abaya sizes represent length from shoulder to floor in inches. Please select based on your total height for a perfect floor-length drape.'}
-                </p>
-
-                {siteSettings?.size_chart_image && (
-                  <div className="rounded-lg overflow-hidden border border-border my-2">
-                    <img src={siteSettings.size_chart_image} alt="Size Guide Diagram" className="w-full object-contain max-h-60" />
+              <div className="p-4 sm:p-6 overflow-y-auto flex items-center justify-center bg-background/50 min-h-[300px]">
+                {chartFile ? (
+                  <div className="flex flex-col items-center gap-3 w-full">
+                    <img
+                      src={chartFile}
+                      alt="Official Size Chart"
+                      className="w-full max-h-[70vh] object-contain rounded-xl border border-border bg-white p-2 shadow-sm"
+                    />
+                    <a
+                      href={chartFile}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-primary hover:underline font-medium"
+                    >
+                      Open full resolution size chart ↗
+                    </a>
+                  </div>
+                ) : (
+                  <div className="py-12 text-center text-muted-foreground space-y-2">
+                    <Ruler size={32} className="mx-auto opacity-30" />
+                    <p className="text-sm font-medium">Standard Gulf Abaya Sizing applies (Sizes 50 - 60).</p>
+                    <p className="text-xs text-muted-foreground">Detailed size chart graphic will be updated by the store admin shortly.</p>
                   </div>
                 )}
-
-                <div className="border border-border rounded-lg overflow-hidden shadow-xs">
-                  <table className="w-full text-left text-xs">
-                    <thead className="bg-muted/40 font-semibold border-b border-border">
-                      <tr>
-                        <th className="p-2.5">Size</th>
-                        <th className="p-2.5">Height</th>
-                        <th className="p-2.5">Length</th>
-                        <th className="p-2.5">Bust</th>
-                        <th className="p-2.5">Sleeve</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border">
-                      {sizeRows.map((row: any, idx: number) => (
-                        <tr key={idx} className="hover:bg-accent/20 transition">
-                          <td className="p-2.5 font-bold text-primary">{row.size}</td>
-                          <td className="p-2.5">{row.height}</td>
-                          <td className="p-2.5">{row.length}</td>
-                          <td className="p-2.5">{row.bust}</td>
-                          <td className="p-2.5">{row.sleeve}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
               </div>
 
               <div className="p-4 border-t border-border flex justify-end bg-background">
@@ -659,7 +633,7 @@ export default function ProductClient({ product }: { product: ProductDetails }) 
                   onClick={() => setShowSizeModal(false)}
                   className="px-5 py-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg text-xs transition cursor-pointer"
                 >
-                  Got It
+                  Close
                 </button>
               </div>
             </div>

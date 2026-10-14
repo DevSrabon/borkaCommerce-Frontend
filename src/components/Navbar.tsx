@@ -39,6 +39,7 @@ interface CategoryNode {
   name: string;
   slug: string;
   description?: string;
+  show_in_navbar?: boolean;
   children?: SubCategory[];
 }
 
@@ -356,8 +357,10 @@ export default function Navbar() {
                 )}
               </div>
 
-              {/* Dynamic Categories with Megamenu Hover */}
-              {categories.map((cat) => {
+              {/* Dynamic Categories with Megamenu Hover - Managed by Admin */}
+              {categories
+                .filter((cat) => cat.show_in_navbar !== false)
+                .map((cat) => {
                 const hasChildren = cat.children && cat.children.length > 0;
                 const isActive = pathname.includes(cat.slug);
 
@@ -781,7 +784,9 @@ export default function Navbar() {
                   Categories & Collections
                 </div>
 
-                {categories.map((cat) => {
+                {categories
+                  .filter((cat) => cat.show_in_navbar !== false)
+                  .map((cat) => {
                   const hasChildren = cat.children && cat.children.length > 0;
                   const isExpanded = !!expandedMobileCats[cat.id];
 

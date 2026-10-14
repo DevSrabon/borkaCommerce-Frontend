@@ -24,6 +24,7 @@ import {
   Calendar,
   Upload,
   Image as ImageIcon,
+  Tag,
 } from 'lucide-react';
 import RichTextEditor from '@/components/RichTextEditor';
 
@@ -38,6 +39,11 @@ interface BlogAdminItem {
   created_at: string;
   featured_image?: string;
   total_comments?: number;
+}
+
+interface CategoryAdminItem {
+  name: string;
+  count: number;
 }
 
 interface CommentAdminItem {
@@ -57,7 +63,15 @@ interface CommentAdminItem {
 
 export default function AdminBlogsPage() {
   const token = useSelector((state: RootState) => state.auth.token);
-  const [activeTab, setActiveTab] = useState<'blogs' | 'comments'>('blogs');
+  const [activeTab, setActiveTab] = useState<'blogs' | 'categories' | 'comments'>('blogs');
+
+  // Categories state
+  const [categoryItems, setCategoryItems] = useState<CategoryAdminItem[]>([]);
+  const [categorySearch, setCategorySearch] = useState('');
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [addingCategory, setAddingCategory] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<{ oldName: string; newName: string } | null>(null);
+  const [updatingCategory, setUpdatingCategory] = useState(false);
 
   // Blogs state
   const [blogs, setBlogs] = useState<BlogAdminItem[]>([]);
@@ -122,18 +136,129 @@ export default function AdminBlogsPage() {
     }
   };
 
-  // Fetch dynamic categories
+  // Fetch dynamic categories with stats
   const fetchCategories = async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/blogs/categories`);
+      const res = await fetch(`${API_BASE_URL}/admin/blogs/categories`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
       if (res.ok) {
         const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) {
-          setCategories(data);
+        if (Array.isArray(data)) {
+          if (data.length > 0 && typeof data[0] === 'string') {
+            setCategoryItems(data.map((c: string) => ({ name: c, count: 0 })));
+            setCategories(data);
+          } else {
+            setCategoryItems(data);
+            setCategories(data.map((d: any) => d.name));
+          }
+        }
+      } else {
+        const pubRes = await fetch(`${API_BASE_URL}/blogs/categories`);
+        if (pubRes.ok) {
+          const pubData = await pubRes.json();
+          if (Array.isArray(pubData)) {
+            setCategoryItems(pubData.map((c: string) => ({ name: c, count: 0 })));
+            setCategories(pubData);
+          }
         }
       }
     } catch (err) {
       console.error('Failed to load categories:', err);
+    }
+  };
+
+  const handleAddCategory = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!token) return;
+    const trimmed = newCategoryName.trim();
+    if (!trimmed) {
+      showNotification('error', 'Please enter a category name');
+      return;
+    }
+    setAddingCategory(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/admin/blogs/categories`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ name: trimmed }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || 'Failed to add category');
+      }
+      showNotification('success', `Category "${trimmed}" added successfully!`);
+      setNewCategoryName('');
+      await fetchCategories();
+      await fetchBlogs();
+    } catch (err: any) {
+      showNotification('error', err.message || 'Failed to add category');
+    } finally {
+      setAddingCategory(false);
+    }
+  };
+
+  const handleUpdateCategory = async (oldName: string, newName: string) => {
+    if (!token) return;
+    const trimmedNew = newName.trim();
+    if (!trimmedNew) {
+      showNotification('error', 'Category name cannot be empty');
+      return;
+    }
+    if (oldName.toLowerCase() === trimmedNew.toLowerCase()) {
+      setEditingCategory(null);
+      return;
+    }
+    setUpdatingCategory(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/admin/blogs/categories`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ oldName, newName: trimmedNew }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || 'Failed to update category');
+      }
+      showNotification('success', `Category renamed to "${trimmedNew}". All matching articles updated!`);
+      setEditingCategory(null);
+      await fetchCategories();
+      await fetchBlogs();
+    } catch (err: any) {
+      showNotification('error', err.message || 'Failed to update category');
+    } finally {
+      setUpdatingCategory(false);
+    }
+  };
+
+  const handleDeleteCategory = async (name: string, count: number) => {
+    if (!token) return;
+    const confirmMsg =
+      count > 0
+        ? `Category "${name}" currently has ${count} articles assigned. Are you sure you want to delete this category?`
+        : `Are you sure you want to delete category "${name}"?`;
+    if (!confirm(confirmMsg)) return;
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/admin/blogs/categories/${encodeURIComponent(name)}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || 'Failed to delete category');
+      }
+      showNotification('success', `Category "${name}" deleted successfully!`);
+      await fetchCategories();
+      await fetchBlogs();
+    } catch (err: any) {
+      showNotification('error', err.message || 'Failed to delete category');
     }
   };
 
@@ -354,7 +479,18 @@ export default function AdminBlogsPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
+          <button
+            type="button"
+            onClick={() => setActiveTab('categories')}
+            className={`inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold border rounded-lg transition cursor-pointer ${
+              activeTab === 'categories'
+                ? 'bg-primary text-primary-foreground border-primary shadow-xs'
+                : 'border-border bg-card hover:bg-accent text-foreground'
+            }`}
+          >
+            <Tag size={14} /> Manage Categories
+          </button>
           <Link
             href="/blogs"
             target="_blank"
@@ -399,6 +535,19 @@ export default function AdminBlogsPage() {
         >
           <BookOpen size={15} />
           <span>Articles ({blogs.length})</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('categories')}
+          className={`pb-3 transition flex items-center gap-2 cursor-pointer ${
+            activeTab === 'categories'
+              ? 'text-primary border-b-2 border-primary font-bold'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <Tag size={15} />
+          <span>Categories ({categories.length})</span>
         </button>
 
         <button
@@ -587,7 +736,200 @@ export default function AdminBlogsPage() {
       )}
 
       {/* ==================================================== */}
-      {/* TAB 2: COMMENT MODERATION                          */}
+      {/* TAB 2: BLOG CATEGORIES MANAGEMENT                   */}
+      {/* ==================================================== */}
+      {activeTab === 'categories' && (
+        <div className="space-y-6 animate-in fade-in">
+          {/* Add Category Card */}
+          <div className="bg-card border border-border rounded-xl p-5 shadow-xs">
+            <h2 className="text-sm font-bold text-foreground flex items-center gap-2 mb-1">
+              <Plus className="text-primary" size={16} /> Add New Blog Category
+            </h2>
+            <p className="text-xs text-muted-foreground mb-4">
+              Add a new dynamic category for your blogs. It will instantly be selectable when writing articles and displayed on the storefront category tabs.
+            </p>
+            <form onSubmit={handleAddCategory} className="flex flex-col sm:flex-row gap-3">
+              <input
+                type="text"
+                placeholder="Enter category name (e.g. Modest Hijab Styles, Bridal Couture)..."
+                value={newCategoryName}
+                onChange={(e) => setNewCategoryName(e.target.value)}
+                className="flex-1 px-3 py-2 bg-background border border-border rounded-lg text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+              <button
+                type="submit"
+                disabled={addingCategory || !newCategoryName.trim()}
+                className="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg text-xs transition cursor-pointer disabled:opacity-50 shadow-xs"
+              >
+                {addingCategory ? (
+                  <>
+                    <RefreshCw size={13} className="animate-spin" /> Adding...
+                  </>
+                ) : (
+                  <>
+                    <Plus size={14} /> Add Category
+                  </>
+                )}
+              </button>
+            </form>
+          </div>
+
+          {/* Categories List Card */}
+          <div className="bg-card border border-border rounded-xl shadow-xs overflow-hidden">
+            <div className="p-4 sm:p-5 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                  <Tag className="text-primary" size={16} /> Dynamic Blog Categories ({categoryItems.length})
+                </h3>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Update/rename existing category names. Renaming a category automatically updates all associated articles!
+                </p>
+              </div>
+
+              {/* Filter Categories Search */}
+              <div className="relative w-full sm:w-64">
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  type="text"
+                  placeholder="Filter categories..."
+                  value={categorySearch}
+                  onChange={(e) => setCategorySearch(e.target.value)}
+                  className="w-full pl-9 pr-3 py-1.5 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+              </div>
+            </div>
+
+            {/* Category Table */}
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs text-left">
+                <thead className="bg-muted/40 border-b border-border text-muted-foreground font-semibold uppercase tracking-wider">
+                  <tr>
+                    <th className="py-3 px-4 sm:px-6">Category Name</th>
+                    <th className="py-3 px-4 text-center">Linked Articles</th>
+                    <th className="py-3 px-4 text-right sm:pr-6">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {categoryItems
+                    .filter((cat) =>
+                      cat.name.toLowerCase().includes(categorySearch.toLowerCase().trim()),
+                    )
+                    .map((cat) => {
+                      const isEditing = editingCategory?.oldName === cat.name;
+                      return (
+                        <tr key={cat.name} className="hover:bg-muted/10 transition">
+                          <td className="py-3.5 px-4 sm:px-6 font-medium text-foreground">
+                            {isEditing ? (
+                              <div className="flex items-center gap-2 max-w-sm">
+                                <input
+                                  type="text"
+                                  value={editingCategory.newName}
+                                  onChange={(e) =>
+                                    setEditingCategory({ ...editingCategory, newName: e.target.value })
+                                  }
+                                  className="w-full px-2.5 py-1.5 text-xs bg-background border border-primary rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                                  autoFocus
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      e.preventDefault();
+                                      handleUpdateCategory(editingCategory.oldName, editingCategory.newName);
+                                    } else if (e.key === 'Escape') {
+                                      setEditingCategory(null);
+                                    }
+                                  }}
+                                />
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2">
+                                <span className="inline-flex items-center justify-center w-6 h-6 rounded-md bg-primary/10 text-primary">
+                                  <Tag size={13} />
+                                </span>
+                                <span className="font-semibold text-sm">{cat.name}</span>
+                              </div>
+                            )}
+                          </td>
+
+                          <td className="py-3.5 px-4 text-center">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setCategoryFilter(cat.name);
+                                setActiveTab('blogs');
+                              }}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-secondary hover:bg-secondary/80 text-secondary-foreground transition cursor-pointer"
+                              title="Click to view articles in this category"
+                            >
+                              <span>
+                                {cat.count} {cat.count === 1 ? 'Article' : 'Articles'}
+                              </span>
+                              <ExternalLink size={10} />
+                            </button>
+                          </td>
+
+                          <td className="py-3.5 px-4 text-right sm:pr-6">
+                            {isEditing ? (
+                              <div className="inline-flex items-center gap-1.5">
+                                <button
+                                  type="button"
+                                  disabled={updatingCategory}
+                                  onClick={() =>
+                                    handleUpdateCategory(editingCategory.oldName, editingCategory.newName)
+                                  }
+                                  className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded text-xs font-semibold transition cursor-pointer shadow-xs disabled:opacity-50"
+                                >
+                                  {updatingCategory ? (
+                                    <RefreshCw size={12} className="animate-spin" />
+                                  ) : (
+                                    <Check size={12} />
+                                  )}
+                                  <span>Save</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingCategory(null)}
+                                  className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-card border border-border hover:bg-muted text-muted-foreground rounded text-xs transition cursor-pointer"
+                                >
+                                  <X size={12} />
+                                  <span>Cancel</span>
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="inline-flex items-center gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setEditingCategory({ oldName: cat.name, newName: cat.name })
+                                  }
+                                  className="inline-flex items-center gap-1 px-2.5 py-1.5 text-foreground hover:text-primary hover:bg-primary/10 rounded text-xs font-medium transition cursor-pointer"
+                                  title="Edit category name"
+                                >
+                                  <Edit size={13} />
+                                  <span>Edit Name</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteCategory(cat.name, cat.count)}
+                                  className="inline-flex items-center gap-1 px-2.5 py-1.5 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded text-xs font-medium transition cursor-pointer"
+                                  title="Delete category"
+                                >
+                                  <Trash2 size={13} />
+                                  <span>Delete</span>
+                                </button>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==================================================== */}
+      {/* TAB 3: COMMENT MODERATION                          */}
       {/* ==================================================== */}
       {activeTab === 'comments' && (
         <div className="space-y-4">
