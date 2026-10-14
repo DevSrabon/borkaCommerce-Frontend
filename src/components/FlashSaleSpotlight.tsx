@@ -64,13 +64,13 @@ export default function FlashSaleSpotlight({
 
   return (
     <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 w-full">
-      <div className="relative rounded-2xl overflow-hidden border border-rose-200/80 dark:border-rose-900/50 bg-gradient-to-br from-rose-50/70 via-amber-50/40 to-orange-50/30 dark:from-zinc-950 dark:via-zinc-900 dark:to-black p-6 sm:p-10 shadow-lg text-foreground">
+      <div className="relative rounded-2xl overflow-hidden border border-rose-200/80 dark:border-rose-900/50 bg-gradient-to-br from-rose-50/70 via-amber-50/40 to-orange-50/30 dark:from-zinc-950 dark:via-zinc-900 dark:to-black p-3.5 sm:p-6 md:p-10 shadow-lg text-foreground">
         {/* Soft luxury ambient background glow */}
         <div className="absolute -top-24 -left-24 w-96 h-96 bg-rose-300/20 dark:bg-red-600/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-amber-300/20 dark:bg-primary/10 rounded-full blur-3xl pointer-events-none" />
 
         {/* Header with Title and Real-time Countdown */}
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6 pb-8 border-b border-rose-200/60 dark:border-white/10">
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 sm:pb-8 border-b border-rose-200/60 dark:border-white/10">
           <div className="space-y-2">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400 border border-rose-200 dark:border-rose-500/30 text-xs font-bold uppercase tracking-wider shadow-xs">
               <Flame size={14} className="animate-bounce text-rose-600 dark:text-rose-400" />
@@ -88,33 +88,33 @@ export default function FlashSaleSpotlight({
           </div>
 
           {/* Real-time Countdown Cards */}
-          <div className="flex items-center gap-2 sm:gap-3 self-start md:self-auto">
-            <div className="flex flex-col items-center justify-center w-14 sm:w-16 h-16 sm:h-20 bg-white/95 dark:bg-black/60 border border-rose-200/80 dark:border-white/10 rounded-xl backdrop-blur-md shadow-sm">
-              <span className="text-xl sm:text-2xl font-mono font-black text-rose-600 dark:text-rose-400">
+          <div className="flex items-center justify-between sm:justify-start gap-1 sm:gap-2.5 w-full sm:w-auto py-1">
+            <div className="flex flex-col items-center justify-center flex-1 sm:flex-initial min-w-[52px] sm:w-16 h-14 sm:h-20 bg-white/95 dark:bg-black/60 border border-rose-200/80 dark:border-white/10 rounded-xl backdrop-blur-md shadow-xs px-1">
+              <span className="text-lg sm:text-2xl font-mono font-black text-rose-600 dark:text-rose-400">
                 {mounted ? String(timeLeft.days).padStart(2, '0') : '00'}
               </span>
               <span className="text-xs uppercase tracking-wider text-stone-500 dark:text-zinc-400 font-semibold">Days</span>
             </div>
-            <span className="text-lg font-bold text-stone-400 dark:text-white/40">:</span>
+            <span className="text-sm sm:text-lg font-bold text-stone-400 dark:text-white/40 shrink-0">:</span>
 
-            <div className="flex flex-col items-center justify-center w-14 sm:w-16 h-16 sm:h-20 bg-white/95 dark:bg-black/60 border border-rose-200/80 dark:border-white/10 rounded-xl backdrop-blur-md shadow-sm">
-              <span className="text-xl sm:text-2xl font-mono font-black text-stone-900 dark:text-white">
+            <div className="flex flex-col items-center justify-center flex-1 sm:flex-initial min-w-[52px] sm:w-16 h-14 sm:h-20 bg-white/95 dark:bg-black/60 border border-rose-200/80 dark:border-white/10 rounded-xl backdrop-blur-md shadow-xs px-1">
+              <span className="text-lg sm:text-2xl font-mono font-black text-stone-900 dark:text-white">
                 {mounted ? String(timeLeft.hours).padStart(2, '0') : '00'}
               </span>
               <span className="text-xs uppercase tracking-wider text-stone-500 dark:text-zinc-400 font-semibold">Hours</span>
             </div>
-            <span className="text-lg font-bold text-stone-400 dark:text-white/40">:</span>
+            <span className="text-sm sm:text-lg font-bold text-stone-400 dark:text-white/40 shrink-0">:</span>
 
-            <div className="flex flex-col items-center justify-center w-14 sm:w-16 h-16 sm:h-20 bg-white/95 dark:bg-black/60 border border-rose-200/80 dark:border-white/10 rounded-xl backdrop-blur-md shadow-sm">
-              <span className="text-xl sm:text-2xl font-mono font-black text-stone-900 dark:text-white">
+            <div className="flex flex-col items-center justify-center flex-1 sm:flex-initial min-w-[52px] sm:w-16 h-14 sm:h-20 bg-white/95 dark:bg-black/60 border border-rose-200/80 dark:border-white/10 rounded-xl backdrop-blur-md shadow-xs px-1">
+              <span className="text-lg sm:text-2xl font-mono font-black text-stone-900 dark:text-white">
                 {mounted ? String(timeLeft.minutes).padStart(2, '0') : '00'}
               </span>
               <span className="text-xs uppercase tracking-wider text-stone-500 dark:text-zinc-400 font-semibold">Mins</span>
             </div>
-            <span className="text-lg font-bold text-stone-400 dark:text-white/40">:</span>
+            <span className="text-sm sm:text-lg font-bold text-stone-400 dark:text-white/40 shrink-0">:</span>
 
-            <div className="flex flex-col items-center justify-center w-14 sm:w-16 h-16 sm:h-20 bg-rose-50 dark:bg-red-950/80 border border-rose-300 dark:border-red-500/40 rounded-xl backdrop-blur-md shadow-sm">
-              <span className="text-xl sm:text-2xl font-mono font-black text-rose-600 dark:text-rose-400 animate-pulse">
+            <div className="flex flex-col items-center justify-center flex-1 sm:flex-initial min-w-[52px] sm:w-16 h-14 sm:h-20 bg-rose-50 dark:bg-red-950/80 border border-rose-300 dark:border-red-500/40 rounded-xl backdrop-blur-md shadow-xs px-1">
+              <span className="text-lg sm:text-2xl font-mono font-black text-rose-600 dark:text-rose-400 animate-pulse">
                 {mounted ? String(timeLeft.seconds).padStart(2, '0') : '00'}
               </span>
               <span className="text-xs uppercase tracking-wider text-rose-600 dark:text-red-300 font-semibold">Secs</span>

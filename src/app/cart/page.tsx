@@ -159,26 +159,45 @@ export default function CartPage() {
     <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8 w-full space-y-8">
       <h1 className="font-serif text-3xl font-bold tracking-tight">Shopping Bag</h1>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
         {/* Cart items list */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-4 sm:space-y-6">
           {cartItems.map((item) => (
-            <div key={item.id} className="flex border border-border bg-card p-4 rounded-md gap-6 shadow-sm relative group">
+            <div
+              key={item.id}
+              className="flex border border-border bg-card p-3 sm:p-4 rounded-xl gap-3 sm:gap-4 shadow-xs relative group"
+            >
               {/* Product Thumbnail */}
-              <div className="h-32 w-24 shrink-0 bg-zinc-100 rounded overflow-hidden border border-border">
-                <img src={item.image || ''} alt={item.name} className="h-full w-full object-cover object-center" />
+              <div className="h-28 w-20 sm:h-32 sm:w-24 shrink-0 bg-zinc-100 dark:bg-zinc-800 rounded-lg overflow-hidden border border-border">
+                <img
+                  src={item.image || ''}
+                  alt={item.name}
+                  className="h-full w-full object-cover object-center"
+                />
               </div>
 
-              {/* Product Details */}
-              <div className="flex-1 flex flex-col justify-between">
-                <div>
-                  <h3 className="font-medium text-sm text-foreground hover:text-primary transition line-clamp-1">
-                    <Link href={`/product/${item.sku}`}>{item.name}</Link>
-                  </h3>
-                  <p className="text-xs text-muted-foreground mt-1">SKU: {item.sku}</p>
+              {/* Product Details & Price */}
+              <div className="flex-1 min-w-0 flex flex-col justify-between gap-3">
+                <div className="space-y-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <h3 className="font-medium text-xs sm:text-sm text-foreground hover:text-primary transition line-clamp-1 pr-2">
+                      <Link href={`/product/${item.sku}`}>{item.name}</Link>
+                    </h3>
+                    <div className="text-right shrink-0">
+                      <span className="font-bold text-xs sm:text-sm text-foreground whitespace-nowrap block">
+                        {formatPrice(item.discounted_price * item.quantity)}
+                      </span>
+                      {item.discounted_price < item.price && (
+                        <span className="text-xs text-muted-foreground line-through font-light whitespace-nowrap block">
+                          {formatPrice(item.price * item.quantity)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">SKU: {item.sku}</p>
 
                   {/* Selected Attributes details */}
-                  <div className="flex flex-wrap gap-x-3 mt-2 text-xs text-muted font-light">
+                  <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1.5 text-xs text-muted-foreground font-light">
                     {item.attributes.map((attr) => (
                       <span key={attr.name}>
                         {attr.name}: <strong className="font-medium text-foreground">{attr.value}</strong>
@@ -188,19 +207,21 @@ export default function CartPage() {
                 </div>
 
                 {/* Adjust Quantities & Delete */}
-                <div className="flex items-center justify-between mt-4">
-                  <div className="flex items-center border border-border rounded">
+                <div className="flex items-center justify-between pt-2 border-t border-border/50">
+                  <div className="flex items-center border border-border rounded-md bg-background">
                     <button
                       onClick={() => dispatch(updateQuantity({ id: item.id, quantity: item.quantity - 1 }))}
-                      className="px-2 py-1.5 hover:bg-accent text-muted-foreground transition"
+                      className="px-2 py-1 hover:bg-accent text-muted-foreground hover:text-foreground transition cursor-pointer"
+                      title="Decrease quantity"
                     >
                       <Minus size={12} />
                     </button>
-                    <span className="px-4 text-xs font-semibold">{item.quantity}</span>
+                    <span className="px-3 text-xs font-semibold">{item.quantity}</span>
                     <button
                       onClick={() => dispatch(updateQuantity({ id: item.id, quantity: item.quantity + 1 }))}
-                      className="px-2 py-1.5 hover:bg-accent text-muted-foreground transition"
+                      className="px-2 py-1 hover:bg-accent text-muted-foreground hover:text-foreground transition cursor-pointer disabled:opacity-40"
                       disabled={item.quantity >= item.available_stock}
+                      title="Increase quantity"
                     >
                       <Plus size={12} />
                     </button>
@@ -208,19 +229,12 @@ export default function CartPage() {
 
                   <button
                     onClick={() => dispatch(removeFromCart(item.id))}
-                    className="text-muted hover:text-red-500 transition-colors p-1"
+                    className="text-muted-foreground hover:text-red-500 transition-colors p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-950/30 cursor-pointer"
+                    title="Remove item"
                   >
                     <Trash2 size={16} />
                   </button>
                 </div>
-              </div>
-
-              {/* Price Details */}
-              <div className="text-right flex flex-col justify-start">
-                <span className="font-bold text-sm text-foreground">{formatPrice(item.discounted_price * item.quantity)}</span>
-                {item.discounted_price < item.price && (
-                  <span className="text-xs text-muted line-through font-light">{formatPrice(item.price * item.quantity)}</span>
-                )}
               </div>
             </div>
           ))}

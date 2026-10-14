@@ -101,6 +101,18 @@ export default function CatalogClient({
   const [saleOnly, setSaleOnly] = useState<boolean>(initialOnSale);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
+  const [selectedFabrics, setSelectedFabrics] = useState<string[]>([]);
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    categories: false,
+    colors: false,
+    sizes: false,
+    fabrics: false,
+  });
+
+  const toggleSection = (key: string) => {
+    setExpandedSections((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
   const [sortBy, setSortBy] = useState<'featured' | 'price-asc' | 'price-desc' | 'discount'>('featured');
 
   // Debounce catalog search by 300ms
@@ -123,14 +135,16 @@ export default function CatalogClient({
   const [minPrice, setMinPrice] = useState<number>(globalMinPrice);
   const [maxPrice, setMaxPrice] = useState<number>(globalMaxPrice);
 
-  // Extract all unique available colors & sizes across all variants
-  const { availableColors, availableSizes } = useMemo(() => {
+  // Extract all unique available colors, sizes & fabrics across all variants
+  const { availableColors, availableSizes, availableFabrics } = useMemo(() => {
     const colorCounts: Record<string, number> = {};
     const sizeCounts: Record<string, number> = {};
+    const fabricCounts: Record<string, number> = {};
 
     initialProducts.forEach((prod) => {
       const prodColors = new Set<string>();
       const prodSizes = new Set<string>();
+      const prodFabrics = new Set<string>();
 
       (prod.variants || []).forEach((v) => {
         (v.attributes || []).forEach((attr) => {
@@ -142,6 +156,8 @@ export default function CatalogClient({
             prodColors.add(val);
           } else if (lowerName.includes('size')) {
             prodSizes.add(val);
+          } else if (lowerName.includes('fabric') || lowerName.includes('material')) {
+            prodFabrics.add(val);
           }
         });
       });
@@ -151,6 +167,9 @@ export default function CatalogClient({
       });
       prodSizes.forEach((s) => {
         sizeCounts[s] = (sizeCounts[s] || 0) + 1;
+      });
+      prodFabrics.forEach((f) => {
+        fabricCounts[f] = (fabricCounts[f] || 0) + 1;
       });
     });
 
@@ -174,7 +193,12 @@ export default function CatalogClient({
         return a.name.localeCompare(b.name);
       });
 
-    return { availableColors: colors, availableSizes: sizes };
+    const fabrics = Object.keys(fabricCounts).map((fabric) => ({
+      name: fabric,
+      count: fabricCounts[fabric],
+    }));
+
+    return { availableColors: colors, availableSizes: sizes, availableFabrics: fabrics };
   }, [initialProducts]);
 
   // Sync category & sale from URL params when navigation occurs
@@ -199,6 +223,13 @@ export default function CatalogClient({
     );
   };
 
+  // Fabric selection toggler
+  const toggleFabric = (fabric: string) => {
+    setSelectedFabrics((prev) =>
+      prev.includes(fabric) ? prev.filter((f) => f !== fabric) : [...prev, fabric]
+    );
+  };
+
   // Reset all filters
   const resetFilters = () => {
     setCatalogSearch('');
@@ -206,6 +237,7 @@ export default function CatalogClient({
     setSaleOnly(false);
     setSelectedColors([]);
     setSelectedSizes([]);
+    setSelectedFabrics([]);
     setMinPrice(globalMinPrice);
     setMaxPrice(globalMaxPrice);
     setSortBy('featured');
@@ -218,6 +250,7 @@ export default function CatalogClient({
     saleOnly ||
     selectedColors.length > 0 ||
     selectedSizes.length > 0 ||
+    selectedFabrics.length > 0 ||
     minPrice > globalMinPrice ||
     maxPrice < globalMaxPrice;
 
@@ -275,6 +308,18 @@ export default function CatalogClient({
           if (!hasSelectedSize) return false;
         }
 
+        // Fabric filter
+        if (selectedFabrics.length > 0) {
+          const hasSelectedFabric = (prod.variants || []).some((v) =>
+            (v.attributes || []).some(
+              (attr) =>
+                (attr.name.toLowerCase().includes('fabric') || attr.name.toLowerCase().includes('material')) &&
+                selectedFabrics.includes(attr.value.trim())
+            )
+          );
+          if (!hasSelectedFabric) return false;
+        }
+
         return true;
       })
       .sort((a, b) => {
@@ -309,6 +354,7 @@ export default function CatalogClient({
     saleOnly,
     selectedColors,
     selectedSizes,
+    selectedFabrics,
     minPrice,
     maxPrice,
     sortBy,
@@ -457,14 +503,15 @@ export default function CatalogClient({
       {availableColors.length > 0 && (
         <div className="space-y-3 pt-2 border-t border-border">
           <div className="flex items-center justify-between">
-            <h3 className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
-              Colors
+            <h3 className="text-xs font-semibold tracking-wider text-muted-foreground uppercase flex items-center gap-1.5">
+              <span>Colors</span>
+              <span className="text-muted-foreground/60 font-mono">({availableColors.length})</span>
             </h3>
             {selectedColors.length > 0 && (
               <button
                 type="button"
                 onClick={() => setSelectedColors([])}
-                className="text-xs text-primary hover:underline font-medium"
+                className="text-xs text-primary hover:underline font-medium cursor-pointer"
               >
                 Clear ({selectedColors.length})
               </button>
@@ -472,7 +519,7 @@ export default function CatalogClient({
           </div>
 
           <div className="flex flex-wrap gap-2">
-            {availableColors.map((color) => {
+            {(expandedSections.colors ? availableColors : availableColors.slice(0, 6)).map((color) => {
               const isSelected = selectedColors.includes(color.name);
               const hex = COLOR_MAP[color.name.toLowerCase()] || '#475569';
               const isLight = color.name.toLowerCase() === 'white' || color.name.toLowerCase() === 'cream';
@@ -501,6 +548,24 @@ export default function CatalogClient({
               );
             })}
           </div>
+
+          {availableColors.length > 6 && (
+            <button
+              type="button"
+              onClick={() => toggleSection('colors')}
+              className="inline-flex items-center gap-1 text-xs text-primary font-semibold hover:underline cursor-pointer pt-0.5"
+            >
+              <ChevronDown
+                size={13}
+                className={`transition-transform duration-200 ${expandedSections.colors ? 'rotate-180' : ''}`}
+              />
+              <span>
+                {expandedSections.colors
+                  ? 'Show Less'
+                  : `+ ${availableColors.length - 6} More Colors`}
+              </span>
+            </button>
+          )}
         </div>
       )}
 
@@ -508,14 +573,15 @@ export default function CatalogClient({
       {availableSizes.length > 0 && (
         <div className="space-y-3 pt-2 border-t border-border">
           <div className="flex items-center justify-between">
-            <h3 className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
-              Sizes
+            <h3 className="text-xs font-semibold tracking-wider text-muted-foreground uppercase flex items-center gap-1.5">
+              <span>Sizes</span>
+              <span className="text-muted-foreground/60 font-mono">({availableSizes.length})</span>
             </h3>
             {selectedSizes.length > 0 && (
               <button
                 type="button"
                 onClick={() => setSelectedSizes([])}
-                className="text-xs text-primary hover:underline font-medium"
+                className="text-xs text-primary hover:underline font-medium cursor-pointer"
               >
                 Clear ({selectedSizes.length})
               </button>
@@ -523,7 +589,7 @@ export default function CatalogClient({
           </div>
 
           <div className="grid grid-cols-3 gap-2">
-            {availableSizes.map((size) => {
+            {(expandedSections.sizes ? availableSizes : availableSizes.slice(0, 6)).map((size) => {
               const isSelected = selectedSizes.includes(size.name);
 
               return (
@@ -545,14 +611,108 @@ export default function CatalogClient({
               );
             })}
           </div>
+
+          {availableSizes.length > 6 && (
+            <button
+              type="button"
+              onClick={() => toggleSection('sizes')}
+              className="inline-flex items-center gap-1 text-xs text-primary font-semibold hover:underline cursor-pointer pt-0.5"
+            >
+              <ChevronDown
+                size={13}
+                className={`transition-transform duration-200 ${expandedSections.sizes ? 'rotate-180' : ''}`}
+              />
+              <span>
+                {expandedSections.sizes
+                  ? 'Show Less'
+                  : `+ ${availableSizes.length - 6} More Sizes`}
+              </span>
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Fabric Filter */}
+      {availableFabrics.length > 0 && (
+        <div className="space-y-3 pt-2 border-t border-border">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-semibold tracking-wider text-muted-foreground uppercase flex items-center gap-1.5">
+              <span>Fabric</span>
+              <span className="text-muted-foreground/60 font-mono">({availableFabrics.length})</span>
+            </h3>
+            {selectedFabrics.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setSelectedFabrics([])}
+                className="text-xs text-primary hover:underline font-medium cursor-pointer"
+              >
+                Clear ({selectedFabrics.length})
+              </button>
+            )}
+          </div>
+
+          <div className="flex flex-wrap gap-1.5">
+            {(expandedSections.fabrics ? availableFabrics : availableFabrics.slice(0, 5)).map((fabric) => {
+              const isSelected = selectedFabrics.includes(fabric.name);
+
+              return (
+                <button
+                  key={fabric.name}
+                  type="button"
+                  onClick={() => toggleFabric(fabric.name)}
+                  className={`px-2.5 py-1.5 rounded-lg border text-xs transition cursor-pointer flex items-center gap-1.5 ${
+                    isSelected
+                      ? 'border-primary bg-primary/10 text-primary font-semibold ring-1 ring-primary/40 shadow-xs'
+                      : 'border-border bg-card hover:bg-accent text-foreground/80'
+                  }`}
+                >
+                  <span>{fabric.name}</span>
+                  <span className="text-xs text-muted-foreground font-mono">({fabric.count})</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {availableFabrics.length > 5 && (
+            <button
+              type="button"
+              onClick={() => toggleSection('fabrics')}
+              className="inline-flex items-center gap-1 text-xs text-primary font-semibold hover:underline cursor-pointer pt-0.5"
+            >
+              <ChevronDown
+                size={13}
+                className={`transition-transform duration-200 ${expandedSections.fabrics ? 'rotate-180' : ''}`}
+              />
+              <span>
+                {expandedSections.fabrics
+                  ? 'Show Less'
+                  : `+ ${availableFabrics.length - 5} More Fabrics`}
+              </span>
+            </button>
+          )}
         </div>
       )}
 
       {/* Category Filter */}
       <div className="space-y-3 pt-2 border-t border-border">
-        <h3 className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
-          Categories
-        </h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-xs font-semibold tracking-wider text-muted-foreground uppercase flex items-center gap-1.5">
+            <span>Categories</span>
+            <span className="text-muted-foreground/60 font-mono">({categories.length})</span>
+          </h3>
+          {selectedCategory && (
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedCategory('');
+                router.push(saleOnly ? '/catalog?on_sale=true' : '/catalog');
+              }}
+              className="text-xs text-primary hover:underline font-medium cursor-pointer"
+            >
+              Reset
+            </button>
+          )}
+        </div>
         <div className="flex flex-col gap-1.5 text-xs">
           <button
             type="button"
@@ -568,7 +728,7 @@ export default function CatalogClient({
           >
             All Collections
           </button>
-          {categories.map((cat) => (
+          {(expandedSections.categories ? categories : categories.slice(0, 5)).map((cat) => (
             <button
               key={cat.id}
               type="button"
@@ -588,14 +748,32 @@ export default function CatalogClient({
             </button>
           ))}
         </div>
+
+        {categories.length > 5 && (
+          <button
+            type="button"
+            onClick={() => toggleSection('categories')}
+            className="inline-flex items-center gap-1 text-xs text-primary font-semibold hover:underline cursor-pointer pt-0.5"
+          >
+            <ChevronDown
+              size={13}
+              className={`transition-transform duration-200 ${expandedSections.categories ? 'rotate-180' : ''}`}
+            />
+            <span>
+              {expandedSections.categories
+                ? 'Show Less'
+                : `+ ${categories.length - 5} More Categories`}
+            </span>
+          </button>
+        )}
       </div>
     </div>
   );
 
   return (
     <div className="flex flex-col md:flex-row gap-8 w-full">
-      {/* Desktop Sidebar */}
-      <aside className="hidden md:block w-64 space-y-6 shrink-0 bg-card/40 p-5 rounded-2xl border border-border h-fit sticky top-24">
+      {/* Desktop Sidebar: Independently scrollable sticky container */}
+      <aside className="hidden md:block w-72 shrink-0 sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto overscroll-contain bg-card/60 backdrop-blur-md p-5 rounded-2xl border border-border shadow-xs scrollbar-thin scrollbar-thumb-border hover:scrollbar-thumb-muted-foreground pr-2.5">
         {renderSidebarContent()}
       </aside>
 
