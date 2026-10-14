@@ -11,6 +11,7 @@ interface Banner {
   cta_text: string | null;
   cta_link: string | null;
   image_url: string;
+  mobile_image_url?: string | null;
 }
 
 interface Props {
@@ -55,17 +56,34 @@ export default function BannerSlider({ serverBanners }: Props) {
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
-      {/* Background images — crossfade */}
+      {/* Background images — crossfade with separate mobile image support */}
       {banners.map((b, i) => (
         <div
           key={b.id}
           className={`absolute inset-0 z-0 transition-opacity duration-1000 ${i === current ? 'opacity-100' : 'opacity-0'}`}
         >
-          <img
-            src={b.image_url}
-            alt={b.title}
-            className="w-full h-full object-cover object-center brightness-50"
-          />
+          {b.mobile_image_url ? (
+            <>
+              {/* Mobile device image (Portrait / Square optimized) */}
+              <img
+                src={b.mobile_image_url}
+                alt={b.title}
+                className="w-full h-full object-cover object-center brightness-50 md:hidden"
+              />
+              {/* Desktop landscape banner */}
+              <img
+                src={b.image_url}
+                alt={b.title}
+                className="w-full h-full object-cover object-center brightness-50 hidden md:block"
+              />
+            </>
+          ) : (
+            <img
+              src={b.image_url}
+              alt={b.title}
+              className="w-full h-full object-cover object-center brightness-50"
+            />
+          )}
         </div>
       ))}
 

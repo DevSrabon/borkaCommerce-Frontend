@@ -63,6 +63,21 @@ export default function Navbar() {
   const [searchSuggestions, setSearchSuggestions] = useState<any[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [siteSettings, setSiteSettings] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/ecommerce/site-settings`)
+      .then((res) => (res.ok ? res.json() : {}))
+      .then((data) => {
+        if (data && typeof data === 'object') {
+          setSiteSettings(data as Record<string, string>);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const logoUrl = siteSettings.logo_url;
+  const siteName = siteSettings.site_name || 'Saba Al Wadi';
 
   // Debounce search query by 300ms
   useEffect(() => {
@@ -248,8 +263,32 @@ export default function Navbar() {
                 <Menu size={22} />
               </button>
 
-              <Link href="/" className="font-serif text-xl sm:text-2xl font-bold tracking-widest text-foreground hover:opacity-90 shrink-0">
-                SABA <span className="text-primary font-serif">AL WADI</span>
+              <Link href="/" className="flex items-center gap-2.5 sm:gap-3 group shrink-0">
+                {logoUrl ? (
+                  <img
+                    src={logoUrl}
+                    alt={siteName}
+                    className="h-10 sm:h-12 w-auto max-h-12 object-contain transition-transform group-hover:scale-105"
+                  />
+                ) : (
+                  /* Elegant Gold Monogram Emblem matching Footer */
+                  <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full border border-amber-500/40 bg-gradient-to-br from-amber-500/10 via-amber-400/5 to-transparent flex flex-col items-center justify-center p-1 shadow-xs group-hover:border-amber-500 transition-all shrink-0">
+                    <span className="font-serif font-black text-amber-500 text-xs sm:text-sm tracking-widest leading-none">
+                      SW
+                    </span>
+                    <span className="text-[5px] sm:text-[5.5px] uppercase tracking-tighter text-amber-600 dark:text-amber-400 font-semibold text-center leading-[6.5px] mt-0.5">
+                      Saba Al Wadi
+                    </span>
+                  </div>
+                )}
+                <div className="flex flex-col justify-center">
+                  <span className="font-serif text-lg sm:text-xl font-bold tracking-widest text-foreground group-hover:opacity-90 leading-tight">
+                    SABA <span className="text-primary font-serif">AL WADI</span>
+                  </span>
+                  <span className="text-[7.5px] sm:text-[8px] uppercase tracking-[0.2em] text-muted-foreground font-medium hidden sm:block">
+                    Haute Couture &bull; Dubai
+                  </span>
+                </div>
               </Link>
             </div>
 
@@ -699,9 +738,32 @@ export default function Navbar() {
                 <Link
                   href="/"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="font-serif text-lg font-bold tracking-widest text-foreground"
+                  className="flex items-center gap-2.5 group"
                 >
-                  SABA <span className="text-primary">AL WADI</span>
+                  {logoUrl ? (
+                    <img
+                      src={logoUrl}
+                      alt={siteName}
+                      className="h-9 w-auto max-h-9 object-contain"
+                    />
+                  ) : (
+                    <div className="w-9 h-9 rounded-full border border-amber-500/40 bg-gradient-to-br from-amber-500/10 via-amber-400/5 to-transparent flex flex-col items-center justify-center p-0.5 shadow-xs shrink-0">
+                      <span className="font-serif font-black text-amber-500 text-[11px] tracking-widest leading-none">
+                        SW
+                      </span>
+                      <span className="text-[4.5px] uppercase tracking-tighter text-amber-600 dark:text-amber-400 font-semibold text-center leading-[5.5px] mt-0.5">
+                        Saba Al Wadi
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex flex-col justify-center">
+                    <span className="font-serif text-base font-bold tracking-widest text-foreground leading-tight">
+                      SABA <span className="text-primary font-serif">AL WADI</span>
+                    </span>
+                    <span className="text-[7px] uppercase tracking-[0.2em] text-muted-foreground font-medium">
+                      Haute Couture &bull; Dubai
+                    </span>
+                  </div>
                 </Link>
                 <button
                   onClick={() => setMobileMenuOpen(false)}

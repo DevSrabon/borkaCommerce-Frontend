@@ -113,7 +113,6 @@ export default function ProductClient({ product }: { product: ProductDetails }) 
   const [activeMediaMode, setActiveMediaMode] = useState<'image' | 'video'>('image');
   const embedUrl = getYoutubeEmbedUrl(product.video_url);
   const [addedAlert, setAddedAlert] = useState(false);
-  const [descExpanded, setDescExpanded] = useState(true);
   const [shippingInfo, setShippingInfo] = useState<{
     base_fee: number;
     final_fee: number;
@@ -510,35 +509,6 @@ export default function ProductClient({ product }: { product: ProductDetails }) 
                 )}
               </div>
             </div>
-          </div>
-
-          {/* Integrated Product Description (Directly accessible without scrolling down) */}
-          <div className="border border-border rounded-xl bg-card overflow-hidden shadow-xs">
-            <button
-              type="button"
-              onClick={() => setDescExpanded(!descExpanded)}
-              className="w-full p-3.5 flex items-center justify-between text-left font-serif font-bold text-xs sm:text-sm text-foreground hover:bg-muted/40 transition cursor-pointer"
-            >
-              <div className="flex items-center gap-2">
-                <FileText size={15} className="text-primary" />
-                <span>Product Description &amp; Fabric Notes</span>
-              </div>
-              {descExpanded ? <ChevronUp size={15} className="text-muted-foreground" /> : <ChevronDown size={15} className="text-muted-foreground" />}
-            </button>
-
-            {descExpanded && (
-              <div className="p-3.5 pt-2 border-t border-border/60 text-xs text-muted-foreground leading-relaxed animate-in fade-in space-y-2">
-                {product.short_description && (
-                  <p className="font-medium text-foreground text-xs">
-                    {product.short_description}
-                  </p>
-                )}
-                <div
-                  className="prose prose-xs dark:prose-invert max-w-none text-xs text-muted-foreground"
-                  dangerouslySetInnerHTML={{ __html: product.description }}
-                />
-              </div>
-            )}
           </div>
         </div>
       </div>

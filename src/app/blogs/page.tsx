@@ -11,6 +11,7 @@ interface BlogItem {
   slug: string;
   excerpt?: string;
   featured_image?: string;
+  main_image?: string;
   category: string;
   author: string;
   views: number;
@@ -23,6 +24,7 @@ interface SidebarBlogItem {
   title: string;
   slug: string;
   featured_image?: string;
+  main_image?: string;
   published_at: string;
   views: number;
   category: string;
@@ -273,11 +275,11 @@ export default function BlogsPage() {
                     key={blog.id}
                     className="group bg-card border border-border rounded-xl overflow-hidden shadow-xs hover:shadow-md transition flex flex-col justify-between"
                   >
-                    {/* Featured Image with category badge */}
+                    {/* Featured / Main Image with category badge */}
                     <div className="relative aspect-4/3 w-full overflow-hidden bg-muted">
-                      {blog.featured_image ? (
+                      {blog.featured_image || blog.main_image ? (
                         <img
-                          src={blog.featured_image}
+                          src={blog.featured_image || blog.main_image}
                           alt={blog.title}
                           className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
                         />
@@ -393,9 +395,9 @@ export default function BlogsPage() {
                     className="py-3 first:pt-0 last:pb-0 flex items-center gap-3.5 group cursor-pointer block"
                   >
                     <div className="w-14 h-14 rounded-lg overflow-hidden shrink-0 bg-muted border border-border">
-                      {item.featured_image ? (
+                      {item.featured_image || item.main_image ? (
                         <img
-                          src={item.featured_image}
+                          src={item.featured_image || item.main_image}
                           alt={item.title}
                           className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
                         />

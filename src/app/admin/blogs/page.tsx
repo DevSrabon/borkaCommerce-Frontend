@@ -38,6 +38,7 @@ interface BlogAdminItem {
   published_at: string;
   created_at: string;
   featured_image?: string;
+  main_image?: string;
   total_comments?: number;
 }
 
@@ -97,22 +98,26 @@ export default function AdminBlogsPage() {
     excerpt: '',
     content: '',
     featured_image: '',
+    main_image: '',
     is_published: true,
   });
   const [savingBlog, setSavingBlog] = useState(false);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
-  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadingFeatured, setUploadingFeatured] = useState(false);
+  const [uploadingMain, setUploadingMain] = useState(false);
 
   const showNotification = (type: 'success' | 'error', message: string) => {
     setNotification({ type, message });
     setTimeout(() => setNotification(null), 4000);
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, field: 'featured_image' | 'main_image') => {
     const file = e.target.files?.[0];
     if (!file || !token) return;
-    setUploadingImage(true);
+    if (field === 'featured_image') setUploadingFeatured(true);
+    else setUploadingMain(true);
+
     try {
       const uploadData = new FormData();
       uploadData.append('image', file);
@@ -123,8 +128,8 @@ export default function AdminBlogsPage() {
       });
       if (res.ok) {
         const data = await res.json();
-        setFormData((prev) => ({ ...prev, featured_image: data.imageUrl }));
-        showNotification('success', 'Featured image uploaded successfully!');
+        setFormData((prev) => ({ ...prev, [field]: data.imageUrl }));
+        showNotification('success', `${field === 'featured_image' ? 'Featured image' : 'Main image'} uploaded successfully!`);
       } else {
         showNotification('error', 'Failed to upload image');
       }
@@ -132,7 +137,8 @@ export default function AdminBlogsPage() {
       console.error('Image upload error:', err);
       showNotification('error', 'Error uploading image');
     } finally {
-      setUploadingImage(false);
+      if (field === 'featured_image') setUploadingFeatured(false);
+      else setUploadingMain(false);
     }
   };
 
@@ -356,6 +362,7 @@ export default function AdminBlogsPage() {
       excerpt: '',
       content: '',
       featured_image: '',
+      main_image: '',
       is_published: true,
     });
     setShowBlogModal(true);
@@ -379,6 +386,7 @@ export default function AdminBlogsPage() {
           excerpt: data.excerpt || '',
           content: data.content || '',
           featured_image: data.featured_image || '',
+          main_image: data.main_image || '',
           is_published: data.is_published ?? true,
         });
         if (!categories.includes(cat)) {
@@ -656,9 +664,9 @@ export default function AdminBlogsPage() {
                           <td className="py-3.5 px-4 font-medium text-foreground max-w-sm">
                             <div className="flex items-center gap-3">
                               <div className="w-10 h-10 rounded-md overflow-hidden bg-muted border border-border shrink-0">
-                                {blog.featured_image ? (
+                                {blog.featured_image || blog.main_image ? (
                                   <img
-                                    src={blog.featured_image}
+                                    src={blog.featured_image || blog.main_image}
                                     alt={blog.title}
                                     className="w-full h-full object-cover"
                                   />
@@ -671,12 +679,20 @@ export default function AdminBlogsPage() {
                               <div className="min-w-0">
                                 <div className="line-clamp-1 font-semibold">{blog.title}</div>
                                 <div className="text-[10px] text-muted-foreground font-mono truncate">/{blog.slug}</div>
+                                <div className="flex items-center gap-2 mt-0.5">
+                                  {blog.featured_image && (
+                                    <span className="text-[9px] text-primary font-medium">★ Featured Img</span>
+                                  )}
+                                  {blog.main_image && (
+                                    <span className="text-[9px] text-blue-500 font-medium">🖼 Main Img</span>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           </td>
-                          <td className="py-3.5 px-4 text-muted-foreground">
-                            <span className="px-2 py-0.5 bg-muted rounded-full text-[10px] font-medium border border-border">
-                              {blog.category}
+                          <td className="py-3.5 px-4">
+                            <span className="px-2.5 py-1 bg-amber-500/10 text-amber-700 dark:text-amber-300 font-semibold rounded-full text-[10px] border border-amber-500/20 inline-block shadow-2xs">
+                              {blog.category || 'General'}
                             </span>
                           </td>
                           <td className="py-3.5 px-4 text-muted-foreground flex items-center gap-1 pt-4">
@@ -1143,51 +1159,107 @@ export default function AdminBlogsPage() {
                 </div>
               </div>
 
-              {/* Featured Image & Photo Upload */}
-              <div>
-                <label className="block font-semibold mb-1">Featured Image (Photo Upload or URL)</label>
-                <div className="flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center">
-                  <input
-                    type="text"
-                    placeholder="https://... (or image URL)"
-                    value={formData.featured_image}
-                    onChange={(e) => setFormData({ ...formData, featured_image: e.target.value })}
-                    className="flex-1 px-3 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-                  />
-                  <label className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-secondary hover:bg-secondary/80 text-secondary-foreground rounded-lg border border-border cursor-pointer transition text-xs font-medium whitespace-nowrap shadow-xs">
-                    <Upload size={14} />
-                    <span>{uploadingImage ? 'Uploading...' : 'Upload Photo'}</span>
+              {/* Image Uploads: Featured Image & Main Image */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-muted/10 p-3.5 rounded-xl border border-border">
+                {/* 1. Featured Image */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="block font-semibold text-foreground">
+                      ★ Featured Image
+                    </label>
+                    <span className="text-[10px] text-muted-foreground">Grid Card (800×600)</span>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">
+                    Thumbnail for blog cards, category lists, and social shares.
+                  </p>
+                  <div className="flex gap-2 items-center">
                     <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      disabled={uploadingImage}
-                      className="hidden"
+                      type="text"
+                      placeholder="Image URL or upload..."
+                      value={formData.featured_image}
+                      onChange={(e) => setFormData({ ...formData, featured_image: e.target.value })}
+                      className="flex-1 px-2.5 py-1.5 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-primary text-xs"
                     />
-                  </label>
-                </div>
-                {formData.featured_image && (
-                  <div className="mt-2.5 flex items-center gap-3 p-2 bg-muted/20 border border-border rounded-lg w-fit">
-                    <img
-                      src={formData.featured_image}
-                      alt="Featured Preview"
-                      className="h-16 w-24 object-cover rounded border border-border shadow-xs"
-                      onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
-                    />
-                    <div className="flex flex-col gap-1 pr-2">
-                      <span className="text-[11px] font-medium text-foreground truncate max-w-[200px]">
-                        Featured Image Attached
-                      </span>
+                    <label className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-secondary hover:bg-secondary/80 text-secondary-foreground rounded-lg border border-border cursor-pointer transition text-xs font-medium whitespace-nowrap shadow-xs">
+                      <Upload size={13} />
+                      <span>{uploadingFeatured ? '...' : 'Upload'}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleImageUpload(e, 'featured_image')}
+                        disabled={uploadingFeatured}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                  {formData.featured_image && (
+                    <div className="flex items-center gap-2 p-1.5 bg-background border border-border rounded-lg mt-1.5">
+                      <img
+                        src={formData.featured_image}
+                        alt="Featured Preview"
+                        className="h-12 w-16 object-cover rounded border border-border"
+                        onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+                      />
                       <button
                         type="button"
                         onClick={() => setFormData({ ...formData, featured_image: '' })}
-                        className="text-[10px] text-red-500 hover:text-red-600 font-semibold text-left cursor-pointer inline-flex items-center gap-1"
+                        className="text-[10px] text-red-500 hover:underline flex items-center gap-1 cursor-pointer"
                       >
-                        <Trash2 size={11} /> Remove Image
+                        <Trash2 size={11} /> Remove
                       </button>
                     </div>
+                  )}
+                </div>
+
+                {/* 2. Main Image */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="block font-semibold text-foreground">
+                      🖼 Main Article Image
+                    </label>
+                    <span className="text-[10px] text-muted-foreground">Header Banner (1200×600)</span>
                   </div>
-                )}
+                  <p className="text-[10px] text-muted-foreground">
+                    Large hero cover banner at the top of the full article view.
+                  </p>
+                  <div className="flex gap-2 items-center">
+                    <input
+                      type="text"
+                      placeholder="Image URL or upload..."
+                      value={formData.main_image}
+                      onChange={(e) => setFormData({ ...formData, main_image: e.target.value })}
+                      className="flex-1 px-2.5 py-1.5 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-primary text-xs"
+                    />
+                    <label className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-secondary hover:bg-secondary/80 text-secondary-foreground rounded-lg border border-border cursor-pointer transition text-xs font-medium whitespace-nowrap shadow-xs">
+                      <Upload size={13} />
+                      <span>{uploadingMain ? '...' : 'Upload'}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleImageUpload(e, 'main_image')}
+                        disabled={uploadingMain}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                  {formData.main_image && (
+                    <div className="flex items-center gap-2 p-1.5 bg-background border border-border rounded-lg mt-1.5">
+                      <img
+                        src={formData.main_image}
+                        alt="Main Preview"
+                        className="h-12 w-20 object-cover rounded border border-border"
+                        onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, main_image: '' })}
+                        className="text-[10px] text-red-500 hover:underline flex items-center gap-1 cursor-pointer"
+                      >
+                        <Trash2 size={11} /> Remove
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Excerpt */}

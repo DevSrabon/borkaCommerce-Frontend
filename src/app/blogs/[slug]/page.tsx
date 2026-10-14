@@ -32,6 +32,7 @@ interface BlogPostDetail {
   excerpt?: string;
   content: string;
   featured_image?: string;
+  main_image?: string;
   category: string;
   author: string;
   views: number;
@@ -44,6 +45,7 @@ interface SidebarBlogItem {
   title: string;
   slug: string;
   featured_image?: string;
+  main_image?: string;
   published_at: string;
   views: number;
 }
@@ -242,13 +244,13 @@ export default function BlogDetailPage() {
               )}
             </div>
 
-            {/* Featured Image */}
-            {blog.featured_image && (
+            {/* Main Cover Banner (Uses main_image or featured_image fallback) */}
+            {(blog.main_image || blog.featured_image) && (
               <div className="w-full rounded-2xl overflow-hidden bg-muted shadow-md border border-border">
                 <img
-                  src={blog.featured_image}
+                  src={blog.main_image || blog.featured_image}
                   alt={blog.title}
-                  className="w-full max-h-[480px] object-cover"
+                  className="w-full max-h-[520px] object-cover"
                 />
               </div>
             )}

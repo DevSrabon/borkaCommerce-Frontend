@@ -14,6 +14,7 @@ interface Banner {
   cta_text: string | null;
   cta_link: string | null;
   image_url: string;
+  mobile_image_url?: string | null;
   size_type?: string;
   size_description?: string | null;
 }

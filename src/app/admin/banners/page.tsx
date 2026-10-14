@@ -14,6 +14,7 @@ interface Banner {
   cta_text: string | null;
   cta_link: string | null;
   image_url: string;
+  mobile_image_url?: string | null;
   alt_text: string | null;
   size_type: string;
   size_description: string | null;
@@ -27,9 +28,10 @@ const EMPTY_FORM = {
   cta_text: '',
   cta_link: '',
   image_url: '',
+  mobile_image_url: '',
   alt_text: '',
   size_type: 'HERO',
-  size_description: 'Desktop Hero: 1920x800px (Full Width)',
+  size_description: 'Desktop: 1920x800px | Mobile: 800x1000px',
   is_active: true,
   sort_order: 0,
 };
@@ -37,8 +39,8 @@ const EMPTY_FORM = {
 const SIZE_PRESETS = {
   HERO: {
     label: 'Hero Main Slider',
-    desc: 'Desktop Hero: 1920x800px (Full Width)',
-    guide: 'Recommended: 1920 × 800 px (Landscape 2.4:1 ratio, Max 2MB). Ideal for top homepage promotional slider.',
+    desc: 'Desktop: 1920x800px | Mobile: 800x1000px',
+    guide: 'Desktop: 1920 × 800 px (Landscape 2.4:1). Mobile: 800 × 1000 px (Portrait 4:5 or 800x800 square). Max 2MB each.',
   },
   SMALL: {
     label: 'Small Promotional Card',
@@ -56,6 +58,7 @@ export default function BannersAdminPage() {
   const [form, setForm] = useState({ ...EMPTY_FORM });
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadingMobile, setUploadingMobile] = useState(false);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState<'ALL' | 'HERO' | 'SMALL'>('ALL');
 
@@ -87,6 +90,7 @@ export default function BannersAdminPage() {
       cta_text: b.cta_text || '',
       cta_link: b.cta_link || '',
       image_url: b.image_url,
+      mobile_image_url: b.mobile_image_url || '',
       alt_text: b.alt_text || '',
       size_type: b.size_type || 'HERO',
       size_description: b.size_description || (b.size_type === 'SMALL' ? SIZE_PRESETS.SMALL.desc : SIZE_PRESETS.HERO.desc),
@@ -125,6 +129,37 @@ export default function BannersAdminPage() {
       setError('File upload failed (Backend offline)');
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleMobileImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingMobile(true);
+    setError('');
+
+    const formData = new FormData();
+    formData.append('image', file);
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/admin/uploads/banner`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setForm((prev) => ({ ...prev, mobile_image_url: data.imageUrl }));
+      } else {
+        const err = await res.json();
+        setError(err.message || 'Mobile image upload failed');
+      }
+    } catch (err) {
+      setError('Mobile image upload failed');
+    } finally {
+      setUploadingMobile(false);
     }
   };
 
@@ -304,26 +339,30 @@ export default function BannersAdminPage() {
                 />
               </div>
 
-              {/* Image preview */}
-              {form.image_url && (
-                <div
-                  className={`w-full rounded-lg overflow-hidden border border-border bg-zinc-900 ${
-                    form.size_type === 'SMALL' ? 'h-40 max-w-xs mx-auto' : 'h-32'
-                  }`}
-                >
-                  <img
-                    src={form.image_url}
-                    alt={form.alt_text || form.title || 'Preview'}
-                    className="h-full w-full object-cover"
-                    onError={(e) => (e.currentTarget.style.display = 'none')}
-                  />
-                </div>
-              )}
-
+              {/* Desktop Banner Image */}
               <div className="space-y-1">
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  Banner Image *
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Desktop Banner Image *
+                  </label>
+                  <span className="text-[10px] text-muted-foreground">Recommended: 1920 × 800 px</span>
+                </div>
+
+                {form.image_url && (
+                  <div
+                    className={`w-full rounded-lg overflow-hidden border border-border bg-zinc-900 mb-2 ${
+                      form.size_type === 'SMALL' ? 'h-36 max-w-xs mx-auto' : 'h-28 sm:h-32'
+                    }`}
+                  >
+                    <img
+                      src={form.image_url}
+                      alt={form.alt_text || form.title || 'Desktop Preview'}
+                      className="h-full w-full object-cover"
+                      onError={(e) => (e.currentTarget.style.display = 'none')}
+                    />
+                  </div>
+                )}
+
                 <div className="flex flex-col gap-2 border border-dashed border-border p-3 rounded bg-zinc-50/5">
                   <div className="relative">
                     <input
@@ -336,12 +375,12 @@ export default function BannersAdminPage() {
                       type="button"
                       className="px-3 py-1.5 border border-border rounded text-xs hover:bg-accent flex items-center gap-1.5 text-foreground cursor-pointer"
                     >
-                      <Upload size={12} /> {uploading ? 'Uploading...' : 'Upload Image File'}
+                      <Upload size={12} /> {uploading ? 'Uploading Desktop Image...' : 'Upload Desktop Image File'}
                     </button>
                   </div>
                   <input
                     type="url"
-                    placeholder="Or enter image URL manually..."
+                    placeholder="Or enter desktop image URL manually..."
                     className="w-full text-xs bg-background border border-border rounded px-3 py-2 focus:outline-none"
                     value={form.image_url}
                     onChange={(e) => setForm({ ...form, image_url: e.target.value })}
@@ -353,6 +392,64 @@ export default function BannersAdminPage() {
                     value={form.alt_text}
                     onChange={(e) => setForm({ ...form, alt_text: e.target.value })}
                   />
+                </div>
+              </div>
+
+              {/* Mobile Banner Image (Separate size for Mobile Devices) */}
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                    <span>📱 Mobile Banner Image</span>
+                    <span className="text-[9px] text-amber-500 font-bold bg-amber-500/10 px-1.5 py-0.5 rounded">Separate Size</span>
+                  </label>
+                  <span className="text-[10px] text-muted-foreground">Recommended: 800 × 1000 px or 800 × 800 px</span>
+                </div>
+                <p className="text-[10px] text-muted-foreground">
+                  Upload a vertical/square image specifically for smartphones & tablets. If left empty, the desktop image will be used.
+                </p>
+
+                {form.mobile_image_url && (
+                  <div className="w-36 h-44 rounded-lg overflow-hidden border border-border bg-zinc-900 mx-auto my-2 shadow-xs">
+                    <img
+                      src={form.mobile_image_url}
+                      alt="Mobile Preview"
+                      className="h-full w-full object-cover"
+                      onError={(e) => (e.currentTarget.style.display = 'none')}
+                    />
+                  </div>
+                )}
+
+                <div className="flex flex-col gap-2 border border-dashed border-amber-500/30 p-3 rounded bg-amber-500/5">
+                  <div className="relative">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleMobileImageUpload}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    />
+                    <button
+                      type="button"
+                      className="px-3 py-1.5 border border-amber-500/40 rounded text-xs hover:bg-amber-500/10 flex items-center gap-1.5 text-foreground cursor-pointer"
+                    >
+                      <Upload size={12} className="text-amber-500" /> {uploadingMobile ? 'Uploading Mobile Image...' : 'Upload Mobile Image File'}
+                    </button>
+                  </div>
+                  <input
+                    type="url"
+                    placeholder="Or enter mobile image URL manually..."
+                    className="w-full text-xs bg-background border border-border rounded px-3 py-2 focus:outline-none"
+                    value={form.mobile_image_url}
+                    onChange={(e) => setForm({ ...form, mobile_image_url: e.target.value })}
+                  />
+                  {form.mobile_image_url && (
+                    <button
+                      type="button"
+                      onClick={() => setForm({ ...form, mobile_image_url: '' })}
+                      className="text-[10px] text-red-400 hover:underline self-end cursor-pointer"
+                    >
+                      Remove mobile image
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -474,13 +571,24 @@ export default function BannersAdminPage() {
               {/* Drag handle visual */}
               <GripVertical size={16} className="text-muted-foreground shrink-0 cursor-grab hidden sm:block" />
 
-              {/* Thumbnail */}
-              <div
-                className={`rounded-md overflow-hidden border border-border bg-zinc-900 shrink-0 ${
-                  b.size_type === 'SMALL' ? 'h-20 w-28 sm:w-32' : 'h-16 w-28 sm:w-36'
-                }`}
-              >
-                <img src={b.image_url} alt={b.alt_text || b.title} className="h-full w-full object-cover" />
+              {/* Thumbnail(s) */}
+              <div className="flex items-center gap-2 shrink-0">
+                <div
+                  className={`rounded-md overflow-hidden border border-border bg-zinc-900 shrink-0 ${
+                    b.size_type === 'SMALL' ? 'h-20 w-28 sm:w-32' : 'h-16 w-28 sm:w-36'
+                  }`}
+                  title="Desktop banner image"
+                >
+                  <img src={b.image_url} alt={b.alt_text || b.title} className="h-full w-full object-cover" />
+                </div>
+                {b.mobile_image_url && (
+                  <div
+                    className="rounded-md overflow-hidden border border-amber-500/40 bg-zinc-900 shrink-0 h-16 w-12"
+                    title="Mobile banner image (Separate size)"
+                  >
+                    <img src={b.mobile_image_url} alt="Mobile preview" className="h-full w-full object-cover" />
+                  </div>
+                )}
               </div>
 
               {/* Info */}
@@ -496,6 +604,11 @@ export default function BannersAdminPage() {
                   >
                     {b.size_type === 'SMALL' ? 'Small Banner (600x400)' : 'Hero Slider (1920x800)'}
                   </span>
+                  {b.mobile_image_url ? (
+                    <span className="text-[9px] bg-blue-500/10 text-blue-400 border border-blue-500/20 px-1.5 py-0.5 rounded font-semibold">
+                      📱 Mobile Size Set
+                    </span>
+                  ) : null}
                   {b.is_active ? (
                     <span className="text-[9px] bg-green-500/10 text-green-500 border border-green-500/20 px-1.5 py-0.5 rounded font-semibold uppercase">
                       Live
