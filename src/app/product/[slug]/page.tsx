@@ -1,5 +1,6 @@
 import { API_BASE_URL } from '@/config/api';
 import React from 'react';
+import type { Metadata } from 'next';
 import ProductClient from './productClient';
 import ReviewSection from '../../../components/ReviewSection';
 import { PriceDisplay } from '../../../components/PriceDisplay';
@@ -9,6 +10,11 @@ import { Crown, ArrowRight } from 'lucide-react';
 
 interface PageProps {
   params: Promise<{ slug: string }>;
+}
+
+function cleanDescription(text?: string | null): string {
+  if (!text) return '';
+  return text.replace(/<[^>]*>?/gm, '').replace(/\s+/g, ' ').trim();
 }
 
 async function getProductDetails(slug: string) {
@@ -26,6 +32,51 @@ async function getProductDetails(slug: string) {
   return null;
 }
 
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const resolvedParams = await params;
+  const product = await getProductDetails(resolvedParams.slug);
+
+  if (!product) {
+    return {
+      title: 'Product Not Found | Saba Al Wadi',
+    };
+  }
+
+  const title = product.seo_title || `${product.name} | Saba Al Wadi Luxury Abayas`;
+  const desc =
+    product.seo_description ||
+    product.short_description ||
+    cleanDescription(product.description).substring(0, 160) ||
+    'Handcrafted luxury abayas from Saba Al Wadi, Dubai.';
+  const images = (product.images || []).map((img: any) =>
+    typeof img === 'string' ? img : img.image_url || img.image || ''
+  ).filter(Boolean);
+
+  return {
+    title,
+    description: desc,
+    keywords:
+      product.seo_keywords || product.tags || `${product.name}, luxury abaya, dubai abaya, modest wear`,
+    alternates: {
+      canonical: `/product/${product.slug}`,
+    },
+    openGraph: {
+      title,
+      description: desc,
+      url: `/product/${product.slug}`,
+      siteName: 'Saba Al Wadi',
+      type: 'website',
+      images: images.length > 0 ? [{ url: images[0] }] : undefined,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description: desc,
+      images: images.length > 0 ? [images[0]] : undefined,
+    },
+  };
+}
+
 export default async function ProductDetailsPage({ params }: PageProps) {
   const resolvedParams = await params;
   const product = await getProductDetails(resolvedParams.slug);
@@ -33,6 +84,42 @@ export default async function ProductDetailsPage({ params }: PageProps) {
   if (!product) {
     notFound();
   }
+
+  const schemaData = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: product.name,
+    image: (product.images || []).map((img: any) =>
+      typeof img === 'string' ? img : img.image_url || img.image || ''
+    ).filter(Boolean),
+    description:
+      product.seo_description ||
+      product.short_description ||
+      cleanDescription(product.description).substring(0, 300) ||
+      product.name,
+    sku: product.sku_prefix || product.product_number || product.slug,
+    brand: {
+      '@type': 'Brand',
+      name: 'Saba Al Wadi',
+    },
+    offers: {
+      '@type': 'Offer',
+      url: `https://sabaalwadi.com/product/${product.slug}`,
+      priceCurrency: 'AED',
+      price: Number(product.min_price || product.price || 0).toFixed(2),
+      availability: 'https://schema.org/InStock',
+      itemCondition: 'https://schema.org/NewCondition',
+    },
+    ...(product.average_rating > 0
+      ? {
+          aggregateRating: {
+            '@type': 'AggregateRating',
+            ratingValue: product.average_rating,
+            reviewCount: Math.max(product.reviews?.length || 1, 1),
+          },
+        }
+      : {}),
+  };
 
   // Related products fallback if not provided in response
   let relatedProducts = product.related_products || [];
@@ -51,6 +138,12 @@ export default async function ProductDetailsPage({ params }: PageProps) {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-3 sm:py-5 sm:px-6 lg:px-8 w-full space-y-6 sm:space-y-8">
+      {/* Product Schema (JSON-LD) for Google Rich Snippets & Search Console */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaData) }}
+      />
+
       {/* Breadcrumbs / Back navigation */}
       <div>
         <Link href="/catalog" className="text-xs text-muted hover:text-primary transition font-medium inline-flex items-center gap-1.5">

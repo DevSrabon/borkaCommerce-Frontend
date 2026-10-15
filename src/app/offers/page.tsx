@@ -1,8 +1,23 @@
 import { API_BASE_URL } from '@/config/api';
 import React from 'react';
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { PriceDisplay } from '../../components/PriceDisplay';
 import { Tag, Flame, Clock, Percent, ShieldCheck } from 'lucide-react';
+
+export const metadata: Metadata = {
+  title: 'Exclusive Offers & Luxury Abaya Promotions | Saba Al Wadi',
+  description:
+    'Discover seasonal promotions, flash sales, and exclusive discounts on handcrafted Dubai abayas and modest attire.',
+  alternates: {
+    canonical: '/offers',
+  },
+  openGraph: {
+    title: 'Exclusive Offers & Luxury Abaya Promotions | Saba Al Wadi',
+    description: 'Discover limited-time promotions and discounts on handcrafted luxury abayas.',
+    url: '/offers',
+  },
+};
 
 interface OfferProduct {
   id: string;

@@ -7,6 +7,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../../../store';
 import { Star, CheckCircle, XCircle, Trash2, ShieldCheck, Filter, RefreshCw, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
+import AdminPagination from '../../../components/admin/AdminPagination';
 
 interface AdminReview {
   id: string;
@@ -313,28 +314,11 @@ export default function AdminReviewsPage() {
                 <option value={100}>100</option>
               </select>
             </div>
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
-                className="px-2.5 py-1 border border-border rounded hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition font-medium"
-              >
-                Previous
-              </button>
-              <span className="px-2 py-1 text-muted-foreground">
-                Page <span className="font-semibold text-foreground">{page}</span> of{' '}
-                <span className="font-semibold text-foreground">{Math.max(1, Math.ceil((totalReviews || reviews.length) / limit))}</span>
-              </span>
-              <button
-                type="button"
-                onClick={() => setPage((p) => p + 1)}
-                disabled={page * limit >= (totalReviews || reviews.length)}
-                className="px-2.5 py-1 border border-border rounded hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition font-medium"
-              >
-                Next
-              </button>
-            </div>
+            <AdminPagination
+              currentPage={page}
+              totalPages={Math.max(1, Math.ceil((totalReviews || reviews.length) / limit))}
+              onPageChange={setPage}
+            />
           </div>
         </div>
       )}

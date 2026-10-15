@@ -24,6 +24,7 @@ import {
   Star,
   ShoppingBag,
 } from 'lucide-react';
+import AdminPagination from '../../../components/admin/AdminPagination';
 
 interface CustomerSummary {
   id: string;
@@ -450,28 +451,11 @@ export default function AdminCustomersPage() {
                     <option value={100}>100</option>
                   </select>
                 </div>
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                    disabled={page === 1}
-                    className="px-2.5 py-1 border border-border rounded hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition font-medium"
-                  >
-                    Previous
-                  </button>
-                  <span className="px-2 py-1 text-muted-foreground">
-                    Page <span className="font-semibold text-foreground">{page}</span> of{' '}
-                    <span className="font-semibold text-foreground">{Math.max(1, Math.ceil((totalCustomers || customers.length) / limit))}</span>
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setPage((p) => p + 1)}
-                    disabled={page * limit >= (totalCustomers || customers.length)}
-                    className="px-2.5 py-1 border border-border rounded hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition font-medium"
-                  >
-                    Next
-                  </button>
-                </div>
+                <AdminPagination
+                  currentPage={page}
+                  totalPages={Math.max(1, Math.ceil((totalCustomers || customers.length) / limit))}
+                  onPageChange={setPage}
+                />
               </div>
             </div>
           </div>

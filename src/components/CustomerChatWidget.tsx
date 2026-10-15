@@ -72,6 +72,21 @@ export default function CustomerChatWidget() {
     setSessionId(currentSession);
   }, []);
 
+  // Listen for open-support-chat custom event to open chat with prefilled order details
+  useEffect(() => {
+    const handleOpenChat = (event: any) => {
+      setIsOpen(true);
+      if (event?.detail?.text) {
+        setInputMessage(event.detail.text);
+      }
+    };
+
+    window.addEventListener('open-support-chat', handleOpenChat);
+    return () => {
+      window.removeEventListener('open-support-chat', handleOpenChat);
+    };
+  }, []);
+
   // Track user scroll position
   const handleScroll = () => {
     if (!chatContainerRef.current) return;
@@ -328,9 +343,6 @@ export default function CustomerChatWidget() {
               {unreadCount}
             </span>
           )}
-          <span className="absolute -bottom-1 text-xs font-semibold uppercase tracking-wider text-amber-200">
-            24/7
-          </span>
         </button>
       )}
 

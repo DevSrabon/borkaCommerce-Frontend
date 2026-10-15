@@ -9,7 +9,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../../store';
 import { clearCart, removeCoupon } from '../../store/cartSlice';
 import { loadStripe } from '@stripe/stripe-js';
-import { CreditCard, Truck, CheckCircle2, AlertCircle, ShoppingBag, ChevronDown, Search, Check } from 'lucide-react';
+import { CreditCard, Truck, CheckCircle2, AlertCircle, ShoppingBag, ChevronDown, Search, Check, MapPin, Plus } from 'lucide-react';
 import { useCurrency } from '../../context/CurrencyContext';
 import { COUNTRIES_LIST } from '@/constants/countries';
 
@@ -25,13 +25,28 @@ export default function CheckoutPage() {
   const user = useSelector((state: RootState) => state.auth.user);
 
   const [mounted, setMounted] = useState(false);
+  const [savedAddresses, setSavedAddresses] = useState<Array<{
+    id: string;
+    country: string;
+    city: string;
+    area: string;
+    street: string;
+    building?: string | null;
+    postal_code?: string | null;
+    is_default: boolean;
+  }>>([]);
+  const [selectedAddressId, setSelectedAddressId] = useState<string>('');
+  const [useNewAddress, setUseNewAddress] = useState<boolean>(true);
+  const [saveForNextOrder, setSaveForNextOrder] = useState<boolean>(true);
+  const [isDefaultAddress, setIsDefaultAddress] = useState<boolean>(false);
+
   const [addressForm, setAddressForm] = useState({
     country: 'United Arab Emirates',
-    city: 'Dubai',
-    area: 'Dubai Marina',
-    street: 'Marina Boulevard',
-    building: 'Marina Heights, Flat 12B',
-    postal_code: '00000',
+    city: '',
+    area: '',
+    street: '',
+    building: '',
+    postal_code: '',
   });
 
   const [loading, setLoading] = useState(false);
@@ -98,6 +113,26 @@ export default function CheckoutPage() {
     }
   }, [mounted, cartItems]);
 
+  // Fetch customer saved addresses
+  useEffect(() => {
+    if (!token) return;
+    fetch(`${API_BASE_URL}/ecommerce/addresses`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setSavedAddresses(data);
+          const def = data.find((a: any) => a.is_default) || data[0];
+          setSelectedAddressId(def.id);
+          setUseNewAddress(false);
+        } else {
+          setUseNewAddress(true);
+        }
+      })
+      .catch(() => setUseNewAddress(true));
+  }, [token]);
+
   // Fetch dynamic delivery calculation
   useEffect(() => {
     if (subtotal <= 0) {
@@ -149,31 +184,38 @@ export default function CheckoutPage() {
     }
 
     try {
-      // 1. Create Address in database or mock it
-      // Let's call checkout directly. In backend we need a customer address ID.
-      // For simplicity, we can fetch customer addresses or first create one.
-      // Let's create an address on-the-fly or query existing addresses.
-      // Let's perform a POST /ecommerce/addresses and then pass address ID to checkout.
-      // Wait, we can implement a transaction in the backend, or write a quick address endpoint.
-      // Let's first register the address.
-      const addressRes = await fetch(`${API_BASE_URL}/ecommerce/addresses`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(addressForm),
-      });
+      let addressId = selectedAddressId;
 
-      if (!addressRes.ok) {
-        const errData = await addressRes.json();
-        setCheckoutError(errData.message || 'Failed to save shipping address');
-        setLoading(false);
-        return;
+      // 1. Resolve or Create Address
+      if (useNewAddress || !addressId) {
+        if (!addressForm.city.trim() || !addressForm.area.trim() || !addressForm.street.trim() || !addressForm.building.trim()) {
+          setCheckoutError('Please fill in all required address fields (City, Area, Street, Building).');
+          setLoading(false);
+          return;
+        }
+
+        const addressRes = await fetch(`${API_BASE_URL}/ecommerce/addresses`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            ...addressForm,
+            is_default: isDefaultAddress,
+          }),
+        });
+
+        if (!addressRes.ok) {
+          const errData = await addressRes.json();
+          setCheckoutError(errData.message || 'Failed to register delivery address');
+          setLoading(false);
+          return;
+        }
+
+        const addressData = await addressRes.json();
+        addressId = addressData.id;
       }
-
-      const addressData = await addressRes.json();
-      const addressId = addressData.id;
 
       // 2. Perform Checkout
       const checkoutRes = await fetch(`${API_BASE_URL}/ecommerce/orders/checkout`, {
@@ -203,6 +245,14 @@ export default function CheckoutPage() {
 
       // If Cash on Delivery, order is confirmed immediately without Stripe intent!
       if (paymentMethod === 'CASH_ON_DELIVERY') {
+        // If customer opted NOT to save address for future orders, remove from saved list
+        if (useNewAddress && !saveForNextOrder && addressId) {
+          fetch(`${API_BASE_URL}/ecommerce/addresses/${addressId}`, {
+            method: 'DELETE',
+            headers: { Authorization: `Bearer ${token}` },
+          }).catch(() => {});
+        }
+
         setOrderNum(checkoutData.order_number);
         setIsSuccess(true);
         dispatch(clearCart());
@@ -227,6 +277,12 @@ export default function CheckoutPage() {
       });
 
       if (confirmRes.ok) {
+        if (useNewAddress && !saveForNextOrder && addressId) {
+          fetch(`${API_BASE_URL}/ecommerce/addresses/${addressId}`, {
+            method: 'DELETE',
+            headers: { Authorization: `Bearer ${token}` },
+          }).catch(() => {});
+        }
         setOrderNum(checkoutData.order_number);
         setIsSuccess(true);
         dispatch(clearCart());
@@ -278,125 +334,247 @@ export default function CheckoutPage() {
               <Truck size={20} className="text-primary" /> Delivery Address
             </h2>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <div className="space-y-1 relative" ref={countryDropdownRef}>
-                <label className="text-xs font-semibold text-muted-foreground uppercase flex items-center justify-between">
-                  <span>Country</span>
-                  <span className="text-xs text-primary font-normal">Searchable Dropdown</span>
-                </label>
-                <button
-                  type="button"
-                  onClick={() => setIsCountryOpen(!isCountryOpen)}
-                  className="w-full text-sm bg-background border border-border rounded px-3 py-2.5 flex items-center justify-between text-left focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer transition hover:border-primary/50"
-                >
-                  <span className="flex items-center gap-2 truncate">
-                    <span>{COUNTRIES_LIST.find((c) => c.name.toLowerCase() === addressForm.country?.toLowerCase())?.flag || '🌐'}</span>
-                    <span className="font-medium text-foreground">{addressForm.country || 'Select Country'}</span>
-                  </span>
-                  <ChevronDown size={16} className={`text-muted-foreground transition-transform ${isCountryOpen ? 'rotate-180 text-primary' : ''}`} />
-                </button>
-
-                {isCountryOpen && (
-                  <div className="absolute top-full left-0 right-0 mt-1 z-30 bg-card border border-border rounded-lg shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-1">
-                    <div className="p-2 border-b border-border bg-muted/30">
-                      <div className="relative">
-                        <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                        <input
-                          type="text"
-                          placeholder="Search country name or code..."
-                          value={countrySearch}
-                          onChange={(e) => setCountrySearch(e.target.value)}
-                          className="w-full bg-background border border-border rounded pl-8 pr-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-                          autoFocus
-                        />
-                      </div>
-                    </div>
-
-                    <div className="max-h-56 overflow-y-auto divide-y divide-border/30">
-                      {filteredCountries.length === 0 ? (
-                        <div className="p-3 text-center text-xs text-muted-foreground">
-                          No countries matching "{countrySearch}"
+            {/* Saved Addresses Selector (if customer has saved addresses) */}
+            {savedAddresses.length > 0 && (
+              <div className="space-y-3 pb-4 border-b border-border">
+                <span className="text-xs font-semibold text-muted-foreground uppercase block tracking-wider">
+                  Select a Shipping Address for this Order
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {savedAddresses.map((addr) => {
+                    const isSelected = !useNewAddress && selectedAddressId === addr.id;
+                    return (
+                      <div
+                        key={addr.id}
+                        onClick={() => {
+                          setSelectedAddressId(addr.id);
+                          setUseNewAddress(false);
+                        }}
+                        className={`p-3.5 rounded-lg border text-xs cursor-pointer transition flex flex-col justify-between space-y-2 select-none ${
+                          isSelected
+                            ? 'border-primary bg-primary/10 ring-1 ring-primary'
+                            : 'border-border bg-background hover:border-primary/40'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-semibold text-foreground flex items-center gap-1.5">
+                            <MapPin size={13} className={isSelected ? 'text-primary' : 'text-muted-foreground'} />
+                            {addr.city}, {addr.country}
+                          </span>
+                          {addr.is_default && (
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/15 border border-primary/20 px-1.5 py-0.5 rounded">
+                              Default
+                            </span>
+                          )}
                         </div>
-                      ) : (
-                        filteredCountries.map((c) => {
-                          const isSelected = addressForm.country?.toLowerCase() === c.name.toLowerCase();
-                          return (
-                            <button
-                              key={c.code}
-                              type="button"
-                              onClick={() => {
-                                setAddressForm((prev) => ({ ...prev, country: c.name }));
-                                setIsCountryOpen(false);
-                                setCountrySearch('');
-                              }}
-                              className={`w-full px-3 py-2 text-left text-xs flex items-center justify-between transition cursor-pointer ${
-                                isSelected
-                                  ? 'bg-primary/10 text-primary font-semibold'
-                                  : 'hover:bg-muted/60 text-foreground'
-                              }`}
-                            >
-                              <span className="flex items-center gap-2">
-                                <span className="text-sm">{c.flag}</span>
-                                <span>{c.name}</span>
-                              </span>
-                              {isSelected && <Check size={14} className="text-primary" />}
-                            </button>
-                          );
-                        })
-                      )}
-                    </div>
+                        <p className="text-muted-foreground leading-relaxed pl-4 font-light">
+                          {[addr.building, addr.street, addr.area, addr.city, addr.country, addr.postal_code]
+                            .filter(Boolean)
+                            .join(', ')}
+                        </p>
+                        <div className="flex items-center gap-2 pt-1 border-t border-border/40 text-xs font-semibold text-primary">
+                          <input
+                            type="radio"
+                            name="addressSelection"
+                            checked={isSelected}
+                            onChange={() => {}}
+                            className="accent-primary cursor-pointer"
+                          />
+                          <span>{isSelected ? 'Delivering to this address' : 'Select this address'}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {/* Option to enter a different / new address */}
+                  <div
+                    onClick={() => setUseNewAddress(true)}
+                    className={`p-3.5 rounded-lg border text-xs cursor-pointer transition flex flex-col items-center justify-center text-center gap-1.5 min-h-[95px] select-none ${
+                      useNewAddress
+                        ? 'border-primary bg-primary/10 ring-1 ring-primary'
+                        : 'border-dashed border-border bg-background hover:border-primary/40 text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    <Plus size={18} className={useNewAddress ? 'text-primary' : 'text-muted-foreground'} />
+                    <span className="font-semibold text-xs text-foreground">+ Deliver to a New Address</span>
+                    <span className="text-[11px] text-muted-foreground">Use different shipping details for this order</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Address Input Form (shown if useNewAddress is true or if no saved addresses) */}
+            {(useNewAddress || savedAddresses.length === 0) && (
+              <div className="space-y-4 animate-in fade-in">
+                {savedAddresses.length > 0 && (
+                  <div className="flex items-center justify-between pb-2">
+                    <span className="text-xs font-semibold text-foreground uppercase tracking-wider flex items-center gap-1.5">
+                      <Truck size={14} className="text-primary" /> Enter New Shipping Details
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setUseNewAddress(false)}
+                      className="text-xs text-primary hover:underline cursor-pointer"
+                    >
+                      &larr; Back to saved addresses
+                    </button>
                   </div>
                 )}
-              </div>
 
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-muted-foreground uppercase">City</label>
-                <input
-                  type="text"
-                  name="city"
-                  className="w-full text-sm bg-background border border-border rounded px-3 py-2.5 focus:outline-none"
-                  value={addressForm.city}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  <div className="space-y-1 relative" ref={countryDropdownRef}>
+                    <label className="text-xs font-semibold text-muted-foreground uppercase flex items-center justify-between">
+                      <span>Country</span>
+                      <span className="text-xs text-primary font-normal">Searchable Dropdown</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setIsCountryOpen(!isCountryOpen)}
+                      className="w-full text-sm bg-background border border-border rounded px-3 py-2.5 flex items-center justify-between text-left focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer transition hover:border-primary/50"
+                    >
+                      <span className="flex items-center gap-2 truncate">
+                        <span>{COUNTRIES_LIST.find((c) => c.name.toLowerCase() === addressForm.country?.toLowerCase())?.flag || '🌐'}</span>
+                        <span className="font-medium text-foreground">{addressForm.country || 'Select Country'}</span>
+                      </span>
+                      <ChevronDown size={16} className={`text-muted-foreground transition-transform ${isCountryOpen ? 'rotate-180 text-primary' : ''}`} />
+                    </button>
 
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-muted-foreground uppercase">Area / District</label>
-                <input
-                  type="text"
-                  name="area"
-                  className="w-full text-sm bg-background border border-border rounded px-3 py-2.5 focus:outline-none"
-                  value={addressForm.area}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
+                    {isCountryOpen && (
+                      <div className="absolute top-full left-0 right-0 mt-1 z-30 bg-card border border-border rounded-lg shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-1">
+                        <div className="p-2 border-b border-border bg-muted/30">
+                          <div className="relative">
+                            <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                            <input
+                              type="text"
+                              placeholder="Search country name or code..."
+                              value={countrySearch}
+                              onChange={(e) => setCountrySearch(e.target.value)}
+                              className="w-full bg-background border border-border rounded pl-8 pr-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                              autoFocus
+                            />
+                          </div>
+                        </div>
 
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-muted-foreground uppercase">Street Name</label>
-                <input
-                  type="text"
-                  name="street"
-                  className="w-full text-sm bg-background border border-border rounded px-3 py-2.5 focus:outline-none"
-                  value={addressForm.street}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
+                        <div className="max-h-56 overflow-y-auto divide-y divide-border/30">
+                          {filteredCountries.length === 0 ? (
+                            <div className="p-3 text-center text-xs text-muted-foreground">
+                              No countries matching "{countrySearch}"
+                            </div>
+                          ) : (
+                            filteredCountries.map((c) => {
+                              const isSelected = addressForm.country?.toLowerCase() === c.name.toLowerCase();
+                              return (
+                                <button
+                                  key={c.code}
+                                  type="button"
+                                  onClick={() => {
+                                    setAddressForm((prev) => ({ ...prev, country: c.name }));
+                                    setIsCountryOpen(false);
+                                    setCountrySearch('');
+                                  }}
+                                  className={`w-full px-3 py-2 text-left text-xs flex items-center justify-between transition cursor-pointer ${
+                                    isSelected
+                                      ? 'bg-primary/10 text-primary font-semibold'
+                                      : 'hover:bg-muted/60 text-foreground'
+                                  }`}
+                                >
+                                  <span className="flex items-center gap-2">
+                                    <span className="text-sm">{c.flag}</span>
+                                    <span>{c.name}</span>
+                                  </span>
+                                  {isSelected && <Check size={14} className="text-primary" />}
+                                </button>
+                              );
+                            })
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
 
-              <div className="sm:col-span-2 space-y-1">
-                <label className="text-xs font-semibold text-muted-foreground uppercase">Building Name & Flat No.</label>
-                <input
-                  type="text"
-                  name="building"
-                  className="w-full text-sm bg-background border border-border rounded px-3 py-2.5 focus:outline-none"
-                  value={addressForm.building}
-                  onChange={handleInputChange}
-                  required
-                />
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase">City</label>
+                    <input
+                      type="text"
+                      name="city"
+                      placeholder="e.g. Dubai, Abu Dhabi, Sharjah"
+                      className="w-full text-sm bg-background border border-border rounded px-3 py-2.5 focus:outline-none"
+                      value={addressForm.city}
+                      onChange={handleInputChange}
+                      required={useNewAddress}
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase">Area / District</label>
+                    <input
+                      type="text"
+                      name="area"
+                      placeholder="e.g. Dubai Marina, Downtown, Al Barsha"
+                      className="w-full text-sm bg-background border border-border rounded px-3 py-2.5 focus:outline-none"
+                      value={addressForm.area}
+                      onChange={handleInputChange}
+                      required={useNewAddress}
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase">Street Name</label>
+                    <input
+                      type="text"
+                      name="street"
+                      placeholder="e.g. Sheikh Zayed Road, Marina Blvd"
+                      className="w-full text-sm bg-background border border-border rounded px-3 py-2.5 focus:outline-none"
+                      value={addressForm.street}
+                      onChange={handleInputChange}
+                      required={useNewAddress}
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2 space-y-1">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase">Building Name & Flat / Villa No.</label>
+                    <input
+                      type="text"
+                      name="building"
+                      placeholder="e.g. Tower 2, Flat 405 / Villa 12"
+                      className="w-full text-sm bg-background border border-border rounded px-3 py-2.5 focus:outline-none"
+                      value={addressForm.building}
+                      onChange={handleInputChange}
+                      required={useNewAddress}
+                    />
+                  </div>
+
+                  {/* Save address options */}
+                  <div className="sm:col-span-2 space-y-2 pt-2 border-t border-border/60">
+                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={saveForNextOrder}
+                        onChange={(e) => setSaveForNextOrder(e.target.checked)}
+                        className="h-4 w-4 rounded border-border accent-primary cursor-pointer"
+                      />
+                      <span className="text-xs font-medium text-foreground">
+                        Save this shipping address for my next orders
+                      </span>
+                    </label>
+
+                    {saveForNextOrder && (
+                      <label className="flex items-center gap-2 cursor-pointer select-none pl-6">
+                        <input
+                          type="checkbox"
+                          checked={isDefaultAddress}
+                          onChange={(e) => setIsDefaultAddress(e.target.checked)}
+                          className="h-3.5 w-3.5 rounded border-border accent-primary cursor-pointer"
+                        />
+                        <span className="text-xs text-muted-foreground font-normal">
+                          Set as my default shipping address
+                        </span>
+                      </label>
+                    )}
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Payment Details Section */}
             <div className="space-y-4 pt-6 border-t border-border">

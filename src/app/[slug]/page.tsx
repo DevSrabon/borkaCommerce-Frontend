@@ -25,10 +25,21 @@ async function getPageData(slug: string): Promise<CMSPage | null> {
 export async function generateMetadata({ params }: PageProps) {
   const { slug } = await params;
   const page = await getPageData(slug);
-  if (!page) return { title: 'Page Not Found' };
+  if (!page) return { title: 'Page Not Found | Saba Al Wadi' };
+  const title = page.meta_title || `${page.title} | Saba Al Wadi`;
+  const description =
+    page.meta_description || `Discover ${page.title} at Saba Al Wadi Luxury Abayas Dubai.`;
   return {
-    title: page.meta_title || `${page.title} | BorkaCommerce`,
-    description: page.meta_description || `Discover ${page.title} at BorkaCommerce.`,
+    title,
+    description,
+    alternates: {
+      canonical: `/${slug}`,
+    },
+    openGraph: {
+      title,
+      description,
+      url: `/${slug}`,
+    },
   };
 }
 

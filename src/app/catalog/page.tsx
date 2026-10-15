@@ -1,6 +1,22 @@
 import { API_BASE_URL } from '@/config/api';
 import React, { Suspense } from 'react';
+import type { Metadata } from 'next';
 import CatalogClient, { CatalogCategory, CatalogProduct } from './CatalogClient';
+
+export const metadata: Metadata = {
+  title: 'Luxury Abayas Collection & Shop Catalog | Saba Al Wadi',
+  description:
+    'Explore our handcrafted abaya catalog. From daily Japanese Crepe silhouettes to opulent crystal and bridal abayas in Dubai with worldwide delivery.',
+  alternates: {
+    canonical: '/catalog',
+  },
+  openGraph: {
+    title: 'Luxury Abayas Collection & Shop Catalog | Saba Al Wadi',
+    description:
+      'Explore handcrafted luxury abayas, bridal abayas, and modest couture in Dubai.',
+    url: '/catalog',
+  },
+};
 
 async function getCategories(): Promise<CatalogCategory[]> {
   try {

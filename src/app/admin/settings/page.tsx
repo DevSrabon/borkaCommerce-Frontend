@@ -646,6 +646,64 @@ export default function SiteSettingsPage() {
                 </div>
               </div>
 
+              {/* Analytics, Tracking Pixels & Webmaster */}
+              <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
+                <div className="flex items-center gap-3 px-5 py-4 border-b border-border bg-background/50">
+                  <div className="h-8 w-8 rounded-md flex items-center justify-center bg-emerald-500/10 text-emerald-500">
+                    <Activity size={16} />
+                  </div>
+                  <div>
+                    <h2 className="text-sm font-semibold text-foreground">Google Analytics, Pixel &amp; Webmaster</h2>
+                    <p className="text-xs text-muted-foreground">Dynamic tracking measurement IDs and verification tokens</p>
+                  </div>
+                </div>
+                <div className="p-5 space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        Google Analytics Measurement ID
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="G-XXXXXXXXXX"
+                        className="w-full text-sm bg-background border border-border rounded-md px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-primary font-mono text-xs"
+                        value={settings.google_analytics_id || ''}
+                        onChange={(e) => handleChange('google_analytics_id', e.target.value)}
+                      />
+                      <p className="text-[11px] text-muted-foreground">e.g. G-1234567890 (GA4 Measurement ID)</p>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        Meta / Facebook Pixel ID
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="123456789012345"
+                        className="w-full text-sm bg-background border border-border rounded-md px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-primary font-mono text-xs"
+                        value={settings.facebook_pixel_id || ''}
+                        onChange={(e) => handleChange('facebook_pixel_id', e.target.value)}
+                      />
+                      <p className="text-[11px] text-muted-foreground">Numeric Facebook / Meta Pixel ID</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Google Search Console Verification Tag
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. google-site-verification=abcdef123456 or token"
+                      className="w-full text-sm bg-background border border-border rounded-md px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-primary font-mono text-xs"
+                      value={settings.google_search_console_tag || ''}
+                      onChange={(e) => handleChange('google_search_console_tag', e.target.value)}
+                    />
+                    <p className="text-[11px] text-muted-foreground">Verification token for Google Search Console ownership</p>
+                  </div>
+                </div>
+              </div>
+
               {/* Favicon & Social OG Image */}
               <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
                 <div className="flex items-center gap-3 px-5 py-4 border-b border-border bg-background/50">

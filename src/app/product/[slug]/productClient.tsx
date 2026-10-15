@@ -375,6 +375,18 @@ export default function ProductClient({ product }: { product: ProductDetails }) 
             <a href="#reviews" className="text-xs text-muted hover:text-primary transition underline cursor-pointer">
               ({product.rating.count} Customer Reviews)
             </a>
+            {embedUrl && (
+              <>
+                <span className="text-muted-foreground/60">•</span>
+                <button
+                  type="button"
+                  onClick={() => setActiveMediaMode('video')}
+                  className="text-xs text-red-500 hover:text-red-600 font-semibold inline-flex items-center gap-1 cursor-pointer transition hover:underline"
+                >
+                  <Play size={11} className="fill-red-500" /> Watch Video
+                </button>
+              </>
+            )}
           </div>
         </div>
 
@@ -580,7 +592,7 @@ export default function ProductClient({ product }: { product: ProductDetails }) 
       </div>
     </div>
 
-    {/* Dedicated Full-Width Product Description Section with tight, refined spacing */}
+    {/* Dedicated Full-Width Product Description Section with pure, unconstrained layout */}
     <div id="product-description" className="border-t border-border pt-5 space-y-3.5 text-left scroll-mt-20">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border pb-2.5 text-left">
         <div className="space-y-0.5 text-left">
@@ -592,51 +604,65 @@ export default function ProductClient({ product }: { product: ProductDetails }) 
           </h2>
         </div>
         {embedUrl && (
+          <a
+            href="#product-video"
+            className="inline-flex items-center gap-1.5 text-xs text-primary font-semibold hover:underline cursor-pointer"
+          >
+            <Play size={12} className="fill-primary" /> View Video Lookbook &darr;
+          </a>
+        )}
+      </div>
+
+      <div className="space-y-4 text-left w-full min-w-0 overflow-hidden">
+        <div
+          className="rich-description-content text-sm sm:text-base text-muted-foreground leading-relaxed font-light max-w-none font-sans text-left overflow-x-auto"
+          style={{ textAlign: 'left', direction: 'ltr' }}
+          dir="ltr"
+          dangerouslySetInnerHTML={{ __html: product.description }}
+        />
+      </div>
+    </div>
+
+    {/* Dedicated Standalone Product Video Showcase Section */}
+    {embedUrl && (
+      <div id="product-video" className="border-t border-border pt-6 sm:pt-8 space-y-4 text-left scroll-mt-20">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border pb-3">
+          <div className="space-y-0.5">
+            <span className="text-xs font-semibold tracking-wider text-primary uppercase">
+              Video Demonstration &amp; Lookbook
+            </span>
+            <h2 className="font-serif text-lg sm:text-xl font-bold tracking-tight text-foreground">
+              Official Video Showcase
+            </h2>
+          </div>
           <button
             type="button"
             onClick={() => {
               setActiveMediaMode('video');
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
-            className="inline-flex items-center gap-1.5 text-xs text-red-500 font-semibold hover:underline cursor-pointer"
+            className="inline-flex items-center gap-1.5 text-xs text-primary font-semibold hover:underline cursor-pointer self-start sm:self-auto"
           >
-            <Play size={13} className="fill-red-500" /> Watch Video Demonstration &uarr;
+            <Play size={12} className="fill-primary" /> Play in Gallery &uarr;
           </button>
-        )}
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 text-left items-start">
-        <div className={`${embedUrl ? 'lg:col-span-7' : 'lg:col-span-12'} space-y-4 text-left`}>
-          <div
-            className="text-sm sm:text-base text-muted-foreground leading-relaxed font-light prose prose-sm sm:prose-base dark:prose-invert prose-zinc max-w-none font-sans text-left"
-            style={{ textAlign: 'left', direction: 'ltr' }}
-            dir="ltr"
-            dangerouslySetInnerHTML={{ __html: product.description }}
-          />
         </div>
 
-        {embedUrl && (
-          <div className="lg:col-span-5 space-y-3.5 text-left bg-card border border-border rounded-xl p-4 shadow-sm">
-            <div className="flex items-center gap-2 text-foreground font-semibold text-sm text-left">
-              <Play size={14} className="text-red-500 fill-red-500" />
-              <span>Official Video Showcase</span>
-            </div>
-            <div className="aspect-video w-full rounded-lg overflow-hidden border border-border shadow-inner bg-black">
-              <iframe
-                src={embedUrl}
-                title={`${product.name} Video Showcase`}
-                className="w-full h-full border-0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              />
-            </div>
-            <p className="text-xs text-muted-foreground text-left">
-              High-definition presentation demonstrating fabric texture, silhouette cut, and fluid motion.
-            </p>
+        <div className="bg-card border border-border rounded-2xl p-4 sm:p-6 shadow-sm max-w-4xl mx-auto space-y-3">
+          <div className="aspect-video w-full rounded-xl overflow-hidden border border-border shadow-inner bg-black">
+            <iframe
+              src={embedUrl}
+              title={`${product.name} Video Showcase`}
+              className="w-full h-full border-0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
           </div>
-        )}
+          <p className="text-xs text-muted-foreground text-center">
+            High-definition presentation demonstrating fabric texture, silhouette cut, and fluid motion.
+          </p>
+        </div>
       </div>
-    </div>
+    )}
 
       {/* Sizing Guide & Chart Modal - Restored Full Interactive Size Chart */}
       {showSizeModal && (() => {

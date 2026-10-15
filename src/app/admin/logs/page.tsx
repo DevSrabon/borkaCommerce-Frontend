@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
 import { API_BASE_URL } from '@/config/api';
+import AdminPagination from '@/components/admin/AdminPagination';
 import {
   Activity,
   Search,
@@ -89,7 +90,7 @@ export default function AdminLogsPage() {
   const [level, setLevel] = useState('ALL');
   const [sort, setSort] = useState('newest'); // 'newest' | 'oldest' | 'slowest' | 'fastest' | 'status_desc' | 'status_asc'
   const [minDuration, setMinDuration] = useState('');
-  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [refreshInterval, setRefreshInterval] = useState<number>(0); // 0 = Off (default)
 
   // Inspector & Clear Modals
   const [selectedLog, setSelectedLog] = useState<LogItem | null>(null);
@@ -174,15 +175,15 @@ export default function AdminLogsPage() {
     return () => clearTimeout(timer);
   }, [search]);
 
-  // Auto refresh every 5 seconds
+  // Auto refresh interval (off by default, or 5s, 10s, 30s, 1m, 5m, 10m)
   useEffect(() => {
-    if (!autoRefresh || !token) return;
+    if (refreshInterval <= 0 || !token) return;
     const interval = setInterval(() => {
       fetchLogs();
       fetchStats();
-    }, 5000);
+    }, refreshInterval);
     return () => clearInterval(interval);
-  }, [autoRefresh, token, page, method, statusGroup, level, sort, minDuration]);
+  }, [refreshInterval, token, page, method, statusGroup, level, sort, minDuration]);
 
   const handleClearLogs = async () => {
     if (!token) return;
@@ -288,19 +289,34 @@ export default function AdminLogsPage() {
 
         {/* Header Action Controls */}
         <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
-          <button
-            type="button"
-            onClick={() => setAutoRefresh(!autoRefresh)}
-            className={`px-3 py-2 rounded-lg text-xs font-semibold border transition cursor-pointer flex items-center gap-2 ${
-              autoRefresh
-                ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30'
+          {/* Live Auto-Refresh Selector */}
+          <div
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition shadow-xs ${
+              refreshInterval > 0
+                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
                 : 'bg-card text-muted-foreground border-border hover:text-foreground'
             }`}
-            title="Auto refresh every 5 seconds"
+            title="Auto-refresh interval"
           >
-            <RefreshCw size={13} className={autoRefresh ? 'animate-spin' : ''} />
-            <span>{autoRefresh ? 'Live: 5s' : 'Live: Paused'}</span>
-          </button>
+            <RefreshCw
+              size={13}
+              className={`shrink-0 ${refreshInterval > 0 ? 'animate-spin text-emerald-500' : 'text-muted-foreground'}`}
+            />
+            <span className="font-semibold text-xs whitespace-nowrap">Live:</span>
+            <select
+              value={refreshInterval}
+              onChange={(e) => setRefreshInterval(Number(e.target.value))}
+              className="bg-transparent font-medium cursor-pointer focus:outline-none text-xs pr-1 text-inherit"
+            >
+              <option value={0} className="bg-card text-foreground">Off</option>
+              <option value={5000} className="bg-card text-foreground">5s</option>
+              <option value={10000} className="bg-card text-foreground">10s</option>
+              <option value={30000} className="bg-card text-foreground">30s</option>
+              <option value={60000} className="bg-card text-foreground">1 min</option>
+              <option value={300000} className="bg-card text-foreground">5 min</option>
+              <option value={600000} className="bg-card text-foreground">10 min</option>
+            </select>
+          </div>
 
           <button
             type="button"
@@ -723,27 +739,11 @@ export default function AdminLogsPage() {
           <div>
             Showing <strong className="text-foreground">{logs.length}</strong> of <strong className="text-foreground">{total}</strong> total recorded requests • Page {page} of {totalPages}
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              disabled={page <= 1}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              className="px-3 py-1.5 rounded border border-border hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center gap-1 font-semibold"
-            >
-              <ChevronLeft size={14} /> Previous
-            </button>
-            <span className="px-2 font-mono font-bold text-foreground">
-              {page} / {totalPages}
-            </span>
-            <button
-              type="button"
-              disabled={page >= totalPages}
-              onClick={() => setPage((p) => p + 1)}
-              className="px-3 py-1.5 rounded border border-border hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center gap-1 font-semibold"
-            >
-              Next <ChevronRight size={14} />
-            </button>
-          </div>
+          <AdminPagination
+            currentPage={page}
+            totalPages={totalPages}
+            onPageChange={setPage}
+          />
         </div>
       </div>
 

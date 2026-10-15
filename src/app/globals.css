@@ -516,3 +516,146 @@ body {
   color: #475569 !important;
 }
 
+/* =============================================
+   Product Description & Rich Content Table Styling
+   ============================================= */
+.rich-description-content {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  word-break: break-word;
+}
+
+.rich-description-content h2,
+.rich-description-content h3 {
+  font-family: var(--font-serif, serif);
+  font-weight: 700;
+  color: var(--foreground);
+  letter-spacing: -0.01em;
+  margin-top: 2rem;
+  margin-bottom: 0.75rem;
+}
+
+.rich-description-content h2 {
+  font-size: 1.25rem;
+  line-height: 1.4;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.5rem;
+}
+
+.rich-description-content h3 {
+  font-size: 1.125rem;
+  line-height: 1.4;
+}
+
+.rich-description-content p {
+  margin-bottom: 1rem;
+  line-height: 1.7;
+}
+
+/* Responsive, Luxury Styled Table that stays strictly inside the container */
+.rich-description-content table,
+.prose table {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 1.5rem 0 !important;
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 0.875rem !important;
+  overflow: hidden !important;
+  background-color: var(--card) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
+  table-layout: auto !important;
+}
+
+.rich-description-content thead tr,
+.rich-description-content tr:first-child:has(th),
+.prose thead tr {
+  background-color: var(--muted) !important;
+}
+
+.rich-description-content th,
+.prose th {
+  padding: 0.85rem 1.25rem !important;
+  font-size: 0.8125rem !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  color: var(--foreground) !important;
+  border-bottom: 1px solid var(--border) !important;
+  border-right: 1px solid var(--border) !important;
+  text-align: left !important;
+}
+
+.rich-description-content th:last-child,
+.prose th:last-child {
+  border-right: none !important;
+}
+
+.rich-description-content td,
+.prose td {
+  padding: 0.85rem 1.25rem !important;
+  font-size: 0.875rem !important;
+  color: var(--foreground) !important;
+  border-bottom: 1px solid var(--border) !important;
+  border-right: 1px solid var(--border) !important;
+  vertical-align: middle !important;
+  line-height: 1.5 !important;
+}
+
+.rich-description-content td:last-child,
+.prose td:last-child {
+  border-right: none !important;
+}
+
+.rich-description-content tr:last-child td,
+.prose tr:last-child td {
+  border-bottom: none !important;
+}
+
+/* Zebra row shading */
+.rich-description-content tbody tr:nth-child(even),
+.rich-description-content tr:nth-child(even),
+.prose tr:nth-child(even) {
+  background-color: rgba(0, 0, 0, 0.015) !important;
+}
+
+.dark .rich-description-content tbody tr:nth-child(even),
+.dark .rich-description-content tr:nth-child(even),
+.dark .prose tr:nth-child(even) {
+  background-color: rgba(255, 255, 255, 0.02) !important;
+}
+
+/* Hover effect */
+.rich-description-content tbody tr:hover,
+.rich-description-content tr:hover,
+.prose tr:hover {
+  background-color: var(--accent) !important;
+  transition: background-color 0.15s ease !important;
+}
+
+/* Feature column (First Column) highlighted cleanly */
+.rich-description-content td:first-child,
+.prose td:first-child {
+  font-weight: 600 !important;
+  color: var(--foreground) !important;
+  width: 28% !important;
+  min-width: 140px !important;
+  background-color: rgba(0, 0, 0, 0.02) !important;
+}
+
+.dark .rich-description-content td:first-child,
+.dark .prose td:first-child {
+  background-color: rgba(255, 255, 255, 0.03) !important;
+}
+
+/* Ensure images inside description don't overflow */
+.rich-description-content img {
+  max-width: 100% !important;
+  height: auto !important;
+  border-radius: 0.75rem !important;
+  margin: 1rem 0 !important;
+}
+
+
