@@ -19,6 +19,7 @@ import {
   Factory,
   Hash,
   RotateCcw,
+  ChevronDown,
 } from 'lucide-react';
 import Link from 'next/link';
 import CreateManualOrderModal from '@/components/admin/CreateManualOrderModal';
@@ -55,13 +56,13 @@ interface Order {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  DELIVERED: 'bg-green-500/10 text-green-500 border-green-500/20',
-  SHIPPED:   'bg-purple-500/10 text-purple-500 border-purple-500/20',
-  CONFIRMED: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
-  PACKED:    'bg-cyan-500/10 text-cyan-500 border-cyan-500/20',
-  PENDING:   'bg-yellow-500/10 text-yellow-500 border-yellow-500/20',
-  CANCELLED: 'bg-red-500/10 text-red-500 border-red-500/20',
-  REFUNDED:  'bg-zinc-500/10 text-zinc-400 border-zinc-500/20',
+  DELIVERED: 'bg-emerald-100 text-emerald-900 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700',
+  SHIPPED:   'bg-purple-100 text-purple-900 dark:bg-purple-950/60 dark:text-purple-300 border-purple-300 dark:border-purple-700',
+  CONFIRMED: 'bg-blue-100 text-blue-900 dark:bg-blue-950/60 dark:text-blue-300 border-blue-300 dark:border-blue-700',
+  PACKED:    'bg-cyan-100 text-cyan-900 dark:bg-cyan-950/60 dark:text-cyan-300 border-cyan-300 dark:border-cyan-700',
+  PENDING:   'bg-amber-100 text-amber-900 dark:bg-amber-950/60 dark:text-amber-300 border-amber-300 dark:border-amber-700',
+  CANCELLED: 'bg-rose-100 text-rose-900 dark:bg-rose-950/60 dark:text-rose-300 border-rose-300 dark:border-rose-700',
+  REFUNDED:  'bg-zinc-200 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-200 border-zinc-300 dark:border-zinc-700',
 };
 
 const STATUS_OPTIONS = [
@@ -191,37 +192,6 @@ export default function OrdersAdminPage() {
     } catch (_) {}
   };
 
-  // Quick Date Preset Handler
-  const setDatePreset = (preset: 'today' | 'yesterday' | 'week' | 'month' | 'all') => {
-    const now = new Date();
-    const pad = (n: number) => String(n).padStart(2, '0');
-    const toYMD = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-
-    if (preset === 'today') {
-      const todayStr = toYMD(now);
-      setStartDate(todayStr);
-      setEndDate(todayStr);
-    } else if (preset === 'yesterday') {
-      const y = new Date();
-      y.setDate(y.getDate() - 1);
-      const yStr = toYMD(y);
-      setStartDate(yStr);
-      setEndDate(yStr);
-    } else if (preset === 'week') {
-      const w = new Date();
-      w.setDate(w.getDate() - 7);
-      setStartDate(toYMD(w));
-      setEndDate(toYMD(now));
-    } else if (preset === 'month') {
-      const m = new Date(now.getFullYear(), now.getMonth(), 1);
-      setStartDate(toYMD(m));
-      setEndDate(toYMD(now));
-    } else if (preset === 'all') {
-      setStartDate('');
-      setEndDate('');
-    }
-  };
-
   const handleClearFilters = () => {
     setSearch('');
     setSelectedStatus('ALL');
@@ -312,39 +282,11 @@ export default function OrdersAdminPage() {
         </div>
       </div>
 
-      {/* Status Filter Tabs */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 border-b border-border text-xs scrollbar-thin">
-        {STATUS_OPTIONS.map((st) => {
-          const count = statusCounts[st] || 0;
-          const isActive = selectedStatus === st;
-          return (
-            <button
-              key={st}
-              onClick={() => setSelectedStatus(st)}
-              className={`px-3 py-1.5 rounded-lg font-medium transition cursor-pointer shrink-0 flex items-center gap-1.5 ${
-                isActive
-                  ? 'bg-primary text-primary-foreground font-semibold shadow-xs'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
-              }`}
-            >
-              <span>{st === 'ALL' ? 'All Orders' : st}</span>
-              <span
-                className={`px-1.5 py-0.2 rounded-full text-[11px] font-mono ${
-                  isActive ? 'bg-primary-foreground/20 text-primary-foreground' : 'bg-muted text-muted-foreground'
-                }`}
-              >
-                {count}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-
       {/* Date Range, Search & Filters Bar */}
       <div className="bg-card border border-border rounded-xl p-4 space-y-3 shadow-xs">
-        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-12 gap-3 items-center">
           {/* Search Input */}
-          <div className="relative flex-1 min-w-[240px]">
+          <div className="relative md:col-span-1 xl:col-span-5">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input
               type="text"
@@ -356,15 +298,31 @@ export default function OrdersAdminPage() {
             {search && (
               <button
                 onClick={() => setSearch('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
               >
                 <X size={13} />
               </button>
             )}
           </div>
 
+          {/* Status Dropdown Filter */}
+          <div className="relative md:col-span-1 xl:col-span-3">
+            <select
+              value={selectedStatus}
+              onChange={(e) => setSelectedStatus(e.target.value)}
+              className="w-full appearance-none bg-background border border-border rounded-lg pl-3 pr-8 py-2 text-xs font-semibold text-foreground focus:outline-none focus:ring-1 focus:ring-primary shadow-xs cursor-pointer"
+            >
+              {STATUS_OPTIONS.map((st) => (
+                <option key={st} value={st}>
+                  {st === 'ALL' ? `All Statuses (${statusCounts['ALL'] || 0})` : `${st} (${statusCounts[st] || 0})`}
+                </option>
+              ))}
+            </select>
+            <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground" />
+          </div>
+
           {/* Date Range Inputs */}
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap md:col-span-2 xl:col-span-4 xl:justify-end">
             <div className="flex items-center gap-1.5 bg-background border border-border px-2.5 py-1.5 rounded-lg text-xs shadow-xs">
               <Calendar size={13} className="text-muted-foreground shrink-0" />
               <span className="text-muted-foreground text-[11px]">From:</span>
@@ -385,38 +343,6 @@ export default function OrdersAdminPage() {
                 onChange={(e) => setEndDate(e.target.value)}
                 className="bg-transparent text-xs text-foreground focus:outline-none cursor-pointer"
               />
-            </div>
-
-            {/* Quick Date Presets */}
-            <div className="flex items-center gap-1 flex-wrap">
-              <button
-                type="button"
-                onClick={() => setDatePreset('today')}
-                className="px-2 py-1 text-[11px] rounded bg-muted/60 hover:bg-muted text-foreground transition cursor-pointer"
-              >
-                Today
-              </button>
-              <button
-                type="button"
-                onClick={() => setDatePreset('yesterday')}
-                className="px-2 py-1 text-[11px] rounded bg-muted/60 hover:bg-muted text-foreground transition cursor-pointer"
-              >
-                Yesterday
-              </button>
-              <button
-                type="button"
-                onClick={() => setDatePreset('week')}
-                className="px-2 py-1 text-[11px] rounded bg-muted/60 hover:bg-muted text-foreground transition cursor-pointer"
-              >
-                Last 7d
-              </button>
-              <button
-                type="button"
-                onClick={() => setDatePreset('month')}
-                className="px-2 py-1 text-[11px] rounded bg-muted/60 hover:bg-muted text-foreground transition cursor-pointer"
-              >
-                This Month
-              </button>
             </div>
 
             {hasActiveFilters && (
@@ -511,73 +437,72 @@ export default function OrdersAdminPage() {
             )}
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
+          <div className="overflow-x-auto w-full scrollbar-thin">
+            <table className="w-full min-w-[950px] text-left border-collapse text-xs">
               <thead>
-                <tr className="bg-muted/40 text-muted-foreground uppercase tracking-wider font-semibold border-b border-border text-xs">
-                  <th className="px-5 py-3">Order #</th>
-                  <th className="px-4 py-3">Production #</th>
-                  <th className="px-5 py-3">Customer</th>
-                  <th className="px-5 py-3">Items</th>
-                  <th className="px-4 py-3">Date</th>
-                  <th className="px-4 py-3">Total</th>
-                  <th className="px-4 py-3">Payment</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3">Courier / Tracking</th>
-                  <th className="px-5 py-3 text-right">Actions</th>
+                <tr className="bg-slate-100 dark:bg-zinc-900 text-slate-800 dark:text-zinc-200 uppercase tracking-wider font-bold border-b border-border text-xs">
+                  <th className="px-5 py-3.5 whitespace-nowrap">Order / Production #</th>
+                  <th className="px-5 py-3.5 min-w-[160px]">Customer</th>
+                  <th className="px-4 py-3.5 min-w-[120px]">Items</th>
+                  <th className="px-4 py-3.5 whitespace-nowrap">Date</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">Total / Payment</th>
+                  <th className="px-4 py-3.5 whitespace-nowrap">Status</th>
+                  <th className="px-4 py-3.5 min-w-[140px]">Courier / Tracking</th>
+                  <th className="px-5 py-3.5 text-right whitespace-nowrap min-w-[130px]">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {filtered.map((ord) => (
                   <tr key={ord.id} className="hover:bg-accent/30 transition">
-                    {/* Order Number (e.g. SW20250001) */}
-                    <td className="px-5 py-3">
-                      <Link
-                        href={`/admin/orders/${ord.id}`}
-                        className="font-mono font-bold text-foreground hover:text-primary transition underline decoration-dotted"
-                      >
-                        {ord.order_number}
-                      </Link>
-                    </td>
-
-                    {/* Production Number (e.g. P-1000) */}
-                    <td className="px-4 py-3">
-                      {ord.production_no ? (
-                        <span
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-mono font-bold bg-amber-500/10 text-amber-500 border border-amber-500/30 shadow-2xs"
-                          title="Workshop & Tailoring Production Number"
+                    {/* Combined: Order # & Production # */}
+                    <td className="px-5 py-3.5 whitespace-nowrap">
+                      <div className="space-y-1">
+                        <Link
+                          href={`/admin/orders/${ord.id}`}
+                          className="font-mono font-bold text-foreground hover:text-primary transition hover:underline inline-block text-xs"
+                          title="View order details"
                         >
-                          <Factory size={11} className="text-amber-500" />
-                          <span>{ord.production_no}</span>
-                        </span>
-                      ) : (
-                        <button
-                          onClick={() => handleGenerateProductionNo(ord.id)}
-                          disabled={generatingProdId === ord.id}
-                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-primary/10 text-primary border border-primary/30 hover:bg-primary/20 transition cursor-pointer"
-                          title="Generate workshop production ID"
-                        >
-                          {generatingProdId === ord.id ? (
-                            <RefreshCw size={10} className="animate-spin" />
+                          {ord.order_number}
+                        </Link>
+                        <div>
+                          {ord.production_no ? (
+                            <span
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-amber-100 text-amber-900 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-700 shadow-2xs"
+                              title="Workshop & Tailoring Production Number"
+                            >
+                              <Factory size={10} className="text-amber-800 dark:text-amber-400" />
+                              <span>{ord.production_no}</span>
+                            </span>
                           ) : (
-                            <Hash size={10} />
+                            <button
+                              onClick={() => handleGenerateProductionNo(ord.id)}
+                              disabled={generatingProdId === ord.id}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-primary/10 text-primary border border-primary/30 hover:bg-primary/20 transition cursor-pointer"
+                              title="Generate workshop production ID"
+                            >
+                              {generatingProdId === ord.id ? (
+                                <RefreshCw size={10} className="animate-spin" />
+                              ) : (
+                                <Hash size={10} />
+                              )}
+                              <span>Generate P#</span>
+                            </button>
                           )}
-                          <span>Generate</span>
-                        </button>
-                      )}
+                        </div>
+                      </div>
                     </td>
 
                     {/* Customer */}
-                    <td className="px-5 py-3">
-                      <p className="font-medium text-foreground">
+                    <td className="px-5 py-3.5">
+                      <p className="font-semibold text-foreground text-xs">
                         {ord.customer?.first_name} {ord.customer?.last_name}
                       </p>
-                      <p className="text-muted-foreground text-xs">{ord.customer?.email}</p>
+                      <p className="text-muted-foreground text-[11px] truncate max-w-[180px]">{ord.customer?.email}</p>
                     </td>
 
                     {/* Items */}
-                    <td className="px-5 py-3">
-                      <div className="flex items-center gap-1.5 flex-wrap max-w-[180px]">
+                    <td className="px-4 py-3.5">
+                      <div className="flex items-center gap-1.5 flex-wrap max-w-[160px]">
                         {(ord.items || []).slice(0, 3).map((item, idx) => {
                           const img = getItemFeaturedImage(item);
                           return (
@@ -617,7 +542,7 @@ export default function OrdersAdminPage() {
                     </td>
 
                     {/* Date */}
-                    <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
+                    <td className="px-4 py-3.5 text-muted-foreground whitespace-nowrap text-xs">
                       {new Date(ord.created_at).toLocaleDateString('en-AE', {
                         day: 'numeric',
                         month: 'short',
@@ -625,37 +550,59 @@ export default function OrdersAdminPage() {
                       })}
                     </td>
 
-                    {/* Total */}
-                    <td className="px-4 py-3 font-semibold text-foreground whitespace-nowrap">
-                      AED {Number(ord.total).toFixed(2)}
+                    {/* Combined: Total & Payment Status */}
+                    <td className="px-5 py-3.5 whitespace-nowrap">
+                      <div className="space-y-1">
+                        <div className="font-bold text-foreground text-xs">
+                          AED {Number(ord.total).toFixed(2)}
+                        </div>
+                        <div>
+                          <span
+                            className={`inline-block px-2 py-0.5 rounded text-[11px] font-bold border ${
+                              ord.payment_status === 'PAID'
+                                ? 'bg-emerald-100 text-emerald-900 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700'
+                                : 'bg-amber-100 text-amber-900 dark:bg-amber-950/60 dark:text-amber-300 border-amber-300 dark:border-amber-700'
+                            }`}
+                          >
+                            {ord.payment_status}
+                          </span>
+                        </div>
+                      </div>
                     </td>
 
-                    {/* Payment Status */}
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <span
-                        className={`px-2 py-0.5 rounded text-xs font-semibold border ${
-                          ord.payment_status === 'PAID'
-                            ? 'bg-green-500/10 text-green-500 border-green-500/20'
-                            : 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'
-                        }`}
-                      >
-                        {ord.payment_status}
-                      </span>
-                    </td>
-
-                    {/* Status with Quick Update */}
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <span
-                        className={`px-2 py-0.5 rounded text-xs font-semibold border ${
-                          STATUS_COLORS[ord.status] || ''
-                        }`}
-                      >
-                        {ord.status}
-                      </span>
+                    {/* Status with Direct Interactive Dropdown */}
+                    <td className="px-4 py-3.5 whitespace-nowrap">
+                      {updatingId === ord.id ? (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs text-muted-foreground animate-pulse font-medium">
+                          <RefreshCw size={12} className="animate-spin text-primary" />
+                          <span>Saving…</span>
+                        </span>
+                      ) : (
+                        <div className="relative inline-block">
+                          <select
+                            value={ord.status}
+                            onChange={(e) => handleUpdateStatus(ord.id, e.target.value)}
+                            className={`appearance-none text-xs font-bold pl-2.5 pr-7 py-1 rounded-md border cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary shadow-2xs transition ${
+                              STATUS_COLORS[ord.status] || 'bg-background border-border text-foreground'
+                            }`}
+                            title="Click to change order status"
+                          >
+                            {STATUS_OPTIONS.filter((s) => s !== 'ALL').map((s) => (
+                              <option key={s} value={s} className="bg-card text-foreground font-semibold">
+                                {s}
+                              </option>
+                            ))}
+                          </select>
+                          <ChevronDown
+                            size={12}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-70"
+                          />
+                        </div>
+                      )}
                     </td>
 
                     {/* Courier / Tracking */}
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 whitespace-nowrap">
                       {ord.delivery_partner ? (
                         <div className="flex flex-col gap-0.5">
                           <span className="inline-flex items-center gap-1 font-medium text-foreground">
@@ -685,36 +632,21 @@ export default function OrdersAdminPage() {
                     </td>
 
                     {/* Actions */}
-                    <td className="px-5 py-3 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        {updatingId === ord.id ? (
-                          <span className="text-muted-foreground text-xs animate-pulse">Saving…</span>
-                        ) : (
-                          <select
-                            className="bg-background border border-border rounded px-2 py-1 text-xs focus:outline-none cursor-pointer"
-                            value={ord.status}
-                            onChange={(e) => handleUpdateStatus(ord.id, e.target.value)}
-                          >
-                            {STATUS_OPTIONS.filter((s) => s !== 'ALL').map((s) => (
-                              <option key={s} value={s}>
-                                {s}
-                              </option>
-                            ))}
-                          </select>
-                        )}
+                    <td className="px-5 py-3 text-right whitespace-nowrap">
+                      <div className="flex items-center justify-end gap-1.5">
                         <Link
                           href={`/admin/orders/${ord.id}`}
-                          className="p-1.5 border border-border rounded hover:bg-accent text-muted-foreground hover:text-foreground transition shadow-2xs"
+                          className="p-1.5 border border-border rounded hover:bg-accent text-foreground hover:text-primary transition shadow-2xs cursor-pointer inline-flex items-center"
                           title="View order details"
                         >
-                          <Eye size={13} />
+                          <Eye size={14} />
                         </Link>
                         <button
                           onClick={() => handleDelete(ord.id)}
-                          className="p-1.5 border border-border rounded text-red-500 hover:bg-red-500/10 hover:border-red-500/20 transition cursor-pointer shadow-2xs"
+                          className="p-1.5 border border-border rounded text-red-500 hover:bg-red-500/10 hover:border-red-500/20 transition cursor-pointer shadow-2xs inline-flex items-center"
                           title="Delete order"
                         >
-                          <Trash2 size={13} />
+                          <Trash2 size={14} />
                         </button>
                       </div>
                     </td>

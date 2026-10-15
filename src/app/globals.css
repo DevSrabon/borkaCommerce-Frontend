@@ -6,22 +6,22 @@
 
 :root {
   --background: #faf8f5;
-  --foreground: #1c1917;
+  --foreground: #0f172a;
   --card: #ffffff;
-  --card-foreground: #1c1917;
+  --card-foreground: #0f172a;
   --popover: #ffffff;
-  --popover-foreground: #1c1917;
-  --primary: #b8860b; /* Luxury Emirati Gold */
+  --popover-foreground: #0f172a;
+  --primary: #926605; /* Deep High-Contrast Emirati Gold */
   --primary-foreground: #ffffff;
   --secondary: #f4f1ea;
-  --secondary-foreground: #292524;
-  --muted: #78716c;
-  --muted-foreground: #71717a;
-  --accent: #f5f2eb;
-  --accent-foreground: #1c1917;
-  --border: #e7e5e4;
-  --input: #e7e5e4;
-  --ring: #b8860b;
+  --secondary-foreground: #0f172a;
+  --muted: #f1f5f9;
+  --muted-foreground: #334155; /* Sharp readable dark slate */
+  --accent: #f1f5f9;
+  --accent-foreground: #0f172a;
+  --border: #cbd5e1;
+  --input: #cbd5e1;
+  --ring: #926605;
   --radius: 0.625rem;
 }
 
@@ -32,37 +32,37 @@
   --card-foreground: #0f172a;
   --popover: #ffffff;
   --popover-foreground: #0f172a;
-  --primary: #b8860b;
+  --primary: #926605;
   --primary-foreground: #ffffff;
   --secondary: #f1f5f9;
   --secondary-foreground: #0f172a;
-  --muted: #64748b;
-  --muted-foreground: #64748b;
+  --muted: #f1f5f9;
+  --muted-foreground: #334155;
   --accent: #f1f5f9;
   --accent-foreground: #0f172a;
-  --border: #e2e8f0;
-  --input: #e2e8f0;
-  --ring: #b8860b;
+  --border: #cbd5e1;
+  --input: #cbd5e1;
+  --ring: #926605;
 }
 
 .dark, [data-theme="dark"] {
   --background: #09090b;
-  --foreground: #f4f4f5;
+  --foreground: #f8fafc;
   --card: #141416;
-  --card-foreground: #f4f4f5;
+  --card-foreground: #f8fafc;
   --popover: #141416;
-  --popover-foreground: #f4f4f5;
-  --primary: #d4af37;
+  --popover-foreground: #f8fafc;
+  --primary: #eab308;
   --primary-foreground: #09090b;
   --secondary: #222226;
-  --secondary-foreground: #f4f4f5;
-  --muted: #a1a1aa;
-  --muted-foreground: #71717a;
+  --secondary-foreground: #f8fafc;
+  --muted: #1e293b;
+  --muted-foreground: #cbd5e1; /* High contrast light slate */
   --accent: #222226;
-  --accent-foreground: #f4f4f5;
-  --border: #27272a;
-  --input: #27272a;
-  --ring: #d4af37;
+  --accent-foreground: #f8fafc;
+  --border: #334155;
+  --input: #334155;
+  --ring: #eab308;
 }
 
 @theme inline {
@@ -94,6 +94,11 @@ body {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   transition: background-color 0.3s ease, color 0.3s ease;
   overflow-x: hidden;
+}
+
+/* Universal readability guarantee: text-muted should always have strong readable contrast */
+.text-muted {
+  color: var(--muted-foreground) !important;
 }
 
 /* Custom premium styles */
@@ -471,31 +476,43 @@ body {
   color: #fafafa !important;
 }
 
-/* Editor Main Container */
-.jodit-container:not(.jodit_inline) {
-  background-color: #18181b !important;
-  border: 1px solid #27272a !important;
-  color: #fafafa !important;
+/* Editor Always Light Mode */
+.jodit-container:not(.jodit_inline),
+.jodit-always-light .jodit-container {
+  background-color: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #0f172a !important;
 }
 
-.jodit-toolbar__box {
-  background-color: #09090b !important;
-  border-bottom: 1px solid #27272a !important;
+.jodit-toolbar__box,
+.jodit-always-light .jodit-toolbar__box {
+  background-color: #f8fafc !important;
+  border-bottom: 1px solid #e2e8f0 !important;
 }
 
 .jodit-toolbar-button__text,
-.jodit-toolbar-button svg {
-  color: #e4e4e7 !important;
-  fill: #e4e4e7 !important;
+.jodit-toolbar-button svg,
+.jodit-always-light .jodit-toolbar-button__text,
+.jodit-always-light .jodit-toolbar-button svg {
+  color: #1e293b !important;
+  fill: #1e293b !important;
 }
 
-.jodit-wysiwyg {
-  background-color: #18181b !important;
-  color: #fafafa !important;
+.jodit-toolbar-button:hover,
+.jodit-always-light .jodit-toolbar-button:hover {
+  background-color: #e2e8f0 !important;
 }
 
-.jodit-status-bar {
-  background-color: #09090b !important;
-  border-top: 1px solid #27272a !important;
-  color: #71717a !important;
+.jodit-wysiwyg,
+.jodit-always-light .jodit-wysiwyg {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
 }
+
+.jodit-status-bar,
+.jodit-always-light .jodit-status-bar {
+  background-color: #f8fafc !important;
+  border-top: 1px solid #e2e8f0 !important;
+  color: #475569 !important;
+}
+

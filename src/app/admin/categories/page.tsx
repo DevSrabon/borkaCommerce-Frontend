@@ -103,6 +103,15 @@ export default function AdminCategoriesPage() {
 
   const handleQuickToggle = async (cat: Category, field: 'show_in_navbar' | 'show_on_homepage' | 'is_active') => {
     const updatedVal = !cat[field];
+
+    if (field === 'show_in_navbar' && updatedVal) {
+      const currentNavbarCount = categories.filter((c) => c.show_in_navbar !== false && c.id !== cat.id).length;
+      if (currentNavbarCount >= 3) {
+        setError('Maximum 3 categories can be displayed in the header navbar. Please hide another category from navbar first.');
+        return;
+      }
+    }
+
     // Optimistic UI update
     setCategories((prev) =>
       prev.map((c) => (c.id === cat.id ? { ...c, [field]: updatedVal } : c))
@@ -130,6 +139,14 @@ export default function AdminCategoriesPage() {
     e.preventDefault();
     setError('');
     setSuccess('');
+
+    if (form.show_in_navbar) {
+      const currentNavbarCount = categories.filter((c) => c.show_in_navbar !== false).length;
+      if (currentNavbarCount >= 3) {
+        setError('Maximum 3 categories can be displayed in the header navbar. Please disable another category first.');
+        return;
+      }
+    }
 
     const payload = {
       ...form,
@@ -220,6 +237,15 @@ export default function AdminCategoriesPage() {
     if (!editingCategory) return;
     setError('');
     setSuccess('');
+
+    if (editingCategory.show_in_navbar) {
+      const currentNavbarCount = categories.filter((c) => c.show_in_navbar !== false && c.id !== editingCategory.id).length;
+      if (currentNavbarCount >= 3) {
+        setError('Maximum 3 categories can be displayed in the header navbar. Please disable another category first.');
+        return;
+      }
+    }
+
     try {
       const res = await fetch(`${API_BASE_URL}/admin/categories/${editingCategory.id}`, {
         method: 'PATCH',

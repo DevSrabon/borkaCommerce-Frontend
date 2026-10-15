@@ -248,7 +248,7 @@ export default function CartPage() {
             {/* Calculations rows */}
             <div className="space-y-3 text-sm font-light">
               <div className="flex justify-between">
-                <span className="text-muted">Subtotal</span>
+                <span className="text-muted-foreground">Subtotal</span>
                 <span className="text-foreground font-medium">{formatPrice(subtotal)}</span>
               </div>
 
@@ -261,7 +261,7 @@ export default function CartPage() {
 
               <div className="flex justify-between items-start">
                 <div>
-                  <span className="text-muted block">Shipping</span>
+                  <span className="text-muted-foreground block">Shipping</span>
                   {shippingInfo?.applied_rule && (
                     <span className="text-xs text-green-500 block font-normal">
                       ✓ {shippingInfo.applied_rule}
@@ -277,7 +277,7 @@ export default function CartPage() {
                     <div className="flex flex-col items-end">
                       <span className="text-foreground font-medium">{formatPrice(shipping)}</span>
                       {shippingInfo && shippingInfo.discount_amount > 0 && (
-                        <span className="text-xs text-muted line-through">
+                        <span className="text-xs text-muted-foreground line-through">
                           {formatPrice(shippingInfo.base_fee)}
                         </span>
                       )}

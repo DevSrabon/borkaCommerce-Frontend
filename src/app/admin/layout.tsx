@@ -327,9 +327,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </aside>
 
       {/* Main content area */}
-      <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${collapsed ? 'ml-16' : 'ml-60'}`}>
+      <div className={`flex-1 flex flex-col min-h-screen min-w-0 max-w-full overflow-x-hidden transition-all duration-300 ${collapsed ? 'ml-16' : 'ml-60'}`}>
         {/* Top bar */}
-        <header className="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur-sm px-6 py-3 flex items-center justify-between shadow-xs">
+        <header className="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur-sm px-4 sm:px-6 py-3 flex items-center justify-between shadow-xs">
           <div>
             <h2 className="text-sm font-semibold text-foreground">
               {NAV_MODULES.find((m) => isActive(m.href, m.exact))?.label ?? 'Admin'}
@@ -366,7 +366,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </header>
 
         {/* Page content */}
-        <main className="flex-1 p-6 lg:p-8">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 min-w-0 w-full overflow-x-hidden">
           {children}
         </main>
       </div>

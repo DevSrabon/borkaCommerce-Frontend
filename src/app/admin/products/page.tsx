@@ -10,6 +10,7 @@ import { RootState } from '../../../store';
 import {
   Plus, Trash, Tag, PlusCircle, Check, Edit2, Upload,
   Eye, EyeOff, X, Pencil, Save, ExternalLink, Video, Search, Layers,
+  Sparkles, Trash2, Loader2,
 } from 'lucide-react';
 import RichTextEditor from '../../../components/RichTextEditor';
 
@@ -159,6 +160,12 @@ export default function AdminProductsPage() {
   const [limit, setLimit] = useState(50);
   const [totalProducts, setTotalProducts] = useState(0);
 
+  // Dummy products generator & purge state
+  const [isDummyModalOpen, setIsDummyModalOpen] = useState(false);
+  const [dummyCount, setDummyCount] = useState<number>(50);
+  const [isGeneratingDummy, setIsGeneratingDummy] = useState(false);
+  const [isPurgingDummy, setIsPurgingDummy] = useState(false);
+
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedProductSearch(productSearch.trim().toLowerCase());
@@ -262,6 +269,62 @@ export default function AdminProductsPage() {
       status: 'PUBLISHED', created_at: new Date().toISOString(),
       variants: [{ price: 250, inventories: [{ quantity: 85 }] }],
     }]);
+  };
+
+  // ─── Dummy Products Generator & Purge Handlers ───────────────────────────
+
+  const handleSeedDummy = async () => {
+    setIsGeneratingDummy(true);
+    setError('');
+    setSuccess('');
+    try {
+      const res = await fetch(`${API_BASE_URL}/admin/products/dummy/seed`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ count: dummyCount }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSuccess(data.message || `Successfully generated ${dummyCount} dummy products!`);
+        setIsDummyModalOpen(false);
+        fetchCatalog();
+      } else {
+        setError(data.message || 'Failed to generate dummy products');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Error communicating with server');
+    } finally {
+      setIsGeneratingDummy(false);
+    }
+  };
+
+  const handlePurgeDummy = async () => {
+    if (!window.confirm('Are you sure you want to delete ALL dummy products? Real products and authentic customer orders will NOT be affected.')) {
+      return;
+    }
+    setIsPurgingDummy(true);
+    setError('');
+    setSuccess('');
+    try {
+      const res = await fetch(`${API_BASE_URL}/admin/products/dummy/purge`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSuccess(data.message || 'Successfully purged all dummy products!');
+        fetchCatalog();
+      } else {
+        setError(data.message || 'Failed to delete dummy products');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Error communicating with server');
+    } finally {
+      setIsPurgingDummy(false);
+    }
   };
 
   // ─── Form Handlers ────────────────────────────────────────────────────────
@@ -1475,36 +1538,62 @@ export default function AdminProductsPage() {
           <p className="text-xs text-muted-foreground font-light">Add, edit, or archive products, variants, attributes and categories.</p>
         </div>
         {adminTab === 'products' && (
-          <button
-            id="btn-new-product"
-            type="button"
-            onClick={async () => {
-              const nextState = !showCreateForm;
-              setShowCreateForm(nextState);
-              setShowEditForm(false);
-              setEditingProduct(null);
-              resetForm();
-              if (nextState) {
-                try {
-                  const res = await fetch(`${API_BASE_URL}/admin/products/next-number`, {
-                    headers: { Authorization: `Bearer ${token}` },
-                  });
-                  if (res.ok) {
-                    const data = await res.json();
-                    if (data.next_product_number) {
-                      setForm((prev) => ({ ...prev, product_number: data.next_product_number }));
+          <div className="flex flex-wrap items-center gap-2.5">
+            {/* Dummy Products Generator Button */}
+            <button
+              type="button"
+              onClick={() => setIsDummyModalOpen(true)}
+              className="px-3.5 py-2 rounded text-xs font-semibold bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 flex items-center gap-1.5 transition cursor-pointer"
+              title="Quickly generate dummy products for catalog testing"
+            >
+              <Sparkles size={14} />
+              <span>Dummy Generator</span>
+            </button>
+
+            {/* Delete All Dummy Products Button */}
+            <button
+              type="button"
+              disabled={isPurgingDummy}
+              onClick={handlePurgeDummy}
+              className="px-3.5 py-2 rounded text-xs font-semibold bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border border-rose-500/30 flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50"
+              title="Delete all dummy items tagged as dummy"
+            >
+              {isPurgingDummy ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+              <span>Delete All Dummy</span>
+            </button>
+
+            {/* New Product Button */}
+            <button
+              id="btn-new-product"
+              type="button"
+              onClick={async () => {
+                const nextState = !showCreateForm;
+                setShowCreateForm(nextState);
+                setShowEditForm(false);
+                setEditingProduct(null);
+                resetForm();
+                if (nextState) {
+                  try {
+                    const res = await fetch(`${API_BASE_URL}/admin/products/next-number`, {
+                      headers: { Authorization: `Bearer ${token}` },
+                    });
+                    if (res.ok) {
+                      const data = await res.json();
+                      if (data.next_product_number) {
+                        setForm((prev) => ({ ...prev, product_number: data.next_product_number }));
+                      }
                     }
-                  }
-                } catch {}
-                setTimeout(() => {
-                  createFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }, 60);
-              }
-            }}
-            className="px-4 py-2 btn-luxury rounded text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer"
-          >
-            <Plus size={16} /> New Product
-          </button>
+                  } catch {}
+                  setTimeout(() => {
+                    createFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }, 60);
+                }
+              }}
+              className="px-4 py-2 btn-luxury rounded text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer"
+            >
+              <Plus size={16} /> New Product
+            </button>
+          </div>
         )}
       </div>
 
@@ -1652,7 +1741,7 @@ export default function AdminProductsPage() {
                 <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse text-xs">
                   <thead>
-                    <tr className="bg-background text-muted-foreground uppercase tracking-wider font-semibold border-b border-border">
+                    <tr className="bg-slate-100 dark:bg-zinc-900 text-slate-800 dark:text-zinc-200 uppercase tracking-wider font-bold border-b border-border">
                       <th className="p-4">Product Name</th>
                       <th className="p-4">Product No</th>
                       <th className="p-4">Slug</th>
@@ -1691,7 +1780,13 @@ export default function AdminProductsPage() {
                                 )}
                               </div>
                               <div className="min-w-0">
-                                <p className="font-semibold text-foreground line-clamp-1">{p.name}</p>
+                                <Link
+                                  href={`/admin/products/${p.id}`}
+                                  className="font-semibold text-foreground hover:text-primary transition line-clamp-1 hover:underline cursor-pointer"
+                                  title="View product details in admin"
+                                >
+                                  {p.name}
+                                </Link>
                                 <p className="text-xs text-muted-foreground font-mono truncate">{p.variants?.[0]?.sku || ''}</p>
                               </div>
                             </div>
@@ -1752,15 +1847,24 @@ export default function AdminProductsPage() {
                               {p.status}
                             </span>
                           </td>
-                          <td className="p-4 text-right flex items-center justify-end gap-2">
+                          <td className="p-4 text-right flex items-center justify-end gap-1.5 flex-wrap">
                             <Link
                               href={`/product/${p.slug}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="p-1.5 border border-border rounded text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 transition cursor-pointer flex items-center justify-center"
-                              title="Go to / View Product on Storefront"
+                              className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 rounded-md transition shadow-2xs cursor-pointer"
+                              title="Open Live Product View on Storefront"
                             >
-                              <ExternalLink size={14} />
+                              <Eye size={12} />
+                              <span>Live View</span>
+                              <ExternalLink size={10} className="opacity-70" />
+                            </Link>
+                            <Link
+                              href={`/admin/products/${p.id}`}
+                              className="p-1.5 border border-border rounded text-foreground hover:bg-accent hover:text-primary transition cursor-pointer flex items-center justify-center"
+                              title="View Product in Admin Single Route"
+                            >
+                              <Layers size={14} />
                             </Link>
                             <button
                               type="button"
@@ -1853,6 +1957,107 @@ export default function AdminProductsPage() {
 
       {/* ── Categories Tab ────────────────────────────────────────── */}
       {adminTab === 'categories' && <CategoryManager />}
+
+      {/* ── Dummy Products Generator Modal ──────────────────────────── */}
+      {isDummyModalOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in"
+        >
+          <div className="bg-card border border-border rounded-xl shadow-2xl max-w-md w-full p-6 space-y-5 text-foreground relative">
+            <button
+              type="button"
+              onClick={() => !isGeneratingDummy && setIsDummyModalOpen(false)}
+              className="absolute top-4 right-4 text-muted-foreground hover:text-foreground p-1 rounded-full cursor-pointer transition"
+            >
+              <X size={18} />
+            </button>
+
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-2 text-primary">
+                <Sparkles size={20} />
+                <h3 className="font-serif text-lg font-bold">Catalog Dummy Generator</h3>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Automatically seed realistic Dubai abayas with high-resolution imagery, sizes (52, 54, 56, 58), warehouse stock, and category associations.
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <label className="text-xs font-semibold text-muted-foreground uppercase block">
+                Select Quantity to Generate
+              </label>
+              <div className="grid grid-cols-4 gap-2">
+                {[20, 50, 100, 200].map((num) => (
+                  <button
+                    key={num}
+                    type="button"
+                    disabled={isGeneratingDummy}
+                    onClick={() => setDummyCount(num)}
+                    className={`py-2 text-xs font-semibold rounded-lg border transition cursor-pointer ${
+                      dummyCount === num
+                        ? 'bg-primary text-primary-foreground border-primary shadow-xs'
+                        : 'bg-background hover:bg-accent border-border text-foreground'
+                    }`}
+                  >
+                    {num} items
+                  </button>
+                ))}
+              </div>
+
+              <div className="space-y-1 pt-1">
+                <label className="text-xs text-muted-foreground">Or enter custom count (1 - 500):</label>
+                <input
+                  type="number"
+                  min={1}
+                  max={500}
+                  disabled={isGeneratingDummy}
+                  value={dummyCount}
+                  onChange={(e) => setDummyCount(Math.max(1, Math.min(500, parseInt(e.target.value, 10) || 1)))}
+                  className="w-full text-xs bg-background border border-border rounded-lg px-3 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+              </div>
+            </div>
+
+            <div className="p-3 bg-muted/40 rounded-lg border border-border text-xs text-muted-foreground space-y-1">
+              <p className="font-medium text-foreground">Safe Dummy Identification</p>
+              <p className="text-[11px] leading-relaxed">
+                All generated dummy items are safely tagged with <code className="text-primary font-mono font-semibold">dummy</code>. You can delete all dummy products anytime using the <strong>&quot;Delete All Dummy&quot;</strong> button without affecting any of your real products or customer orders.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-border">
+              <button
+                type="button"
+                disabled={isGeneratingDummy}
+                onClick={() => setIsDummyModalOpen(false)}
+                className="px-4 py-2 border border-border rounded-lg text-xs hover:bg-accent cursor-pointer transition disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isGeneratingDummy}
+                onClick={handleSeedDummy}
+                className="px-5 py-2 btn-luxury rounded-lg text-xs font-semibold flex items-center gap-2 cursor-pointer transition disabled:opacity-50 shadow-md"
+              >
+                {isGeneratingDummy ? (
+                  <>
+                    <Loader2 size={14} className="animate-spin" />
+                    <span>Generating {dummyCount} Products...</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles size={14} />
+                    <span>Generate {dummyCount} Products</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

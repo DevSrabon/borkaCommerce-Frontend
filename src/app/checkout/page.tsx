@@ -211,49 +211,29 @@ export default function CheckoutPage() {
         return;
       }
 
-      // 3. Confirm Stripe Payment (Mock succeed or actual)
-      // Since we are running in dev/local and might not have Stripe keys configured,
-      // we can call a mock confirmation endpoint on our backend or directly call confirmation webhook
-      const confirmRes = await fetch(`${API_BASE_URL}/admin/orders/${checkoutData.order_id}`, {
-        method: 'PATCH',
+      // 3. Confirm Stripe Payment directly via backend using Stripe Secret Key (Zero webhooks required)
+      const confirmRes = await fetch(`${API_BASE_URL}/ecommerce/orders/confirm-stripe`, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({
-          status: 'CONFIRMED', // directly approve the order in test mode
+          order_id: checkoutData.order_id,
+          payment_intent_id: checkoutData.client_secret
+            ? checkoutData.client_secret.split('_secret_')[0]
+            : undefined,
         }),
       });
 
       if (confirmRes.ok) {
-        // Also simulate database webhook inventory decrease
-        await fetch(`${API_BASE_URL}/ecommerce/orders/stripe-webhook`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'stripe-signature': 'mock_sig',
-          },
-          body: JSON.stringify({
-            id: 'evt_mock',
-            type: 'payment_intent.succeeded',
-            data: {
-              object: {
-                id: 'pi_mock',
-                latest_charge: 'ch_mock',
-                metadata: {
-                  order_id: checkoutData.order_id,
-                  customer_id: user?.id,
-                },
-              },
-            },
-          }),
-        });
-
         setOrderNum(checkoutData.order_number);
         setIsSuccess(true);
         dispatch(clearCart());
+        dispatch(removeCoupon());
       } else {
-        setCheckoutError('Payment confirmation failed.');
+        const errData = await confirmRes.json().catch(() => ({}));
+        setCheckoutError(errData.message || 'Payment confirmation failed.');
       }
     } catch (err) {
       setCheckoutError('Network connectivity error. Backend offline.');
@@ -270,8 +250,8 @@ export default function CheckoutPage() {
         </div>
         <div className="space-y-2">
           <h1 className="font-serif text-3xl font-bold text-foreground">Order Confirmed!</h1>
-          <p className="text-sm text-muted">
-            Thank you for shopping with Saba Al Wadi. Your order <span className="font-semibold text-foreground">#{orderNum}</span> is currently being processed.
+          <p className="text-sm text-slate-700 dark:text-slate-300 font-medium leading-relaxed">
+            Thank you for shopping with Saba Al Wadi. Your order <span className="font-bold text-foreground">#{orderNum}</span> is currently being processed.
           </p>
         </div>
         <div className="pt-6 flex flex-col gap-4">
@@ -552,7 +532,7 @@ export default function CheckoutPage() {
                 <img src={item.image || ''} alt="" className="h-16 w-12 object-cover rounded border border-border" />
                 <div className="flex-1 min-w-0">
                   <h4 className="text-xs font-semibold text-foreground line-clamp-1">{item.name}</h4>
-                  <p className="text-xs text-muted font-light">Qty: {item.quantity}</p>
+                  <p className="text-xs text-muted-foreground font-light">Qty: {item.quantity}</p>
                 </div>
                 <span className="text-xs font-semibold">{formatPrice(item.discounted_price * item.quantity)}</span>
               </div>
@@ -561,7 +541,7 @@ export default function CheckoutPage() {
 
           <div className="border-t border-border pt-4 space-y-2 text-xs font-light">
             <div className="flex justify-between">
-              <span className="text-muted">Subtotal</span>
+              <span className="text-muted-foreground">Subtotal</span>
               <span>{formatPrice(subtotal)}</span>
             </div>
             {coupon && (
@@ -572,7 +552,7 @@ export default function CheckoutPage() {
             )}
             <div className="flex justify-between items-start">
               <div>
-                <span className="text-muted block">Shipping</span>
+                <span className="text-muted-foreground block">Shipping</span>
                 {shippingInfo?.applied_rule && (
                   <span className="text-xs text-green-500 block font-normal">
                     ✓ {shippingInfo.applied_rule}
@@ -588,7 +568,7 @@ export default function CheckoutPage() {
                   <div className="flex flex-col items-end">
                     <span className="text-foreground font-medium">{formatPrice(shipping)}</span>
                     {shippingInfo && shippingInfo.discount_amount > 0 && (
-                      <span className="text-xs text-muted line-through">
+                      <span className="text-xs text-muted-foreground line-through">
                         {formatPrice(shippingInfo.base_fee)}
                       </span>
                     )}

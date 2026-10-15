@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { addToCart } from '../../../store/cartSlice';
-import { Check, Info, ShoppingBag, Truck, ShieldCheck, Clock, Star, Share2, Ruler, X, Play, ChevronDown, ChevronUp, FileText } from 'lucide-react';
+import { Check, Info, ShoppingBag, Truck, ShieldCheck, Clock, Star, Share2, Ruler, X, Play, ChevronDown, ChevronUp, FileText, Maximize2 } from 'lucide-react';
 import { DiscountedPrice } from '../../../components/PriceDisplay';
 import { useCurrency } from '../../../context/CurrencyContext';
 import { API_BASE_URL } from '@/config/api';
@@ -70,6 +70,15 @@ function CountdownTimer({ endDate }: { endDate: string }) {
   );
 }
 
+function WhatsAppIcon({ className = 'w-4 h-4' }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.312.045-.694.074-1.116-.062-.357-.115-.815-.274-1.408-.53-2.483-1.077-4.103-3.606-4.228-3.771-.125-.165-1.008-1.341-1.008-2.557 0-1.216.637-1.815.864-2.062.228-.247.498-.309.664-.309.167 0 .333.001.479.009.155.008.363-.058.568.435.21.503.714 1.741.776 1.867.063.125.105.271.021.438-.083.167-.125.271-.25.417-.125.146-.263.326-.375.438-.125.125-.255.26-.11.509.146.25.647 1.066 1.388 1.725.953.849 1.756 1.112 2.006 1.237.25.125.396.104.542-.062.146-.167.625-.729.792-.979.166-.25.333-.208.562-.125.229.083 1.458.687 1.708.812.25.125.416.188.479.292.062.104.062.604-.083 1.009z" />
+      <path d="M12 2C6.477 2 2 6.477 2 12c0 1.891.524 3.662 1.436 5.176L2 22l4.981-1.306C8.423 21.536 10.155 22 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18.25c-1.637 0-3.162-.489-4.444-1.328l-.319-.208-2.957.776.789-2.884-.227-.361C4.945 14.939 4.417 13.518 4.417 12c0-4.182 3.401-7.583 7.583-7.583 4.182 0 7.583 3.401 7.583 7.583 0 4.182-3.401 7.583-7.583 7.583z" />
+    </svg>
+  );
+}
+
 interface ProductDetails {
   id: string;
   name: string;
@@ -82,6 +91,7 @@ interface ProductDetails {
   rating: { average: number; count: number };
   reviews: { id: string; rating: number; review: string; created_at: string; customer_name: string }[];
   is_cod_allowed?: boolean;
+  product_number?: string | null;
 }
 
 export default function ProductClient({ product }: { product: ProductDetails }) {
@@ -121,6 +131,7 @@ export default function ProductClient({ product }: { product: ProductDetails }) 
   const [sizeUnit, setSizeUnit] = useState<'in' | 'cm'>('in');
   const [siteSettings, setSiteSettings] = useState<Record<string, string> | null>(null);
   const [shareSuccess, setShareSuccess] = useState(false);
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
 
   useEffect(() => {
     fetch(`${API_BASE_URL}/ecommerce/site-settings`)
@@ -154,6 +165,33 @@ export default function ProductClient({ product }: { product: ProductDetails }) 
       setShareSuccess(true);
       setTimeout(() => setShareSuccess(false), 3000);
     }
+  };
+
+  // Dynamic Settings for stock and WhatsApp
+  const whatsappNumber = siteSettings?.whatsapp_order_number || siteSettings?.whatsapp_number || '+971 55 642 4758';
+  const showStockQuantity = siteSettings?.show_stock_quantity !== 'false';
+  const showStockBadge = siteSettings?.show_stock_badge !== 'false';
+  const isWhatsappOrderEnabled = siteSettings?.whatsapp_order_enabled !== 'false';
+
+  const handleOrderWhatsApp = () => {
+    const cleanNumber = whatsappNumber.replace(/[^0-9]/g, '');
+    const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
+    const selectedAttrs = Object.entries(selections)
+      .map(([k, v]) => `${k}: ${v}`)
+      .join(', ');
+
+    const lines = [
+      `Hello Saba Al Wadi! 👋`,
+      `I would like to order:`,
+      `*${product.name}*`,
+      product.product_number ? `Code: ${product.product_number}` : '',
+      selectedAttrs ? `Selected: ${selectedAttrs}` : '',
+      selectedVariant ? `Price: AED ${selectedVariant.price}` : '',
+      `Link: ${currentUrl}`,
+    ].filter(Boolean);
+
+    const text = encodeURIComponent(lines.join('\n'));
+    window.open(`https://wa.me/${cleanNumber}?text=${text}`, '_blank');
   };
 
   // Fetch dynamic delivery calculation for this product / selected variant price
@@ -229,7 +267,7 @@ export default function ProductClient({ product }: { product: ProductDetails }) 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 items-start">
         {/* Product Image / Video Section */}
         <div className="space-y-2.5">
-          <div className="relative h-[22rem] sm:h-[26rem] lg:h-[30rem] w-full border border-border bg-zinc-100 dark:bg-zinc-900 rounded-lg overflow-hidden shadow-sm">
+          <div className="relative w-full aspect-[3/4] sm:aspect-[4/5] min-h-[440px] sm:min-h-[540px] lg:min-h-[640px] max-h-[85vh] border border-border bg-neutral-100/70 dark:bg-zinc-950/40 rounded-xl overflow-hidden shadow-sm flex items-center justify-center group">
             {activeMediaMode === 'video' && product.video_url ? (
               <ProductVideoPlayer
                 videoUrl={product.video_url}
@@ -240,9 +278,12 @@ export default function ProductClient({ product }: { product: ProductDetails }) 
               <img
                 src={activeImage}
                 alt={product.name}
-                className="w-full h-full object-cover object-center transition duration-300"
+                onClick={() => setIsImageModalOpen(true)}
+                className="w-full h-full object-contain object-center transition-transform duration-300 cursor-zoom-in group-hover:scale-[1.01]"
               />
             )}
+
+            {/* Watch Video Button */}
             {embedUrl && activeMediaMode === 'image' && (
               <button
                 type="button"
@@ -251,6 +292,19 @@ export default function ProductClient({ product }: { product: ProductDetails }) 
               >
                 <Play size={13} className="fill-red-500 text-red-500" />
                 <span>Watch Product Video</span>
+              </button>
+            )}
+
+            {/* Fullscreen Zoom Button */}
+            {activeMediaMode === 'image' && (
+              <button
+                type="button"
+                onClick={() => setIsImageModalOpen(true)}
+                className="absolute top-3 right-3 bg-black/70 hover:bg-black text-white text-xs font-medium px-3 py-1.5 rounded-full backdrop-blur-md border border-white/20 flex items-center gap-1.5 opacity-90 sm:opacity-0 sm:group-hover:opacity-100 transition shadow-lg cursor-pointer"
+                title="View full resolution image"
+              >
+                <Maximize2 size={13} />
+                <span>Full View</span>
               </button>
             )}
           </div>
@@ -335,21 +389,29 @@ export default function ProductClient({ product }: { product: ProductDetails }) 
                 size="lg"
               />
 
-              <div className="text-right">
-                {selectedVariant.available_stock <= 0 ? (
-                  <span className="text-xs text-red-500 font-semibold px-2 py-0.5 bg-red-500/10 border border-red-500/20 rounded">
-                    Out of Stock
-                  </span>
-                ) : selectedVariant.available_stock <= 5 ? (
-                  <span className="text-xs text-amber-500 font-semibold px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 rounded flex items-center gap-1">
-                    <span>⚡ Only {selectedVariant.available_stock} left in stock!</span>
-                  </span>
-                ) : (
-                  <span className="text-xs text-green-500 font-semibold px-2 py-0.5 bg-green-500/10 border border-green-500/20 rounded">
-                    ✓ In Stock ({selectedVariant.available_stock} available)
-                  </span>
-                )}
-              </div>
+              {showStockBadge && (
+                <div className="text-right">
+                  {selectedVariant.available_stock <= 0 ? (
+                    <span className="text-xs text-red-500 font-semibold px-2 py-0.5 bg-red-500/10 border border-red-500/20 rounded">
+                      Out of Stock
+                    </span>
+                  ) : showStockQuantity ? (
+                    selectedVariant.available_stock <= 5 ? (
+                      <span className="text-xs text-amber-500 font-semibold px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 rounded flex items-center gap-1">
+                        <span>⚡ Only {selectedVariant.available_stock} left in stock!</span>
+                      </span>
+                    ) : (
+                      <span className="text-xs text-green-500 font-semibold px-2 py-0.5 bg-green-500/10 border border-green-500/20 rounded">
+                        ✓ In Stock ({selectedVariant.available_stock} available)
+                      </span>
+                    )
+                  ) : (
+                    <span className="text-xs text-green-500 font-semibold px-2 py-0.5 bg-green-500/10 border border-green-500/20 rounded">
+                      ✓ In Stock
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
             {selectedVariant.offer?.end_date && (
               <CountdownTimer endDate={selectedVariant.offer.end_date} />
@@ -357,7 +419,7 @@ export default function ProductClient({ product }: { product: ProductDetails }) 
           </div>
         ) : (
           <div className="border-y border-border py-2.5">
-            <p className="text-xs sm:text-sm text-muted">Select variant options below to see price and stock availability.</p>
+            <p className="text-xs sm:text-sm text-muted-foreground font-medium">Select variant options below to see price and stock availability.</p>
           </div>
         )}
 
@@ -428,6 +490,18 @@ export default function ProductClient({ product }: { product: ProductDetails }) 
             </button>
           </div>
 
+          {/* Order on WhatsApp Button */}
+          {isWhatsappOrderEnabled && (
+            <button
+              type="button"
+              onClick={handleOrderWhatsApp}
+              className="w-full py-2.5 sm:py-3 rounded-md uppercase font-semibold text-xs sm:text-sm flex items-center justify-center gap-2 transition duration-200 bg-[#25D366] hover:bg-[#20ba59] text-white shadow-sm cursor-pointer hover:shadow-md"
+            >
+              <WhatsAppIcon className="w-4 h-4" />
+              <span>Order on WhatsApp</span>
+            </button>
+          )}
+
           {shareSuccess && (
             <div className="flex items-center gap-2 text-xs bg-primary/10 border border-primary/30 text-primary p-2 rounded-md">
               <Check size={14} />
@@ -453,10 +527,10 @@ export default function ProductClient({ product }: { product: ProductDetails }) 
                 <div className="flex items-center justify-between">
                   <span className="font-semibold text-foreground">Express UAE &amp; GCC Delivery</span>
                   {shippingInfo && (
-                    <span className={`font-bold px-1.5 py-0.5 rounded text-xs ${
+                    <span className={`font-semibold px-2.5 py-0.5 rounded-full text-xs shadow-xs tracking-tight ${
                       shippingInfo.is_free
-                        ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
-                        : 'bg-muted border border-border text-foreground font-mono'
+                        ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30'
+                        : 'bg-amber-500/15 text-amber-800 dark:text-amber-200 border border-amber-500/30'
                     }`}>
                       {shippingInfo.is_free ? 'FREE EXPRESS SHIPPING' : `${formatPrice(shippingInfo.final_fee)} Express Delivery`}
                     </span>
@@ -730,6 +804,36 @@ export default function ProductClient({ product }: { product: ProductDetails }) 
           </div>
         );
       })()}
+
+      {/* Fullscreen High-Resolution Image Lightbox Modal */}
+      {isImageModalOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setIsImageModalOpen(false)}
+          className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in cursor-zoom-out"
+        >
+          <button
+            type="button"
+            onClick={() => setIsImageModalOpen(false)}
+            className="absolute top-4 right-4 z-10 p-2.5 rounded-full bg-white/10 hover:bg-white/25 text-white transition backdrop-blur-md cursor-pointer border border-white/20"
+            title="Close preview"
+          >
+            <X size={22} />
+          </button>
+
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="relative max-w-5xl max-h-[92vh] flex items-center justify-center cursor-default"
+          >
+            <img
+              src={activeImage}
+              alt={product.name}
+              className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

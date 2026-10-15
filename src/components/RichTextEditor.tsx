@@ -577,11 +577,11 @@ export default function RichTextEditor({
     );
   }, [mediaList, debouncedSearchQuery]);
 
-  // Jodit Configuration
+  // Jodit Configuration (Always Light Mode)
   const config = useMemo(() => {
     return {
       readonly: false,
-      theme: 'dark',
+      theme: 'default',
       placeholder,
       minHeight,
       toolbarAdaptive: false,
@@ -826,8 +826,8 @@ export default function RichTextEditor({
         </div>
       </div>
 
-      {/* Editor Container */}
-      <div ref={editorContainerRef} className="border border-border rounded-lg overflow-hidden bg-card shadow-sm">
+      {/* Editor Container - Always Light Mode */}
+      <div ref={editorContainerRef} className="border border-border rounded-lg overflow-hidden bg-white text-zinc-900 shadow-sm jodit-always-light">
         <JoditEditor
           ref={editorRef}
           value={value}

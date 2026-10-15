@@ -115,6 +115,21 @@ export default function CatalogClient({
 
   const [sortBy, setSortBy] = useState<'featured' | 'price-asc' | 'price-desc' | 'discount'>('featured');
 
+  // Dropdown filter popover states (Horizontal Dropdown Filters)
+  const [openDropdown, setOpenDropdown] = useState<'category' | 'price' | 'color' | 'size' | null>(null);
+  const [showSidebar, setShowSidebar] = useState<boolean>(false);
+  const dropdownBarRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownBarRef.current && !dropdownBarRef.current.contains(e.target as Node)) {
+        setOpenDropdown(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   // Debounce catalog search by 300ms
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -772,18 +787,20 @@ export default function CatalogClient({
 
   return (
     <div className="flex flex-col md:flex-row gap-8 w-full">
-      {/* Desktop Sidebar: Independently scrollable sticky container */}
-      <aside className="hidden md:block w-72 shrink-0 sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto overscroll-contain bg-card/60 backdrop-blur-md p-5 rounded-2xl border border-border shadow-xs scrollbar-thin scrollbar-thumb-border hover:scrollbar-thumb-muted-foreground pr-2.5">
-        {renderSidebarContent()}
-      </aside>
+      {/* Optional Desktop Sidebar */}
+      {showSidebar && (
+        <aside className="hidden md:block w-72 shrink-0 sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto overscroll-contain bg-card/60 backdrop-blur-md p-5 rounded-2xl border border-border shadow-xs scrollbar-thin scrollbar-thumb-border hover:scrollbar-thumb-muted-foreground pr-2.5 animate-in fade-in slide-in-from-left duration-200">
+          {renderSidebarContent()}
+        </aside>
+      )}
 
       {/* Main Content Area */}
       <div className="flex-1 space-y-6 min-w-0">
-        {/* Top Filter & Sort Bar */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-border pb-4 gap-4">
+        {/* Page Title & Desktop Toolbar */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/60 pb-3 md:pb-4">
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="font-serif text-2xl font-bold text-foreground">
+              <h1 className="font-serif text-xl sm:text-2xl font-bold text-foreground">
                 {saleOnly
                   ? '🔥 Flash Sale & Offers'
                   : selectedCategory
@@ -805,9 +822,10 @@ export default function CatalogClient({
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
-            {/* Catalog Live Search Bar with Debounce */}
-            <div className="relative min-w-[180px] sm:min-w-[220px]">
+          {/* Desktop Search & Sort */}
+          <div className="hidden md:flex items-center gap-3">
+            {/* Catalog Live Search Bar */}
+            <div className="relative w-64">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <input
                 type="text"
@@ -827,22 +845,9 @@ export default function CatalogClient({
               )}
             </div>
 
-            {/* Mobile Filter Button */}
-            <button
-              type="button"
-              onClick={() => setMobileDrawerOpen(true)}
-              className="md:hidden flex items-center gap-2 px-3 py-2 bg-card border border-border rounded-lg text-xs font-semibold text-foreground hover:bg-accent transition shadow-xs cursor-pointer"
-            >
-              <SlidersHorizontal size={14} className="text-primary" />
-              <span>Filters</span>
-              {hasActiveFilters && (
-                <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-              )}
-            </button>
-
             {/* Sort Dropdown */}
             <div className="flex items-center gap-2 text-xs">
-              <span className="text-muted-foreground hidden sm:inline">Sort:</span>
+              <span className="text-muted-foreground">Sort:</span>
               <div className="relative">
                 <select
                   value={sortBy}
@@ -859,6 +864,359 @@ export default function CatalogClient({
                   className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground"
                 />
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Horizontal Dropdown Filter Bar (No forced vertical sidebar required!) */}
+        <div
+          ref={dropdownBarRef}
+          className="bg-card/90 backdrop-blur-md border border-border rounded-xl p-2.5 sm:p-3 shadow-xs flex flex-wrap items-center justify-between gap-2.5 relative"
+        >
+          <div className="flex flex-wrap items-center gap-2">
+            {/* 1. Category Dropdown */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setOpenDropdown(openDropdown === 'category' ? null : 'category')}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition cursor-pointer ${
+                  selectedCategory
+                    ? 'bg-primary/10 border-primary text-primary font-bold shadow-xs'
+                    : 'bg-background hover:bg-accent border-border text-foreground'
+                }`}
+              >
+                <span>Category: {selectedCategory ? categories.find((c) => c.slug === selectedCategory)?.name || selectedCategory : 'All'}</span>
+                <ChevronDown size={13} className={`transition-transform duration-200 ${openDropdown === 'category' ? 'rotate-180' : ''}`} />
+              </button>
+
+              {openDropdown === 'category' && (
+                <div className="absolute left-0 top-full mt-1.5 z-40 w-64 bg-card border border-border rounded-xl shadow-xl p-2.5 space-y-1 animate-in fade-in duration-150">
+                  <div className="text-[11px] font-bold text-muted-foreground uppercase px-2 py-1 border-b border-border mb-1">
+                    Select Collection
+                  </div>
+                  <div className="max-h-60 overflow-y-auto space-y-0.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedCategory('');
+                        setOpenDropdown(null);
+                        router.push(saleOnly ? '/catalog?on_sale=true' : '/catalog');
+                      }}
+                      className={`w-full text-left px-2.5 py-1.5 rounded-md text-xs font-medium flex items-center justify-between transition cursor-pointer ${
+                        !selectedCategory ? 'bg-primary/10 text-primary font-bold' : 'hover:bg-accent text-foreground'
+                      }`}
+                    >
+                      <span>All Collections</span>
+                      {!selectedCategory && <Check size={13} />}
+                    </button>
+                    {categories.map((cat) => (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedCategory(cat.slug);
+                          setOpenDropdown(null);
+                          router.push(`/catalog?category=${cat.slug}${saleOnly ? '&on_sale=true' : ''}`);
+                        }}
+                        className={`w-full text-left px-2.5 py-1.5 rounded-md text-xs font-medium flex items-center justify-between transition cursor-pointer ${
+                          selectedCategory === cat.slug ? 'bg-primary/10 text-primary font-bold' : 'hover:bg-accent text-foreground'
+                        }`}
+                      >
+                        <span>{cat.name}</span>
+                        {selectedCategory === cat.slug && <Check size={13} />}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* 2. Price Range Dropdown */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setOpenDropdown(openDropdown === 'price' ? null : 'price')}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition cursor-pointer ${
+                  minPrice > globalMinPrice || maxPrice < globalMaxPrice
+                    ? 'bg-primary/10 border-primary text-primary font-bold shadow-xs'
+                    : 'bg-background hover:bg-accent border-border text-foreground'
+                }`}
+              >
+                <span>Price: {minPrice} - {maxPrice} AED</span>
+                <ChevronDown size={13} className={`transition-transform duration-200 ${openDropdown === 'price' ? 'rotate-180' : ''}`} />
+              </button>
+
+              {openDropdown === 'price' && (
+                <div className="absolute left-0 top-full mt-1.5 z-40 w-72 bg-card border border-border rounded-xl shadow-xl p-4 space-y-3.5 animate-in fade-in duration-150">
+                  <div className="flex items-center justify-between border-b border-border pb-2">
+                    <span className="text-[11px] font-bold text-muted-foreground uppercase">Price Range</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMinPrice(globalMinPrice);
+                        setMaxPrice(globalMaxPrice);
+                      }}
+                      className="text-[11px] text-primary hover:underline font-semibold cursor-pointer"
+                    >
+                      Reset
+                    </button>
+                  </div>
+
+                  <div>
+                    <input
+                      type="range"
+                      min={globalMinPrice}
+                      max={globalMaxPrice}
+                      value={maxPrice}
+                      onChange={(e) => setMaxPrice(Number(e.target.value))}
+                      className="w-full accent-primary h-1.5 bg-muted rounded-lg cursor-pointer"
+                    />
+                    <div className="flex justify-between text-[11px] text-muted-foreground mt-1">
+                      <span>{globalMinPrice} AED</span>
+                      <span className="font-bold text-primary">{maxPrice} AED</span>
+                      <span>{globalMaxPrice} AED</span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <span className="text-[10px] text-muted-foreground uppercase block mb-1">Min AED</span>
+                      <input
+                        type="number"
+                        min={globalMinPrice}
+                        max={maxPrice}
+                        value={minPrice}
+                        onChange={(e) => setMinPrice(Math.max(globalMinPrice, Number(e.target.value)))}
+                        className="w-full px-2 py-1 bg-background border border-border rounded text-xs font-mono"
+                      />
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-muted-foreground uppercase block mb-1">Max AED</span>
+                      <input
+                        type="number"
+                        min={minPrice}
+                        max={globalMaxPrice}
+                        value={maxPrice}
+                        onChange={(e) => setMaxPrice(Math.min(globalMaxPrice, Number(e.target.value)))}
+                        className="w-full px-2 py-1 bg-background border border-border rounded text-xs font-mono"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* 3. Color Dropdown */}
+            {availableColors.length > 0 && (
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setOpenDropdown(openDropdown === 'color' ? null : 'color')}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition cursor-pointer ${
+                    selectedColors.length > 0
+                      ? 'bg-primary/10 border-primary text-primary font-bold shadow-xs'
+                      : 'bg-background hover:bg-accent border-border text-foreground'
+                  }`}
+                >
+                  <span>Color {selectedColors.length > 0 ? `(${selectedColors.length})` : ''}</span>
+                  <ChevronDown size={13} className={`transition-transform duration-200 ${openDropdown === 'color' ? 'rotate-180' : ''}`} />
+                </button>
+
+                {openDropdown === 'color' && (
+                  <div className="absolute left-0 top-full mt-1.5 z-40 w-72 bg-card border border-border rounded-xl shadow-xl p-3.5 space-y-2.5 animate-in fade-in duration-150">
+                    <div className="flex items-center justify-between border-b border-border pb-2">
+                      <span className="text-[11px] font-bold text-muted-foreground uppercase">Filter by Color</span>
+                      {selectedColors.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setSelectedColors([])}
+                          className="text-[11px] text-primary hover:underline font-semibold cursor-pointer"
+                        >
+                          Clear ({selectedColors.length})
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-1.5 max-h-56 overflow-y-auto">
+                      {availableColors.map((color) => {
+                        const isSelected = selectedColors.includes(color.name);
+                        const hex = COLOR_MAP[color.name.toLowerCase()] || '#475569';
+                        return (
+                          <button
+                            key={color.name}
+                            type="button"
+                            onClick={() => toggleColor(color.name)}
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs transition cursor-pointer border ${
+                              isSelected
+                                ? 'border-primary bg-primary/10 text-primary font-bold'
+                                : 'border-border bg-background hover:bg-accent text-foreground'
+                            }`}
+                          >
+                            <span className="w-3 h-3 rounded-full shrink-0 border border-black/20" style={{ backgroundColor: hex }} />
+                            <span>{color.name}</span>
+                            <span className="text-[10px] text-muted-foreground">({color.count})</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* 4. Size Dropdown */}
+            {availableSizes.length > 0 && (
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setOpenDropdown(openDropdown === 'size' ? null : 'size')}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition cursor-pointer ${
+                    selectedSizes.length > 0
+                      ? 'bg-primary/10 border-primary text-primary font-bold shadow-xs'
+                      : 'bg-background hover:bg-accent border-border text-foreground'
+                  }`}
+                >
+                  <span>Size {selectedSizes.length > 0 ? `(${selectedSizes.length})` : ''}</span>
+                  <ChevronDown size={13} className={`transition-transform duration-200 ${openDropdown === 'size' ? 'rotate-180' : ''}`} />
+                </button>
+
+                {openDropdown === 'size' && (
+                  <div className="absolute left-0 top-full mt-1.5 z-40 w-64 bg-card border border-border rounded-xl shadow-xl p-3.5 space-y-2.5 animate-in fade-in duration-150">
+                    <div className="flex items-center justify-between border-b border-border pb-2">
+                      <span className="text-[11px] font-bold text-muted-foreground uppercase">Filter by Size</span>
+                      {selectedSizes.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setSelectedSizes([])}
+                          className="text-[11px] text-primary hover:underline font-semibold cursor-pointer"
+                        >
+                          Clear ({selectedSizes.length})
+                        </button>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {availableSizes.map((size) => {
+                        const isSelected = selectedSizes.includes(size.name);
+                        return (
+                          <button
+                            key={size.name}
+                            type="button"
+                            onClick={() => toggleSize(size.name)}
+                            className={`py-1.5 px-2 text-center rounded-lg text-xs font-mono font-semibold border transition cursor-pointer ${
+                              isSelected
+                                ? 'bg-primary text-primary-foreground border-primary font-bold shadow-xs'
+                                : 'bg-background hover:bg-accent border-border text-foreground'
+                            }`}
+                          >
+                            {size.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* 5. Flash Sale Pill */}
+            <button
+              type="button"
+              onClick={() => setSaleOnly(!saleOnly)}
+              className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold border transition cursor-pointer ${
+                saleOnly
+                  ? 'bg-rose-500/15 border-rose-500 text-rose-600 dark:text-rose-400 font-bold shadow-xs'
+                  : 'bg-background hover:bg-accent border-border text-foreground'
+              }`}
+            >
+              <span>🔥 Flash Sale</span>
+            </button>
+
+            {hasActiveFilters && (
+              <button
+                type="button"
+                onClick={resetFilters}
+                className="text-xs text-muted-foreground hover:text-foreground underline flex items-center gap-1 px-2 py-1 cursor-pointer font-medium"
+              >
+                <RotateCcw size={11} />
+                <span>Reset</span>
+              </button>
+            )}
+          </div>
+
+          {/* Right: Sidebar View Toggle Button */}
+          <button
+            type="button"
+            onClick={() => setShowSidebar(!showSidebar)}
+            className={`hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition cursor-pointer ${
+              showSidebar
+                ? 'bg-accent border-border text-foreground font-bold'
+                : 'bg-background hover:bg-accent border-border text-muted-foreground hover:text-foreground'
+            }`}
+            title="Toggle between dropdown-only mode and vertical sidebar"
+          >
+            <SlidersHorizontal size={13} className={showSidebar ? 'text-primary' : ''} />
+            <span>{showSidebar ? 'Hide Vertical Sidebar' : 'Show Vertical Sidebar'}</span>
+          </button>
+        </div>
+
+        {/* Mobile Screen: Always Sticky Search & Filter Toolbar */}
+        <div className="md:hidden sticky top-20 z-30 bg-background/95 backdrop-blur-md -mx-4 px-4 py-2.5 border-y border-border shadow-sm space-y-2">
+          {/* Row 1: Search Input (flex-1) + Filters Button (shrink-0) */}
+          <div className="flex items-center gap-2 w-full">
+            <div className="relative flex-1 min-w-0">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder="Search catalog..."
+                value={catalogSearch}
+                onChange={(e) => setCatalogSearch(e.target.value)}
+                className="w-full text-xs bg-card border border-border rounded-lg pl-8 pr-7 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-primary shadow-xs"
+              />
+              {catalogSearch && (
+                <button
+                  type="button"
+                  onClick={() => setCatalogSearch('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5 rounded cursor-pointer"
+                >
+                  <X size={12} />
+                </button>
+              )}
+            </div>
+
+            {/* Mobile Filters Drawer Trigger */}
+            <button
+              type="button"
+              onClick={() => setMobileDrawerOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-2 bg-card border border-border rounded-lg text-xs font-semibold text-foreground hover:bg-accent transition shadow-xs cursor-pointer shrink-0"
+            >
+              <SlidersHorizontal size={14} className="text-primary" />
+              <span>Filters</span>
+              {hasActiveFilters && (
+                <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+              )}
+            </button>
+          </div>
+
+          {/* Row 2: Items Count + Compact Sort Dropdown */}
+          <div className="flex items-center justify-between gap-2 text-xs">
+            <span className="text-xs text-muted-foreground font-medium">
+              Showing {Math.min(visibleCount, filteredProducts.length)} of {filteredProducts.length} items
+            </span>
+
+            <div className="relative shrink-0">
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as any)}
+                className="appearance-none bg-card border border-border rounded-lg px-2.5 py-1.5 pr-7 text-xs font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer shadow-xs"
+              >
+                <option value="featured">Featured / Newest</option>
+                <option value="price-asc">Price: Low to High</option>
+                <option value="price-desc">Price: High to Low</option>
+                <option value="discount">Biggest Discount</option>
+              </select>
+              <ChevronDown
+                size={13}
+                className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground"
+              />
             </div>
           </div>
         </div>
@@ -953,7 +1311,7 @@ export default function CatalogClient({
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+          <div className={`grid grid-cols-1 sm:grid-cols-2 ${showSidebar ? 'lg:grid-cols-3' : 'md:grid-cols-3 lg:grid-cols-4'} gap-6 sm:gap-8`}>
             {visibleProducts.map((prod) => {
               const discountPct =
                 prod.discount_percentage ||

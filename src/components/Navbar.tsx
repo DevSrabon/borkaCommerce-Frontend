@@ -390,9 +390,10 @@ export default function Navbar() {
                 )}
               </div>
 
-              {/* Dynamic Categories with Megamenu Hover - Managed by Admin */}
+              {/* Dynamic Categories with Megamenu Hover - Managed by Admin (Strictly Max 3 in Header) */}
               {categories
                 .filter((cat) => cat.show_in_navbar !== false)
+                .slice(0, 3)
                 .map((cat) => {
                 const hasChildren = cat.children && cat.children.length > 0;
                 const isActive = pathname.includes(cat.slug);

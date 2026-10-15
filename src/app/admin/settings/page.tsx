@@ -755,6 +755,149 @@ export default function SiteSettingsPage() {
                 </div>
               </div>
 
+              {/* Stock Display & Availability Configuration */}
+              <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
+                <div className="flex items-center gap-3 px-5 py-4 border-b border-border bg-background/50">
+                  <div className="h-8 w-8 rounded-md flex items-center justify-center bg-amber-500/10 text-amber-500">
+                    <Layers size={16} />
+                  </div>
+                  <div>
+                    <h2 className="text-sm font-semibold text-foreground">Stock Display &amp; Inventory Visibility</h2>
+                    <p className="text-xs text-muted-foreground">Control how product stock counts and availability badges appear to customers</p>
+                  </div>
+                </div>
+                <div className="p-5 space-y-4">
+                  <div className="flex items-center justify-between gap-4 p-4 rounded-xl border border-border bg-background">
+                    <div>
+                      <h4 className="text-xs font-bold text-foreground">Display Exact Stock Quantity on Frontend</h4>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        When enabled, customers see exact remaining numbers (e.g. &ldquo;⚡ Only 3 left!&rdquo; or &ldquo;✓ In Stock (50 available)&rdquo;). When disabled, only &ldquo;✓ In Stock&rdquo; is shown without numbers.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleChange(
+                          'show_stock_quantity',
+                          settings.show_stock_quantity === 'false' ? 'true' : 'false',
+                        )
+                      }
+                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                        settings.show_stock_quantity !== 'false' ? 'bg-primary' : 'bg-muted'
+                      }`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-background shadow-lg ring-0 transition duration-200 ease-in-out ${
+                          settings.show_stock_quantity !== 'false' ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-4 p-4 rounded-xl border border-border bg-background">
+                    <div>
+                      <h4 className="text-xs font-bold text-foreground">Display Stock Availability Badge</h4>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Show or completely hide the stock status indicator badge on single product sheets.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleChange(
+                          'show_stock_badge',
+                          settings.show_stock_badge === 'false' ? 'true' : 'false',
+                        )
+                      }
+                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                        settings.show_stock_badge !== 'false' ? 'bg-primary' : 'bg-muted'
+                      }`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-background shadow-lg ring-0 transition duration-200 ease-in-out ${
+                          settings.show_stock_badge !== 'false' ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  <div className="space-y-1.5 pt-1">
+                    <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Low Stock Urgency Alert Threshold
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="100"
+                      placeholder="5"
+                      className="w-full sm:w-48 text-sm bg-background border border-border rounded-md px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-primary"
+                      value={settings.low_stock_threshold || '5'}
+                      onChange={(e) => handleChange('low_stock_threshold', e.target.value)}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Variants with available quantity at or below this number display an urgent warning badge.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* WhatsApp Direct Order Configuration */}
+              <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
+                <div className="flex items-center gap-3 px-5 py-4 border-b border-border bg-background/50">
+                  <div className="h-8 w-8 rounded-md flex items-center justify-center bg-emerald-500/10 text-emerald-500">
+                    <Phone size={16} />
+                  </div>
+                  <div>
+                    <h2 className="text-sm font-semibold text-foreground">WhatsApp Direct Ordering</h2>
+                    <p className="text-xs text-muted-foreground">Configure dynamic WhatsApp number and one-click direct orders for product pages</p>
+                  </div>
+                </div>
+                <div className="p-5 space-y-4">
+                  <div className="flex items-center justify-between gap-4 p-4 rounded-xl border border-border bg-background">
+                    <div>
+                      <h4 className="text-xs font-bold text-foreground">Enable &ldquo;Order on WhatsApp&rdquo; Button on Single Product</h4>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Adds a high-converting green WhatsApp button next to Add to Shopping Bag on every product page.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleChange(
+                          'whatsapp_order_enabled',
+                          settings.whatsapp_order_enabled === 'false' ? 'true' : 'false',
+                        )
+                      }
+                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                        settings.whatsapp_order_enabled !== 'false' ? 'bg-emerald-600' : 'bg-muted'
+                      }`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-background shadow-lg ring-0 transition duration-200 ease-in-out ${
+                          settings.whatsapp_order_enabled !== 'false' ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  <div className="space-y-1.5 pt-1">
+                    <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      WhatsApp Business Phone Number
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="+971 55 642 4758"
+                      className="w-full text-sm bg-background border border-border rounded-md px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-primary font-mono"
+                      value={settings.whatsapp_order_number || ''}
+                      onChange={(e) => handleChange('whatsapp_order_number', e.target.value)}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Include country code (e.g. +971 for UAE). Customers will be redirected to chat with this number with product details prefilled.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               {/* Size Chart Configuration */}
               <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
                 <div className="flex items-center gap-3 px-5 py-4 border-b border-border bg-background/50">
@@ -1659,7 +1802,7 @@ export default function SiteSettingsPage() {
                             </span>
                           )
                         ) : (
-                          <span className="text-xs px-2 py-0.5 rounded-full font-bold bg-muted text-muted-foreground border border-border">
+                          <span className="text-xs px-2.5 py-0.5 rounded-full font-bold bg-slate-200 text-slate-800 dark:bg-zinc-800 dark:text-zinc-200 border border-slate-300 dark:border-zinc-700">
                             Disabled (In-Memory Fallback)
                           </span>
                         )}
@@ -1794,10 +1937,10 @@ export default function SiteSettingsPage() {
                   </div>
                   <div>
                     <h2 className="text-sm font-semibold text-foreground">Payment Gateways &amp; Stripe</h2>
-                    <p className="text-xs text-muted-foreground">Secure credit card checkout keys and webhooks</p>
+                    <p className="text-xs text-muted-foreground">Direct backend Stripe card verification (no webhook required)</p>
                   </div>
                 </div>
-                <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="p-5 max-w-xl">
                   <div className="space-y-1">
                     <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                       Stripe Secret Key
@@ -1809,18 +1952,9 @@ export default function SiteSettingsPage() {
                       value={settings.STRIPE_SECRET_KEY || ''}
                       onChange={(e) => handleChange('STRIPE_SECRET_KEY', e.target.value)}
                     />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      Stripe Webhook Secret
-                    </label>
-                    <input
-                      type="password"
-                      placeholder="whsec_••••••••••••••••••••••••"
-                      className="w-full text-xs bg-background border border-border rounded-md px-3 py-2 font-mono"
-                      value={settings.STRIPE_WEBHOOK_SECRET || ''}
-                      onChange={(e) => handleChange('STRIPE_WEBHOOK_SECRET', e.target.value)}
-                    />
+                    <p className="text-[11px] text-muted-foreground mt-1">
+                      Payments are verified directly from backend using this secret key without requiring webhooks.
+                    </p>
                   </div>
                 </div>
               </div>

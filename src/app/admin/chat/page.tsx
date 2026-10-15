@@ -469,12 +469,15 @@ export default function AdminChatPage() {
                   >
                     <div className="relative flex items-center justify-center w-10 h-10 rounded-full bg-muted border border-border text-primary shrink-0">
                       <User className="w-5 h-5" />
-                      {/* Customer Online indicator dot */}
+                      {/* Customer Online indicator dot - YELLOW & BLINKING */}
                       {s.is_online ? (
                         <span
-                          className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-card rounded-full shadow-sm"
-                          title="Customer is Online"
-                        />
+                          className="absolute bottom-0 right-0 flex h-3.5 w-3.5"
+                          title="Customer is Online (Active now)"
+                        >
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-90" />
+                          <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-amber-400 border-2 border-card shadow-sm animate-pulse" />
+                        </span>
                       ) : (
                         <span
                           className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-muted-foreground/60 border-2 border-card rounded-full"
@@ -495,8 +498,11 @@ export default function AdminChatPage() {
                             {s.customer_name || 'Guest Visitor'}
                           </span>
                           {s.is_online && (
-                            <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.2 rounded-full shrink-0">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                            <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-700 dark:text-amber-300 bg-amber-400/10 border border-amber-400/30 px-2 py-0.5 rounded-full shrink-0 shadow-2xs">
+                              <span className="relative flex h-2 w-2">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-90" />
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-400 animate-pulse" />
+                              </span>
                               Online
                             </span>
                           )}
@@ -517,7 +523,7 @@ export default function AdminChatPage() {
                             ? s.messages[0].message
                             : 'Chat initiated'}
                         </p>
-                        <span className={`text-xs shrink-0 font-medium ${s.is_online ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'}`}>
+                        <span className={`text-xs shrink-0 font-medium ${s.is_online ? 'text-amber-600 dark:text-amber-400 font-semibold' : 'text-muted-foreground'}`}>
                           {formatLastSeen(s.last_active_at, s.is_online)}
                         </span>
                       </div>
@@ -560,10 +566,10 @@ export default function AdminChatPage() {
               <div className="flex items-center gap-2.5">
                 {/* Real-time Customer Online / Last Seen Badge */}
                 {activeSession?.is_online ? (
-                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs font-medium shadow-sm">
-                    <span className="relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75" />
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-400/10 border border-amber-400/30 text-amber-700 dark:text-amber-300 text-xs font-semibold shadow-sm">
+                    <span className="relative flex h-2.5 w-2.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-90" />
+                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-400 animate-pulse" />
                     </span>
                     <span>Online • Active now</span>
                   </div>
