@@ -701,4 +701,198 @@ body {
   margin: 1rem 0 !important;
 }
 
+/* ═════════════════════════════════════════════════════════════════════════
+   WORDPRESS CLASSIC EDITOR CONTENT TYPOGRAPHY & PREVIEW
+   Prevents Tailwind CSS preflight from stripping headings, lists & colors
+   ═════════════════════════════════════════════════════════════════════════ */
+.wp-editor-content {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 15px;
+  line-height: 1.7;
+  color: #1e293b;
+}
+
+.dark .wp-editor-content {
+  color: #f1f5f9;
+}
+
+.wp-editor-content h1 {
+  display: block;
+  font-size: 2.25rem;
+  font-weight: 700;
+  line-height: 1.25;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+  font-family: ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif;
+  letter-spacing: -0.02em;
+}
+
+.wp-editor-content h2 {
+  display: block;
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1.3;
+  margin-top: 1.35rem;
+  margin-bottom: 0.65rem;
+  font-family: ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif;
+  letter-spacing: -0.01em;
+}
+
+.wp-editor-content h3 {
+  display: block;
+  font-size: 1.35rem;
+  font-weight: 600;
+  line-height: 1.4;
+  margin-top: 1.15rem;
+  margin-bottom: 0.5rem;
+  font-family: ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif;
+}
+
+.wp-editor-content h4 {
+  display: block;
+  font-size: 1.15rem;
+  font-weight: 600;
+  line-height: 1.4;
+  margin-top: 1rem;
+  margin-bottom: 0.4rem;
+}
+
+.wp-editor-content h5 {
+  display: block;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.5;
+  margin-top: 0.85rem;
+  margin-bottom: 0.35rem;
+}
+
+.wp-editor-content h6 {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.5;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.wp-editor-content p {
+  display: block;
+  margin-top: 0.75rem;
+  margin-bottom: 0.75rem;
+  line-height: 1.75;
+}
+
+.wp-editor-content b,
+.wp-editor-content strong {
+  font-weight: 700 !important;
+}
+
+.wp-editor-content i,
+.wp-editor-content em {
+  font-style: italic !important;
+}
+
+.wp-editor-content u {
+  text-decoration: underline !important;
+}
+
+.wp-editor-content s,
+.wp-editor-content strike,
+.wp-editor-content del {
+  text-decoration: line-through !important;
+}
+
+.wp-editor-content ul {
+  display: block !important;
+  list-style-type: disc !important;
+  margin-top: 0.75rem !important;
+  margin-bottom: 0.75rem !important;
+  padding-left: 2rem !important;
+}
+
+.wp-editor-content ol {
+  display: block !important;
+  list-style-type: decimal !important;
+  margin-top: 0.75rem !important;
+  margin-bottom: 0.75rem !important;
+  padding-left: 2rem !important;
+}
+
+.wp-editor-content li {
+  display: list-item !important;
+  margin-top: 0.25rem !important;
+  margin-bottom: 0.25rem !important;
+}
+
+.wp-editor-content blockquote {
+  display: block !important;
+  border-left: 4px solid var(--primary, #b89047) !important;
+  padding-left: 1.25rem !important;
+  margin: 1.25rem 0 !important;
+  font-style: italic !important;
+  color: #64748b !important;
+  background: rgba(148, 163, 184, 0.08) !important;
+  padding-top: 0.5rem !important;
+  padding-bottom: 0.5rem !important;
+  border-radius: 0 0.5rem 0.5rem 0 !important;
+}
+
+.wp-editor-content a {
+  color: #2271b1;
+  text-decoration: underline;
+  font-weight: 500;
+}
+
+.wp-editor-content table {
+  display: table !important;
+  width: 100% !important;
+  border-collapse: collapse !important;
+  margin: 1rem 0 !important;
+}
+
+.wp-editor-content th,
+.wp-editor-content td {
+  border: 1px solid #cbd5e1 !important;
+  padding: 0.6rem 0.85rem !important;
+  text-align: left !important;
+}
+
+.wp-editor-content th {
+  background-color: #f8fafc !important;
+  font-weight: 600 !important;
+}
+
+.dark .wp-editor-content th {
+  background-color: #1e293b !important;
+}
+
+.wp-editor-content hr {
+  border: none !important;
+  border-top: 1px solid #cbd5e1 !important;
+  margin: 1.5rem 0 !important;
+}
+
+/* Image selection in visual editor */
+.wp-editor-content img {
+  cursor: pointer;
+  transition: outline 0.15s ease, box-shadow 0.15s ease;
+  user-select: none;
+}
+
+.wp-editor-content img.wp-selected-img {
+  outline: 3px solid var(--primary, #b89047) !important;
+  outline-offset: 3px !important;
+  box-shadow: 0 0 0 6px rgba(184, 144, 71, 0.25) !important;
+}
+
+/* Ensure inline colors and highlights render vividly without Tailwind interference */
+.wp-editor-content [style*="color"] {
+  /* Inline color is preserved */
+}
+
+.wp-editor-content [style*="background"] {
+  /* Inline background highlight is preserved */
+}
+
+
 

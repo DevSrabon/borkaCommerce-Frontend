@@ -356,10 +356,10 @@ export default function AdminPagesListPage() {
                     )}
                     <Link
                       href={`/admin/pages/${p.id}`}
-                      className="px-3 py-1.5 rounded bg-primary/10 hover:bg-primary/20 text-primary font-semibold text-xs inline-flex items-center gap-1 transition"
+                      className="px-3 py-1.5 rounded-lg bg-[#e2285c]/10 hover:bg-[#e2285c] text-[#e2285c] hover:text-white font-bold text-xs inline-flex items-center gap-1.5 transition shadow-2xs"
                     >
-                      <Edit size={12} />
-                      Open Builder
+                      <span className="w-4 h-4 rounded bg-[#e2285c] text-white flex items-center justify-center text-[10px] font-bold">E</span>
+                      <span>Edit with Elementor</span>
                     </Link>
                     <button
                       type="button"

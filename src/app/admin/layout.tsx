@@ -34,6 +34,7 @@ import {
 import { clearSession } from '../../store/authSlice';
 import { useDispatch } from 'react-redux';
 import AdminNotificationsBell from '@/components/admin/AdminNotificationsBell';
+import { useAdminPermissions } from '@/hooks/useAdminPermissions';
 
 const NAV_MODULES = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard, exact: true },
@@ -68,6 +69,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [adminTheme, setAdminTheme] = useState<'light' | 'dark'>('dark');
   const [clearingCache, setClearingCache] = useState(false);
   const [cacheStatus, setCacheStatus] = useState<string | null>(null);
+  const perms = useAdminPermissions();
+
+  // Role-to-color mapping for the badge
+  const roleBadgeColor: Record<string, string> = {
+    SUPER_ADMIN: 'bg-violet-600/20 text-violet-400 border-violet-500/30',
+    ADMIN: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
+    EDITOR: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
+    VIEWER: 'bg-sky-500/20 text-sky-400 border-sky-500/30',
+    NONE: 'bg-muted text-muted-foreground border-border',
+  };
+  const roleBadge = roleBadgeColor[perms.role] || roleBadgeColor.NONE;
 
   useEffect(() => {
     setMounted(true);
@@ -334,7 +346,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <div className="px-3 py-2 text-xs text-muted-foreground border-t border-border mt-1 pt-2 flex items-center justify-between">
               <div className="min-w-0">
                 <p className="font-semibold text-foreground truncate">{user.email}</p>
-                <p className="uppercase tracking-wider text-amber-500 font-bold">{user.role || 'Administrator'}</p>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest border ${roleBadge}`}>
+                    {perms.role.replace('_', ' ')}
+                  </span>
+                </div>
               </div>
               <button
                 onClick={handleLogout}

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { WifiOff, Wifi, RefreshCw, ServerCrash, MessageCircle, AlertTriangle, ArrowRight, ShieldAlert } from 'lucide-react';
+import { WifiOff, Wifi, RefreshCw, ServerCrash, ArrowRight, ShieldCheck } from 'lucide-react';
 import { API_BASE_URL } from '@/config/api';
 
 // Custom WhatsApp SVG Icon for pristine luxury aesthetic
@@ -20,7 +20,7 @@ export default function NetworkStatusBanner() {
   const [isChecking, setIsChecking] = useState<boolean>(false);
   const [whatsappNumber, setWhatsappNumber] = useState<string>('+971 55 642 4758');
 
-  // Track failure count to avoid flashing on a single transient abort
+  // Track consecutive failure count (require at least 3 consecutive failures to avoid false positives)
   const failureCountRef = useRef(0);
 
   // Load WhatsApp contact from site settings or cached localStorage
@@ -63,7 +63,7 @@ export default function NetworkStatusBanner() {
     setIsChecking(true);
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 4000);
+      const timeoutId = setTimeout(() => controller.abort(), 4500);
 
       const res = await fetch(`${API_BASE_URL}/health?_t=${Date.now()}`, {
         method: 'GET',
@@ -85,7 +85,8 @@ export default function NetworkStatusBanner() {
         return true;
       } else {
         failureCountRef.current += 1;
-        if (failureCountRef.current >= 1) {
+        // Require 3 consecutive failures before displaying server down overlay
+        if (failureCountRef.current >= 3) {
           setServerDown(true);
         }
         return false;
@@ -93,7 +94,7 @@ export default function NetworkStatusBanner() {
     } catch {
       // Network failure / Connection Refused / Server is Down
       failureCountRef.current += 1;
-      if (failureCountRef.current >= 1) {
+      if (failureCountRef.current >= 3) {
         setServerDown(true);
       }
       return false;
@@ -119,15 +120,15 @@ export default function NetworkStatusBanner() {
     window.addEventListener('offline', handleBrowserOffline);
     window.addEventListener('online', handleBrowserOnline);
 
-    // Initial check after 2 seconds
+    // Initial check after 4 seconds (avoids triggering during page load / HMR)
     const initialTimer = setTimeout(() => {
       verifyServerHealth();
-    }, 2500);
+    }, 4000);
 
-    // Standing heartbeat check every 7 seconds if down, or 25 seconds if normal
+    // Standing heartbeat check every 8s if down, or 35s if healthy
     const heartbeatInterval = setInterval(() => {
       verifyServerHealth();
-    }, serverDown ? 5000 : 25000);
+    }, serverDown ? 8000 : 35000);
 
     return () => {
       window.removeEventListener('offline', handleBrowserOffline);
@@ -139,105 +140,105 @@ export default function NetworkStatusBanner() {
 
   const cleanPhone = whatsappNumber.replace(/[^0-9]/g, '') || '971556424758';
   const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(
-    'Hello Saba Al Wadi Luxury Concierge, I was browsing the online boutique and the server seems temporarily unavailable. I would like assistance with an inquiry/order.',
+    'Hello Saba Al Wadi Luxury Concierge, I was browsing the online boutique and would like assistance with an inquiry/order.',
   )}`;
 
-  // 1. FULLSCREEN SERVER DOWN / MAINTENANCE OVERLAY (User requirement)
+  // 1. FULLSCREEN SERVER DOWN / MAINTENANCE OVERLAY (White Luxury Minimalist Theme)
   if (serverDown) {
     return (
       <div
         role="alertdialog"
         aria-modal="true"
         aria-live="assertive"
-        className="fixed inset-0 z-[999999] flex items-center justify-center p-4 sm:p-6 bg-[#090807]/95 backdrop-blur-2xl text-stone-100 overflow-y-auto animate-in fade-in duration-300"
+        className="fixed inset-0 z-[999999] flex items-center justify-center p-4 sm:p-6 bg-stone-100/80 backdrop-blur-md text-stone-800 overflow-y-auto animate-in fade-in duration-300"
       >
-        {/* Luxury Gold Ambient Aura */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 sm:w-[500px] sm:h-[500px] bg-gradient-to-tr from-[#d4af37]/15 via-amber-500/10 to-transparent rounded-full blur-3xl pointer-events-none" />
+        {/* Soft Ambient Pearl / Champagne Glow */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 sm:w-[540px] sm:h-[540px] bg-gradient-to-tr from-amber-200/25 via-rose-100/20 to-transparent rounded-full blur-3xl pointer-events-none" />
 
-        <div className="relative w-full max-w-lg bg-[#141210] border border-[#d4af37]/40 rounded-3xl p-6 sm:p-8 shadow-[0_0_60px_rgba(212,175,55,0.15)] text-center space-y-6 overflow-hidden">
-          {/* Top Decorative Gold Accent Bar */}
-          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#d4af37] to-transparent" />
+        <div className="relative w-full max-w-lg bg-white border border-stone-200/90 rounded-3xl p-7 sm:p-9 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.08),0_0_1px_rgba(0,0,0,0.08)] text-center space-y-6 overflow-hidden">
+          {/* Top Hairline Gold Accent */}
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#b89047] to-transparent" />
 
-          {/* Animated Server Down Icon Badge */}
-          <div className="mx-auto w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-[#d4af37]/10 border border-[#d4af37]/40 flex items-center justify-center text-[#d4af37] shadow-inner relative">
-            <ServerCrash className="w-8 h-8 sm:w-10 sm:h-10 animate-pulse" />
-            <span className="absolute -top-1 -right-1 flex h-4 w-4">
+          {/* Minimalist Icon Badge */}
+          <div className="mx-auto w-16 h-16 sm:w-18 sm:h-18 rounded-2xl bg-amber-50/90 border border-amber-200/80 flex items-center justify-center text-amber-800 shadow-2xs relative">
+            <ServerCrash className="w-8 h-8 sm:w-9 sm:h-9" />
+            <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-4 w-4 bg-rose-500 border-2 border-[#141210]" />
+              <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-rose-500 border-2 border-white" />
             </span>
           </div>
 
           {/* Titles & Message */}
           <div className="space-y-2">
-            <span className="inline-block px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-widest bg-amber-500/10 text-amber-400 border border-amber-500/30">
-              Temporary Server Maintenance
+            <span className="inline-block px-3.5 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wider bg-stone-100 text-stone-600 border border-stone-200/90">
+              Temporary System Maintenance
             </span>
-            <h2 className="font-serif text-2xl sm:text-3xl font-bold text-stone-100 tracking-wide">
+            <h2 className="font-serif text-2xl sm:text-3xl font-bold text-stone-900 tracking-tight">
               Server is Currently Down
             </h2>
-            <p className="text-xs sm:text-sm text-stone-400 leading-relaxed max-w-md mx-auto">
-              Our backend server is currently unresponsive or undergoing essential maintenance. Please visit after a few moments.
+            <p className="text-xs sm:text-sm text-stone-500 leading-relaxed max-w-md mx-auto font-normal">
+              Our boutique server is temporarily undergoing scheduled maintenance or is momentarily unresponsive.
             </p>
-            <p className="text-xs text-[#d4af37]/90 font-medium">
+            <p className="text-xs text-amber-800/90 font-medium pt-0.5">
               Please check back shortly or connect with our luxury concierge team below
             </p>
           </div>
 
-          {/* WhatsApp Direct Concierge Card */}
-          <div className="p-4 sm:p-5 rounded-2xl bg-[#1c1916] border border-[#d4af37]/30 text-left space-y-3 shadow-lg">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center shrink-0">
-                <WhatsAppIcon className="w-4 h-4 text-emerald-400" />
+          {/* Minimalist WhatsApp Concierge Card */}
+          <div className="p-5 rounded-2xl bg-stone-50 border border-stone-200/80 text-left space-y-3.5 shadow-2xs">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-emerald-100/90 text-emerald-700 border border-emerald-200/80 flex items-center justify-center shrink-0">
+                <WhatsAppIcon className="w-5 h-5 text-emerald-700" />
               </div>
               <div>
-                <h4 className="text-xs sm:text-sm font-bold text-stone-100">
+                <h4 className="text-xs sm:text-sm font-bold text-stone-900">
                   Contact Us on WhatsApp
                 </h4>
-                <p className="text-[11px] text-stone-400">
+                <p className="text-[11px] text-stone-500">
                   Reach our 24/7 dedicated concierge desk for immediate assistance
                 </p>
               </div>
             </div>
 
-            <p className="text-xs text-stone-300 leading-relaxed">
+            <p className="text-xs text-stone-600 leading-relaxed">
               If you have an urgent inquiry or wish to complete an order, our WhatsApp concierge is active 24/7 at{' '}
-              <strong className="text-emerald-400 font-mono">{whatsappNumber}</strong>.
+              <strong className="text-emerald-700 font-mono font-bold">{whatsappNumber}</strong>.
             </p>
 
             <a
               href={whatsappUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-emerald-600 via-emerald-500 to-emerald-600 hover:from-emerald-500 hover:to-emerald-400 text-white font-bold text-xs sm:text-sm tracking-wide shadow-lg shadow-emerald-950/40 transition hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
+              className="w-full flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs sm:text-sm tracking-wide shadow-sm hover:shadow-md transition active:scale-[0.99] cursor-pointer"
             >
-              <WhatsAppIcon className="w-5 h-5 text-white" />
+              <WhatsAppIcon className="w-4 h-4 text-white" />
               <span>Message on WhatsApp ({whatsappNumber})</span>
               <ArrowRight className="w-4 h-4 ml-1" />
             </a>
           </div>
 
           {/* Retry Connection Button */}
-          <div className="flex items-center justify-center gap-3 pt-2">
+          <div className="flex items-center justify-center gap-3 pt-1">
             <button
               type="button"
               onClick={verifyServerHealth}
               disabled={isChecking}
-              className="flex items-center gap-2 px-6 py-2.5 rounded-xl border border-stone-700 bg-stone-900 hover:bg-stone-800 hover:border-[#d4af37] text-stone-200 text-xs font-semibold transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
+              className="flex items-center gap-2 px-6 py-2.5 rounded-xl border border-stone-300 hover:border-stone-400 bg-white hover:bg-stone-50 text-stone-700 text-xs font-semibold transition cursor-pointer disabled:opacity-50 shadow-2xs"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${isChecking ? 'animate-spin text-[#d4af37]' : ''}`} />
+              <RefreshCw className={`w-3.5 h-3.5 ${isChecking ? 'animate-spin text-amber-700' : ''}`} />
               <span>{isChecking ? 'Checking Connection...' : 'Retry Server Connection'}</span>
             </button>
           </div>
 
-          <p className="text-[10px] text-stone-500 uppercase tracking-widest">
-            Auto-reconnecting every 5 seconds • Saba Al Wadi Couture
+          <p className="text-[10px] text-stone-400 uppercase tracking-widest font-medium">
+            Auto-reconnecting every 8 seconds • Saba Al Wadi Couture
           </p>
         </div>
       </div>
     );
   }
 
-  // 2. OFFLINE BROWSER BANNER
+  // 2. OFFLINE BROWSER BANNER (Minimalist Light Theme)
   if (!isOnline) {
     return (
       <div
@@ -245,23 +246,23 @@ export default function NetworkStatusBanner() {
         aria-live="assertive"
         className="fixed bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-[99999] w-[calc(100%-2rem)] max-w-lg pointer-events-auto"
       >
-        <div className="flex items-center justify-between gap-3 p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-stone-950 via-red-950/90 to-stone-950 border border-red-500/50 text-white shadow-2xl backdrop-blur-xl animate-in fade-in slide-in-from-bottom-5 duration-300">
+        <div className="flex items-center justify-between gap-3 p-3.5 sm:p-4 rounded-2xl bg-white border border-rose-200 text-stone-800 shadow-xl backdrop-blur-xl animate-in fade-in slide-in-from-bottom-5 duration-300">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="relative shrink-0 flex items-center justify-center w-10 h-10 rounded-xl bg-red-500/20 text-red-400 border border-red-500/40 shadow-inner">
+            <div className="relative shrink-0 flex items-center justify-center w-10 h-10 rounded-xl bg-rose-50 text-rose-600 border border-rose-200">
               <WifiOff className="w-5 h-5 animate-pulse" />
             </div>
 
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <h4 className="text-xs sm:text-sm font-bold tracking-wide text-red-200">
+                <h4 className="text-xs sm:text-sm font-bold tracking-tight text-stone-900">
                   No Internet Connection
                 </h4>
-                <span className="hidden sm:inline-block px-1.5 py-0.5 rounded text-xs uppercase font-semibold bg-red-900/60 text-red-300 border border-red-700/60">
+                <span className="hidden sm:inline-block px-1.5 py-0.5 rounded text-[10px] uppercase font-bold bg-rose-100 text-rose-700">
                   Offline
                 </span>
               </div>
-              <p className="text-xs text-stone-300 truncate sm:whitespace-normal">
-                No internet connection detected • Please check your network settings
+              <p className="text-xs text-stone-500 truncate sm:whitespace-normal">
+                Please check your network connection
               </p>
             </div>
           </div>
@@ -270,7 +271,7 @@ export default function NetworkStatusBanner() {
             type="button"
             onClick={verifyServerHealth}
             disabled={isChecking}
-            className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-semibold bg-red-600 hover:bg-red-500 text-white transition shadow-lg cursor-pointer disabled:opacity-50 border border-red-400/40"
+            className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white transition shadow-xs cursor-pointer disabled:opacity-50"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isChecking ? 'animate-spin' : ''}`} />
             <span>{isChecking ? 'Checking...' : 'Retry'}</span>
@@ -280,7 +281,7 @@ export default function NetworkStatusBanner() {
     );
   }
 
-  // 3. RESTORED ONLINE TOAST
+  // 3. RESTORED ONLINE TOAST (Minimalist Light Theme)
   if (showRestored) {
     return (
       <div
@@ -288,23 +289,23 @@ export default function NetworkStatusBanner() {
         aria-live="polite"
         className="fixed bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-[99999] w-[calc(100%-2rem)] max-w-lg pointer-events-auto"
       >
-        <div className="flex items-center justify-between gap-3 p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-stone-950 via-emerald-950/90 to-stone-950 border border-emerald-500/50 text-white shadow-2xl backdrop-blur-xl animate-in fade-in slide-in-from-bottom-5 duration-300">
+        <div className="flex items-center justify-between gap-3 p-3.5 sm:p-4 rounded-2xl bg-white border border-emerald-200 text-stone-800 shadow-xl backdrop-blur-xl animate-in fade-in slide-in-from-bottom-5 duration-300">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="shrink-0 flex items-center justify-center w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-inner">
-              <Wifi className="w-5 h-5 animate-pulse" />
+            <div className="shrink-0 flex items-center justify-center w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200">
+              <Wifi className="w-5 h-5" />
             </div>
 
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <h4 className="text-xs sm:text-sm font-bold tracking-wide text-emerald-200">
+                <h4 className="text-xs sm:text-sm font-bold tracking-tight text-stone-900">
                   Server Connected &amp; Online
                 </h4>
-                <span className="px-1.5 py-0.5 rounded text-xs uppercase font-semibold bg-emerald-900/60 text-emerald-300 border border-emerald-700/60">
+                <span className="px-1.5 py-0.5 rounded text-[10px] uppercase font-bold bg-emerald-100 text-emerald-700">
                   Online
                 </span>
               </div>
-              <p className="text-xs text-stone-300">
-                Connection restored • All boutique systems are fully operational
+              <p className="text-xs text-stone-500">
+                Connection restored • Boutique systems are fully operational
               </p>
             </div>
           </div>

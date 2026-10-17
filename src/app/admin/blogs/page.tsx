@@ -28,6 +28,8 @@ import {
   Tag,
 } from 'lucide-react';
 import RichTextEditor from '@/components/RichTextEditor';
+import { useAdminPermissions } from '@/hooks/useAdminPermissions';
+import { ShieldAlert } from 'lucide-react';
 
 interface BlogAdminItem {
   id: string;
@@ -69,6 +71,7 @@ export default function AdminBlogsPage() {
   const pathname = usePathname();
 
   const token = useSelector((state: RootState) => state.auth.token);
+  const { canCreate, canUpdate, canDelete, canPublish, role } = useAdminPermissions();
   const tabParam = searchParams?.get('tab') as 'blogs' | 'categories' | 'comments' | null;
   const [activeTab, setActiveTabState] = useState<'blogs' | 'categories' | 'comments'>(
     tabParam && ['blogs', 'categories', 'comments'].includes(tabParam) ? tabParam : 'blogs'
@@ -541,13 +544,15 @@ export default function AdminBlogsPage() {
           >
             <ExternalLink size={14} /> View Blog Storefront
           </Link>
-          <button
-            type="button"
-            onClick={handleOpenCreateModal}
-            className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg text-xs shadow-sm transition cursor-pointer"
-          >
-            <Plus size={15} /> Write New Article
-          </button>
+          {canCreate && (
+            <button
+              type="button"
+              onClick={handleOpenCreateModal}
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg text-xs shadow-sm transition cursor-pointer"
+            >
+              <Plus size={15} /> Write New Article
+            </button>
+          )}
         </div>
       </div>
 
@@ -759,22 +764,26 @@ export default function AdminBlogsPage() {
                             >
                               <ExternalLink size={14} />
                             </Link>
-                            <button
-                              type="button"
-                              onClick={() => handleOpenEditModal(blog)}
-                              className="p-1.5 text-muted-foreground hover:text-foreground transition cursor-pointer"
-                              title="Edit"
-                            >
-                              <Edit size={14} />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteBlog(blog.id)}
-                              className="p-1.5 text-muted-foreground hover:text-red-500 transition cursor-pointer"
-                              title="Delete"
-                            >
-                              <Trash2 size={14} />
-                            </button>
+                            {canUpdate && (
+                              <button
+                                type="button"
+                                onClick={() => handleOpenEditModal(blog)}
+                                className="p-1.5 text-muted-foreground hover:text-foreground transition cursor-pointer"
+                                title="Edit"
+                              >
+                                <Edit size={14} />
+                              </button>
+                            )}
+                            {canDelete && (
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteBlog(blog.id)}
+                                className="p-1.5 text-muted-foreground hover:text-red-500 transition cursor-pointer"
+                                title="Delete"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            )}
                           </td>
                         </tr>
                       ))
@@ -1052,7 +1061,7 @@ export default function AdminBlogsPage() {
 
                   {/* Right: Moderation Actions (Approve, Reject, Delete) */}
                   <div className="flex sm:flex-col items-center gap-1.5 shrink-0">
-                    {comment.status !== 'APPROVED' && (
+                    {canUpdate && comment.status !== 'APPROVED' && (
                       <button
                         type="button"
                         onClick={() => handleUpdateCommentStatus(comment.id, 'APPROVED')}
@@ -1064,7 +1073,7 @@ export default function AdminBlogsPage() {
                       </button>
                     )}
 
-                    {comment.status !== 'REJECTED' && (
+                    {canUpdate && comment.status !== 'REJECTED' && (
                       <button
                         type="button"
                         onClick={() => handleUpdateCommentStatus(comment.id, 'REJECTED')}
@@ -1076,15 +1085,21 @@ export default function AdminBlogsPage() {
                       </button>
                     )}
 
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteComment(comment.id)}
-                      className="inline-flex items-center gap-1 px-3 py-1.5 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded text-xs transition cursor-pointer"
-                      title="Delete Comment"
-                    >
-                      <Trash2 size={13} />
-                      <span>Delete</span>
-                    </button>
+                    {canDelete && (
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteComment(comment.id)}
+                        className="inline-flex items-center gap-1 px-3 py-1.5 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded text-xs transition cursor-pointer"
+                        title="Delete Comment"
+                      >
+                        <Trash2 size={13} />
+                        <span>Delete</span>
+                      </button>
+                    )}
+
+                    {!canUpdate && !canDelete && (
+                      <span className="text-[10px] text-muted-foreground italic">View only</span>
+                    )}
                   </div>
                 </div>
               ))

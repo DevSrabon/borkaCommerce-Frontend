@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
@@ -45,44 +45,223 @@ import {
   Shield,
   Phone,
   FileCheck,
+  Type,
+  Image as ImageIcon,
+  Video,
+  MousePointer,
+  RotateCcw,
+  RotateCw,
+  FolderOpen,
+  X,
+  Sliders,
+  Palette,
+  EyeOff,
+  MoveUp,
+  MoveDown,
+  Maximize2,
+  Check,
+  ShoppingBag,
+  Star,
+  Compass,
+  Upload,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
 } from 'lucide-react';
-import { PageBlock, BlockType, CMSPage } from '@/types/page-builder';
-import PageBuilderCanvas from '@/components/page-builder/PageBuilderCanvas';
-import AddBlockModal from '@/components/page-builder/AddBlockModal';
-import BlockSettingsModal from '@/components/page-builder/BlockSettingsModal';
+import { PageBlock, BlockType, CMSPage, ElementorTypography, ElementorBoxModel } from '@/types/page-builder';
+import BlockRenderer from '@/components/page-builder/BlockRenderer';
+import WordPressEditor from '@/components/WordPressEditor';
 import { PAGE_TEMPLATES, PageTemplateInfo } from '@/components/page-builder/pageTemplates';
 
-// Block Palette definitions for the WordPress-like side drawer
-const PALETTE_BLOCKS: {
+// ─── Available Elementor Widgets ─────────────────────────────────────────────
+interface ElementorWidgetDef {
   type: BlockType;
   title: string;
-  category: string;
+  category: 'Layout' | 'Basic' | 'eCommerce';
   icon: React.ElementType;
   description: string;
   defaultData: Record<string, any>;
-}[] = [
+  defaultStyle?: Record<string, any>;
+}
+
+const ELEMENTOR_WIDGETS: ElementorWidgetDef[] = [
+  // Layout
+  {
+    type: 'CONTAINER',
+    title: 'Container',
+    category: 'Layout',
+    icon: Layout,
+    description: 'Flexbox & CSS Grid container for wrapping and structuring widgets',
+    defaultData: {
+      columns: 1,
+      direction: 'column',
+      gap: 'normal',
+      align_items: 'start',
+    },
+  },
+  {
+    type: 'GRID',
+    title: 'Grid / Columns',
+    category: 'Layout',
+    icon: Columns,
+    description: 'Multi-column layout (2, 3, 4 columns or 1/3-2/3)',
+    defaultData: {
+      columns: 2,
+      gap: 'normal',
+    },
+  },
+
+  // Basic
+  {
+    type: 'HEADING',
+    title: 'Heading',
+    category: 'Basic',
+    icon: Type,
+    description: 'Title or subtitle with custom typography and Google fonts',
+    defaultData: {
+      title: 'This is a Heading',
+      tag: 'h2',
+      alignment: 'left',
+      link_url: '',
+    },
+    defaultStyle: {
+      alignment: 'left',
+    },
+  },
+  {
+    type: 'TEXT_EDITOR',
+    title: 'Text Editor',
+    category: 'Basic',
+    icon: FileText,
+    description: 'WordPress Classic Editor for formatted articles and paragraphs',
+    defaultData: {
+      content: '<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut elit tellus, luctus nec ullamcorper mattis, pulvinar dapibus leo.</p>',
+    },
+  },
+  {
+    type: 'IMAGE',
+    title: 'Image',
+    category: 'Basic',
+    icon: ImageIcon,
+    description: 'Showcase an atelier photo, lookbook banner, or graphic',
+    defaultData: {
+      image_url: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=1200&q=80',
+      alt_text: 'Saba Al Wadi Luxury Modest Couture',
+      caption: '',
+      link_url: '',
+      aspect_ratio: '16/9',
+      max_width: 'boxed',
+    },
+  },
+  {
+    type: 'BUTTON',
+    title: 'Button',
+    category: 'Basic',
+    icon: MousePointer,
+    description: 'Call to action button with custom luxury styling & link',
+    defaultData: {
+      label: 'Explore Collection',
+      url: '/catalog',
+      variant: 'luxury',
+      size: 'md',
+      icon: 'ArrowRight',
+      icon_position: 'right',
+    },
+  },
+  {
+    type: 'VIDEO',
+    title: 'Video',
+    category: 'Basic',
+    icon: Video,
+    description: 'Embed YouTube, Vimeo, or self-hosted fashion video',
+    defaultData: {
+      url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+    },
+  },
+  {
+    type: 'DIVIDER',
+    title: 'Divider',
+    category: 'Basic',
+    icon: Minus,
+    description: 'Divider line with solid, dashed, or text/icon separator',
+    defaultData: {
+      style: 'solid',
+      width: 100,
+      text: '',
+    },
+  },
+  {
+    type: 'SPACER',
+    title: 'Spacer',
+    category: 'Basic',
+    icon: Sliders,
+    description: 'Add vertical spacing between elements',
+    defaultData: {
+      height: 48,
+    },
+  },
+  {
+    type: 'MAP',
+    title: 'Google Maps',
+    category: 'Basic',
+    icon: MapPin,
+    description: 'Interactive map and boutique address for visitors',
+    defaultData: {
+      title: 'Flagship Dubai Showroom',
+      map_url: 'https://maps.google.com/maps?q=Downtown+Dubai&t=&z=14&ie=UTF8&iwloc=&output=embed',
+      address: 'Suit No: M-49, 2nd Floor, Al Habtoor Building, Abu Hail, Deira-Dubai, UAE',
+      phone: '+971 55 642 4758',
+      hours: 'Sat - Thu: 09:00 AM - 11:00 PM',
+      map_height: 400,
+    },
+  },
+  {
+    type: 'ICON',
+    title: 'Icon',
+    category: 'Basic',
+    icon: Sparkles,
+    description: 'Decorative icon from Lucide library',
+    defaultData: {
+      icon: 'Sparkles',
+      size: 36,
+    },
+  },
+
+  // eCommerce & Modest Luxury
+  {
+    type: 'PRODUCTS_GRID',
+    title: 'Products Grid',
+    category: 'eCommerce',
+    icon: ShoppingBag,
+    description: 'Curated products grid with prices and direct buy buttons',
+    defaultData: {
+      title: 'Curated Modest Creations',
+      subtitle: 'Hand-tailored in Dubai with pure UAE Nida and imported silks',
+      columns: 4,
+    },
+  },
   {
     type: 'HERO',
     title: 'Hero Banner',
-    category: 'Header',
+    category: 'eCommerce',
     icon: Layout,
-    description: 'Prominent showcase header with badge, title, subtitle & CTAs',
+    description: 'High-impact hero showcase with badge, title, subtitle & CTAs',
     defaultData: {
-      badge: 'Bespoke Atelier',
+      badge: 'Atelier Dubai 2026',
       title: 'Timeless Modest Elegance',
       subtitle: 'Redefining modesty with architectural silhouettes and premium textiles.',
       alignment: 'center',
       background_type: 'gradient',
       primary_button: { label: 'Explore Collection', url: '/catalog' },
-      secondary_button: { label: 'Learn More', url: '#story' },
+      secondary_button: { label: 'Our Story', url: '#story' },
     },
   },
   {
     type: 'TWO_COLUMN',
     title: 'Two Column (Story + Image)',
-    category: 'Content',
+    category: 'eCommerce',
     icon: Columns,
-    description: 'Split section for atelier heritage, craftsmanship, or styling',
+    description: 'Split story section for heritage, craftsmanship, or styling',
     defaultData: {
       heading: 'Our Craftsmanship & Heritage',
       subheading: 'ARTISANAL PERFECTION',
@@ -98,12 +277,12 @@ const PALETTE_BLOCKS: {
   },
   {
     type: 'FEATURES_GRID',
-    title: 'Features & Values Grid',
-    category: 'Content',
-    icon: Grid,
-    description: '3 or 4 column grid showcasing brand pillars and unique services',
+    title: 'Features & Values',
+    category: 'eCommerce',
+    icon: Shield,
+    description: 'Brand pillars: Master Tailoring, Imported Textiles, Shipping',
     defaultData: {
-      heading: 'Why Connoisseurs Choose Us',
+      heading: 'Why Connoisseurs Choose Saba Al Wadi',
       subtitle: 'Crafted with reverence for both faith and high fashion',
       columns: 4,
       items: [
@@ -115,9 +294,39 @@ const PALETTE_BLOCKS: {
     },
   },
   {
+    type: 'TESTIMONIALS',
+    title: 'Testimonials',
+    category: 'eCommerce',
+    icon: MessageSquare,
+    description: 'Client reviews, star ratings, and locations',
+    defaultData: {
+      title: 'Words from Our Patrons',
+      subtitle: 'Read genuine reviews from women around the globe',
+      items: [
+        { quote: 'The fabric quality of Saba Al Wadi abayas is unmatched.', author: 'Fatima Al Mansoori', role: 'Dubai, UAE', rating: 5 },
+        { quote: 'Fast international delivery to London and divine tailoring.', author: 'Amina Rahman', role: 'London, UK', rating: 5 },
+      ],
+    },
+  },
+  {
+    type: 'FAQ_ACCORDION',
+    title: 'FAQ Accordion',
+    category: 'eCommerce',
+    icon: HelpCircle,
+    description: 'Collapsible accordion for sizing, care, shipping, or returns',
+    defaultData: {
+      title: 'Frequently Asked Questions',
+      subtitle: 'Answers to common inquiries regarding our pieces',
+      items: [
+        { question: 'What sizes are available?', answer: 'We offer standard length sizing from 50 to 60 inches.' },
+        { question: 'What are the care instructions?', answer: 'Dry clean recommended for embroidered garments.' },
+      ],
+    },
+  },
+  {
     type: 'STATS_COUNTER',
-    title: 'Stats & Metrics Counter',
-    category: 'Social Proof',
+    title: 'Stats Counter',
+    category: 'eCommerce',
     icon: BarChart3,
     description: 'Highlight milestones, client count, and global reach',
     defaultData: {
@@ -131,41 +340,11 @@ const PALETTE_BLOCKS: {
     },
   },
   {
-    type: 'TESTIMONIALS',
-    title: 'Client Testimonials',
-    category: 'Social Proof',
-    icon: MessageSquare,
-    description: 'Authentic patron quotes, star ratings, and locations',
-    defaultData: {
-      title: 'Words from Our Patrons',
-      subtitle: 'Read genuine reviews from women around the globe',
-      items: [
-        { quote: 'The fabric quality of Saba Al Wadi abayas is unmatched.', author: 'Fatima Al Mansoori', role: 'Dubai, UAE', rating: 5 },
-        { quote: 'Fast international delivery to London and divine tailoring.', author: 'Amina Rahman', role: 'London, UK', rating: 5 },
-      ],
-    },
-  },
-  {
-    type: 'FAQ_ACCORDION',
-    title: 'FAQ Accordion',
-    category: 'Content',
-    icon: HelpCircle,
-    description: 'Collapsible accordion for sizing, care, shipping, or returns',
-    defaultData: {
-      title: 'Frequently Asked Questions',
-      subtitle: 'Answers to common inquiries regarding our pieces',
-      items: [
-        { question: 'What sizes are available?', answer: 'We offer standard length sizing from 50 to 60 inches.' },
-        { question: 'What are the care instructions?', answer: 'Dry clean recommended for embroidered garments.' },
-      ],
-    },
-  },
-  {
     type: 'CTA_BANNER',
-    title: 'Call to Action Banner',
-    category: 'Conversion',
+    title: 'Call to Action',
+    category: 'eCommerce',
     icon: Megaphone,
-    description: 'High-converting banner driving visitors to collection or contact',
+    description: 'High-converting banner driving visitors to catalog or contact',
     defaultData: {
       title: 'Experience The Luxury Collection',
       subtitle: 'Hand-embroidered abayas crafted to inspire grace and reverence.',
@@ -173,979 +352,3182 @@ const PALETTE_BLOCKS: {
       button_link: '/catalog',
     },
   },
-  {
-    type: 'RICH_TEXT',
-    title: 'Rich Text / Legal Article',
-    category: 'Content',
-    icon: FileText,
-    description: 'Formatted typography for policies, privacy terms, and detailed stories',
-    defaultData: {
-      title: 'Section Title',
-      max_width: 'normal',
-      html_content: '<p>Write your detailed story, policies, or terms content here...</p>',
-    },
-  },
-  {
-    type: 'MAP',
-    title: 'Interactive Map & Location',
-    category: 'Contact',
-    icon: MapPin,
-    description: 'Google Maps embed with boutique addresses, phone & hours',
-    defaultData: {
-      title: 'Visit Our Flagship Boutique',
-      subtitle: 'Experience our bespoke modest collections in person',
-      map_url: 'https://maps.google.com/maps?q=Downtown+Dubai&t=&z=14&ie=UTF8&iwloc=&output=embed',
-      address: 'Suit No: M-49, 2nd Floor, Al Habtoor Building, Abu Hail, Deira-Dubai, UAE',
-      phone: '+971 55 642 4758',
-      email: 'contact@sabaalwadi.com',
-      hours: 'Sat - Thu: 09:00 AM - 11:00 PM',
-      map_height: 420,
-      layout: 'split',
-      show_card: true,
-    },
-  },
-  {
-    type: 'SPACER',
-    title: 'Spacer & Divider',
-    category: 'Layout',
-    icon: Minus,
-    description: 'Add vertical breathing room or subtle dividers between blocks',
-    defaultData: {
-      height: 48,
-      has_divider: true,
-    },
-  },
-  {
-    type: 'IMAGE',
-    title: 'Single Image / Visual Banner',
-    category: 'Media',
-    icon: Layout,
-    description: 'Standalone image section with caption, custom aspect ratio, link & rounded corners',
-    defaultData: {
-      image_url: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=1600&q=80',
-      caption: 'Saba Al Wadi Autumn Haute Couture Lookbook',
-      alt_text: 'Luxury modest wear collection',
-      aspect_ratio: '16/9',
-      max_width: 'boxed',
-      link_url: '/catalog',
-      overlay_badge: 'Exclusive Atelier',
-      overlay_title: 'Handcrafted With Uncompromising Modesty',
-    },
-  },
-  {
-    type: 'CARDS_GRID',
-    title: 'Content & Product Cards Grid',
-    category: 'Content',
-    icon: Layers,
-    description: 'Showcase abaya pieces, seasonal collections, or highlights in interactive cards',
-    defaultData: {
-      title: 'Curated Seasonal Highlights',
-      subtitle: 'Hand-tailored creations in limited quantities for discerning clients',
-      columns: 3,
-      cards: [
-        {
-          image_url: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=800&q=80',
-          badge: 'Best Seller',
-          title: 'Royal Nada Open Abaya',
-          description: 'Pure Korean Nada textile with hand-embellished crystal sleeves and architectural drape.',
-          tag: 'AED 450',
-          button_label: 'View Piece',
-          button_url: '/catalog',
-        },
-        {
-          image_url: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=800&q=80',
-          badge: 'Atelier Signature',
-          title: 'Midnight Black French Crepe',
-          description: 'Floor-sweeping architectural silhouette designed for graceful, dignified modesty.',
-          tag: 'AED 520',
-          button_label: 'View Piece',
-          button_url: '/catalog',
-        },
-        {
-          image_url: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=800&q=80',
-          badge: 'New Arrival',
-          title: 'Champagne Gold Embroidered Set',
-          description: 'Complete 3-piece set with matching silk chiffon Sheila and tailored sleeves.',
-          tag: 'AED 610',
-          button_label: 'View Piece',
-          button_url: '/catalog',
-        },
-      ],
-    },
-  },
-  {
-    type: 'GALLERY',
-    title: 'Image Gallery / Lookbook Grid',
-    category: 'Media',
-    icon: Grid,
-    description: 'Multi-image lookbook gallery showcasing atelier craftsmanship, fabrics, and styling',
-    defaultData: {
-      title: 'Atelier Lookbook Gallery',
-      subtitle: 'A visual celebration of modest couture and artisanal craftsmanship',
-      columns: 3,
-      images: [
-        {
-          url: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=800&q=80',
-          caption: 'Hand Embroidery Details',
-          link: '/catalog',
-        },
-        {
-          url: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=800&q=80',
-          caption: 'Silk Chiffon Drapes',
-          link: '/catalog',
-        },
-        {
-          url: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=800&q=80',
-          caption: 'Bespoke Atelier Workshop',
-          link: '/catalog',
-        },
-      ],
-    },
-  },
 ];
 
-import { useModal } from '@/components/common/LuxuryModal';
+const GOOGLE_FONTS = [
+  'Inter',
+  'Roboto',
+  'Outfit',
+  'Playfair Display',
+  'Cinzel',
+  'Montserrat',
+  'Cormorant Garamond',
+  'Rock Salt',
+  'Rock 3D',
+  'Lora',
+  'Cinzel Decorative',
+];
 
-export default function PageBuilderEditorPage() {
+const WP_COLOR_PALETTE = [
+  '#000000', '#2c3338', '#646970', '#dcdcde', '#ffffff',
+  '#d63638', '#cf4944', '#dba617', '#008a20', '#2271b1',
+  '#826eb4', '#b89047', '#926605', '#10b981', '#6366f1'
+];
+
+interface ImageControlGroupProps {
+  label: string;
+  imageUrl?: string;
+  onImageChange: (url: string) => void;
+  onRemove?: () => void;
+  widthPercent?: number;
+  onWidthChange?: (width: number) => void;
+  alignment?: 'left' | 'center' | 'right';
+  onAlignmentChange?: (align: 'left' | 'center' | 'right') => void;
+  aspectRatio?: string;
+  onAspectRatioChange?: (ratio: string) => void;
+  altText?: string;
+  onAltTextChange?: (alt: string) => void;
+  caption?: string;
+  onCaptionChange?: (caption: string) => void;
+}
+
+function ImageControlGroup({
+  label,
+  imageUrl,
+  onImageChange,
+  onRemove,
+  widthPercent = 100,
+  onWidthChange,
+  alignment = 'center',
+  onAlignmentChange,
+  aspectRatio = '16/9',
+  onAspectRatioChange,
+  altText = '',
+  onAltTextChange,
+  caption = '',
+  onCaptionChange,
+}: ImageControlGroupProps) {
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
+
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result === 'string') {
+          onImageChange(reader.result);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  return (
+    <div className="space-y-3 p-3 bg-white border border-slate-200 rounded-xl shadow-2xs">
+      <div className="flex items-center justify-between">
+        <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+          <ImageIcon size={14} className="text-[#e2285c]" />
+          <span>{label}</span>
+        </label>
+        {imageUrl && onRemove && (
+          <button
+            type="button"
+            onClick={onRemove}
+            className="text-[11px] text-red-500 hover:text-red-700 flex items-center gap-1 font-semibold transition cursor-pointer"
+          >
+            <Trash2 size={12} />
+            <span>Remove</span>
+          </button>
+        )}
+      </div>
+
+      {/* Image Preview & Upload Button */}
+      {imageUrl ? (
+        <div className="relative group rounded-lg overflow-hidden border border-slate-200 bg-slate-50 aspect-video flex items-center justify-center">
+          <img src={imageUrl} alt={altText || 'Preview'} className="w-full h-full object-cover" />
+          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="px-2.5 py-1 bg-white text-slate-800 font-semibold rounded text-[11px] shadow hover:bg-slate-100 flex items-center gap-1 cursor-pointer"
+            >
+              <Upload size={12} />
+              Change
+            </button>
+            {onRemove && (
+              <button
+                type="button"
+                onClick={onRemove}
+                className="p-1 bg-red-600 text-white rounded text-[11px] shadow hover:bg-red-700 cursor-pointer"
+                title="Delete Image"
+              >
+                <Trash2 size={12} />
+              </button>
+            )}
+          </div>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          className="w-full py-4 px-3 border-2 border-dashed border-slate-300 hover:border-[#e2285c] rounded-lg bg-slate-50 hover:bg-rose-50/40 text-center flex flex-col items-center justify-center gap-1.5 transition cursor-pointer"
+        >
+          <Upload size={18} className="text-slate-400 group-hover:text-[#e2285c]" />
+          <span className="text-xs font-bold text-slate-700">Upload Image from PC</span>
+          <span className="text-[10px] text-slate-400">JPG, PNG, WEBP or SVG</span>
+        </button>
+      )}
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleFile}
+        className="hidden"
+      />
+
+      {/* Image URL input */}
+      <div>
+        <label className="block text-[11px] text-slate-600 font-semibold mb-1">Or Paste Image URL</label>
+        <input
+          type="text"
+          placeholder="https://..."
+          value={imageUrl || ''}
+          onChange={(e) => onImageChange(e.target.value)}
+          className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded text-slate-900 text-xs focus:border-[#e2285c] focus:ring-1 focus:ring-[#e2285c]"
+        />
+      </div>
+
+      {/* Width / Resize Controls */}
+      {onWidthChange && (
+        <div className="space-y-1.5 pt-1 border-t border-slate-100">
+          <div className="flex justify-between text-[11px] text-slate-600 font-semibold">
+            <span>Image Width</span>
+            <span className="text-[#e2285c] font-bold">{widthPercent}%</span>
+          </div>
+          {/* Quick preset buttons: 25%, 50%, 75%, 100% */}
+          <div className="grid grid-cols-4 gap-1">
+            {[25, 50, 75, 100].map((pct) => (
+              <button
+                key={pct}
+                type="button"
+                onClick={() => onWidthChange(pct)}
+                className={`py-1 text-center rounded text-[10px] font-bold transition cursor-pointer border ${
+                  widthPercent === pct
+                    ? 'bg-[#e2285c] text-white border-[#e2285c]'
+                    : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                }`}
+              >
+                {pct}%
+              </button>
+            ))}
+          </div>
+          <input
+            type="range"
+            min="10"
+            max="100"
+            value={widthPercent}
+            onChange={(e) => onWidthChange(Number(e.target.value))}
+            className="w-full accent-[#e2285c] mt-1"
+          />
+        </div>
+      )}
+
+      {/* Alignment */}
+      {onAlignmentChange && (
+        <div>
+          <label className="block text-[11px] text-slate-600 font-semibold mb-1">Alignment</label>
+          <div className="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200">
+            {(['left', 'center', 'right'] as const).map((a) => (
+              <button
+                key={a}
+                type="button"
+                onClick={() => onAlignmentChange(a)}
+                className={`flex-1 py-1 text-center rounded text-xs capitalize transition cursor-pointer ${
+                  alignment === a
+                    ? 'bg-white text-slate-900 font-bold shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                {a}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Aspect Ratio */}
+      {onAspectRatioChange && (
+        <div>
+          <label className="block text-[11px] text-slate-600 font-semibold mb-1">Aspect Ratio</label>
+          <select
+            value={aspectRatio}
+            onChange={(e) => onAspectRatioChange(e.target.value)}
+            className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded text-slate-900 text-xs"
+          >
+            <option value="16/9">Landscape 16:9</option>
+            <option value="4/3">Standard 4:3</option>
+            <option value="1/1">Square 1:1</option>
+            <option value="21/9">Cinematic 21:9</option>
+            <option value="auto">Original Auto</option>
+          </select>
+        </div>
+      )}
+
+      {/* Alt Text */}
+      {onAltTextChange && (
+        <div>
+          <label className="block text-[11px] text-slate-600 font-semibold mb-1">Alt Text (SEO)</label>
+          <input
+            type="text"
+            placeholder="Describe the image..."
+            value={altText}
+            onChange={(e) => onAltTextChange(e.target.value)}
+            className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded text-slate-900 text-xs"
+          />
+        </div>
+      )}
+
+      {/* Caption */}
+      {onCaptionChange && (
+        <div>
+          <label className="block text-[11px] text-slate-600 font-semibold mb-1">Caption</label>
+          <input
+            type="text"
+            placeholder="Image caption..."
+            value={caption}
+            onChange={(e) => onCaptionChange(e.target.value)}
+            className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded text-slate-900 text-xs"
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function ElementorPageBuilderPage() {
   const params = useParams();
-  const pageId = params?.id as string;
   const router = useRouter();
-  const token = useSelector((state: RootState) => state.auth.token);
-  const { showAlert } = useModal();
+  const pageId = params?.id as string;
+  const token = useSelector((state: RootState) => (state as any).auth?.token);
 
+  // Core CMS page state
   const [page, setPage] = useState<CMSPage | null>(null);
   const [blocks, setBlocks] = useState<PageBlock[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
-  const [title, setTitle] = useState('');
-  const [slug, setSlug] = useState('');
-  const [isSlugLocked, setIsSlugLocked] = useState(true);
-  const [isPublished, setIsPublished] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Elementor Sidebar State
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
+  const [activeElementTab, setActiveElementTab] = useState<'content' | 'style' | 'advanced'>('content');
+  const [widgetSearchQuery, setWidgetSearchQuery] = useState('');
+  const [activeCategory, setActiveCategory] = useState<'All' | 'Layout' | 'Basic' | 'eCommerce'>('All');
+
+  // Device Preview State
+  const [deviceView, setDeviceView] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
+
+  // Modals & Panels
+  const [showPageSettingsModal, setShowPageSettingsModal] = useState(false);
+  const [showTemplateLibraryModal, setShowTemplateLibraryModal] = useState(false);
+  const [showNavigatorDrawer, setShowNavigatorDrawer] = useState(false);
+  const [structureInsertIndex, setStructureInsertIndex] = useState<number | null>(null);
+
+  // Page Settings fields
+  const [pageTitle, setPageTitle] = useState('');
+  const [pageSlug, setPageSlug] = useState('');
   const [metaTitle, setMetaTitle] = useState('');
   const [metaDescription, setMetaDescription] = useState('');
+  const [isPublished, setIsPublished] = useState(false);
 
-  // WordPress-style Customizer Panel State
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [sidebarTab, setSidebarTab] = useState<'elements' | 'outline' | 'settings'>('elements');
-  const [deviceView, setDeviceView] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
-  const [paletteSearch, setPaletteSearch] = useState('');
-  const [showTemplatesDropdown, setShowTemplatesDropdown] = useState(false);
-
-  // Modals state
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [insertIndex, setInsertIndex] = useState<number | undefined>(undefined);
-  const [editingBlock, setEditingBlock] = useState<PageBlock | null>(null);
-  const [showSeoModal, setShowSeoModal] = useState(false);
+  // Undo / Redo history
+  const [history, setHistory] = useState<PageBlock[][]>([]);
+  const [historyIndex, setHistoryIndex] = useState<number>(-1);
 
   // Fetch page data
   useEffect(() => {
-    if (!pageId || !token) return;
     const fetchPage = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`${API_BASE_URL}/admin/pages/${pageId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const headers: Record<string, string> = {};
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const res = await fetch(`${API_BASE_URL}/admin/pages/${pageId}`, { headers });
         if (res.ok) {
           const data: CMSPage = await res.json();
           setPage(data);
-          setTitle(data.title);
-          setSlug(data.slug);
-          setIsPublished(data.is_published);
+          setPageTitle(data.title || '');
+          setPageSlug(data.slug || '');
           setMetaTitle(data.meta_title || '');
           setMetaDescription(data.meta_description || '');
+          setIsPublished(Boolean(data.is_published));
 
+          let parsedBlocks: PageBlock[] = [];
           try {
-            const parsed = JSON.parse(data.content || '[]');
-            setBlocks(Array.isArray(parsed) ? parsed : []);
+            parsedBlocks = JSON.parse(data.content || '[]');
           } catch {
-            setBlocks([]);
+            parsedBlocks = [];
           }
+          setBlocks(parsedBlocks);
+          setHistory([parsedBlocks]);
+          setHistoryIndex(0);
         } else {
-          showAlert('Could not find the requested CMS page.', 'Page Not Found', 'warning');
-          router.push('/admin/pages');
+          setErrorMessage('Failed to load page content.');
         }
       } catch (err) {
-        console.error('Error fetching page:', err);
+        console.error('Failed to fetch page:', err);
+        setErrorMessage('Network error while loading page.');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchPage();
-  }, [pageId, token, router]);
+    if (pageId) fetchPage();
+  }, [pageId, token]);
 
-  const handleSavePage = useCallback(async (publishOverride?: boolean) => {
-    if (!token || !pageId) return;
+  // Update blocks with history tracking
+  const updateBlocksWithHistory = useCallback((nextBlocks: PageBlock[]) => {
+    setBlocks(nextBlocks);
+    setHistory((prev) => {
+      const trimmed = prev.slice(0, historyIndex + 1);
+      return [...trimmed, nextBlocks];
+    });
+    setHistoryIndex((prev) => prev + 1);
+  }, [historyIndex]);
 
+  // Undo / Redo
+  const handleUndo = () => {
+    if (historyIndex > 0) {
+      const prevIdx = historyIndex - 1;
+      setHistoryIndex(prevIdx);
+      setBlocks(history[prevIdx]);
+    }
+  };
+
+  const handleRedo = () => {
+    if (historyIndex < history.length - 1) {
+      const nextIdx = historyIndex + 1;
+      setHistoryIndex(nextIdx);
+      setBlocks(history[nextIdx]);
+    }
+  };
+
+  // Find currently selected block
+  const selectedBlock = useMemo(() => {
+    if (!selectedBlockId) return null;
+    return blocks.find((b) => b.id === selectedBlockId) || null;
+  }, [blocks, selectedBlockId]);
+
+  // Update a specific field in selected block
+  const updateSelectedBlock = (mutator: (block: PageBlock) => PageBlock) => {
+    if (!selectedBlockId) return;
+    const nextBlocks = blocks.map((b) => {
+      if (b.id === selectedBlockId) {
+        return mutator(JSON.parse(JSON.stringify(b)));
+      }
+      return b;
+    });
+    setBlocks(nextBlocks);
+  };
+
+  // Inline edit handler: update block data directly when edited on canvas
+  const handleInlineBlockDataChange = useCallback((blockId: string, newData: Record<string, any>) => {
+    const nextBlocks = blocks.map((b) => {
+      if (b.id === blockId) {
+        return {
+          ...b,
+          data: newData,
+        };
+      }
+      return b;
+    });
+    updateBlocksWithHistory(nextBlocks);
+  }, [blocks, updateBlocksWithHistory]);
+
+  // Add a widget to the canvas
+  const handleAddWidget = (def: ElementorWidgetDef, insertIndex?: number) => {
+    const newBlock: PageBlock = {
+      id: `elem-${def.type.toLowerCase()}-${Date.now()}`,
+      type: def.type,
+      data: JSON.parse(JSON.stringify(def.defaultData)),
+      style: def.defaultStyle ? JSON.parse(JSON.stringify(def.defaultStyle)) : {},
+      advanced: {},
+    };
+
+    const next = [...blocks];
+    if (typeof insertIndex === 'number' && insertIndex >= 0 && insertIndex <= blocks.length) {
+      next.splice(insertIndex, 0, newBlock);
+    } else {
+      next.push(newBlock);
+    }
+    updateBlocksWithHistory(next);
+    setSelectedBlockId(newBlock.id);
+    setActiveElementTab('content');
+    setStructureInsertIndex(null);
+  };
+
+  // Add column structure (e.g. 1 col, 2 cols 50/50, 3 cols)
+  const handleAddContainerStructure = (cols: number | string, insertIndex?: number) => {
+    const newContainer: PageBlock = {
+      id: `elem-container-${Date.now()}`,
+      type: 'CONTAINER',
+      data: {
+        columns: cols,
+        gap: 'normal',
+      },
+      style: {},
+      advanced: {},
+    };
+
+    const next = [...blocks];
+    if (typeof insertIndex === 'number' && insertIndex >= 0 && insertIndex <= blocks.length) {
+      next.splice(insertIndex, 0, newContainer);
+    } else {
+      next.push(newContainer);
+    }
+    updateBlocksWithHistory(next);
+    setSelectedBlockId(newContainer.id);
+    setActiveElementTab('content');
+    setStructureInsertIndex(null);
+  };
+
+  // Delete a block
+  const handleDeleteBlock = (id: string) => {
+    if (confirm('Are you sure you want to delete this element?')) {
+      const next = blocks.filter((b) => b.id !== id);
+      updateBlocksWithHistory(next);
+      if (selectedBlockId === id) setSelectedBlockId(null);
+    }
+  };
+
+  // Duplicate a block
+  const handleDuplicateBlock = (id: string) => {
+    const idx = blocks.findIndex((b) => b.id === id);
+    if (idx === -1) return;
+    const original = blocks[idx];
+    const clone: PageBlock = {
+      id: `elem-${original.type.toLowerCase()}-${Date.now()}`,
+      type: original.type,
+      data: JSON.parse(JSON.stringify(original.data)),
+      style: original.style ? JSON.parse(JSON.stringify(original.style)) : {},
+      advanced: original.advanced ? JSON.parse(JSON.stringify(original.advanced)) : {},
+    };
+    const next = [...blocks];
+    next.splice(idx + 1, 0, clone);
+    updateBlocksWithHistory(next);
+    setSelectedBlockId(clone.id);
+  };
+
+  // Move a block up or down
+  const handleMoveBlock = (id: string, direction: 'up' | 'down') => {
+    const idx = blocks.findIndex((b) => b.id === id);
+    if (idx === -1) return;
+    const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
+    if (targetIdx < 0 || targetIdx >= blocks.length) return;
+    const next = [...blocks];
+    const [moved] = next.splice(idx, 1);
+    next.splice(targetIdx, 0, moved);
+    updateBlocksWithHistory(next);
+  };
+
+  // Save changes to backend
+  const handleSavePage = async (publishStatus?: boolean) => {
     setSaving(true);
     setSaveSuccess(false);
+    setErrorMessage(null);
 
-    const publishState = publishOverride !== undefined ? publishOverride : isPublished;
+    const isPub = publishStatus !== undefined ? publishStatus : isPublished;
 
     try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
       const res = await fetch(`${API_BASE_URL}/admin/pages/${pageId}`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+        headers,
         body: JSON.stringify({
-          title: title.trim(),
-          slug: slug.trim(),
+          title: pageTitle.trim(),
+          slug: pageSlug.trim(),
           content: JSON.stringify(blocks),
-          meta_title: metaTitle.trim() || title.trim(),
-          meta_description: metaDescription.trim() || undefined,
-          is_published: publishState,
+          meta_title: metaTitle.trim(),
+          meta_description: metaDescription.trim(),
+          is_published: isPub,
         }),
       });
 
       if (res.ok) {
         const updated = await res.json();
         setPage(updated);
-        setIsPublished(updated.is_published);
+        setIsPublished(Boolean(updated.is_published));
         setSaveSuccess(true);
         setTimeout(() => setSaveSuccess(false), 3000);
       } else {
-        const err = await res.json();
-        showAlert(err.message || 'Failed to save page', 'Save Failed', 'error');
+        const errData = await res.json().catch(() => ({}));
+        setErrorMessage(errData.message || 'Failed to save page changes.');
       }
     } catch (err) {
-      console.error('Error saving page:', err);
-      showAlert('Network error saving page. Please check your connection.', 'Network Error', 'error');
+      console.error('Failed to save page:', err);
+      setErrorMessage('Network error while saving page.');
     } finally {
       setSaving(false);
     }
-  }, [token, pageId, isPublished, title, slug, blocks, metaTitle, metaDescription, showAlert]);
-
-  // Keyboard shortcut: Ctrl + S / Cmd + S to save
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-        e.preventDefault();
-        handleSavePage();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleSavePage]);
-
-  // Insert block handler
-  const handleAddBlock = (newBlock: PageBlock) => {
-    if (insertIndex !== undefined && insertIndex >= 0) {
-      const next = [...blocks];
-      next.splice(insertIndex, 0, newBlock);
-      setBlocks(next);
-    } else {
-      setBlocks((prev) => [...prev, newBlock]);
-    }
-    setInsertIndex(undefined);
   };
 
-  // Instant add from palette
-  const handleQuickAddBlock = (def: (typeof PALETTE_BLOCKS)[0]) => {
-    const newBlock: PageBlock = {
-      id: `block-${def.type.toLowerCase()}-${Date.now()}`,
-      type: def.type,
-      data: JSON.parse(JSON.stringify(def.defaultData)),
-    };
-    setBlocks((prev) => [...prev, newBlock]);
-  };
-
-  // 1-Click Starter Template Loader (About Us, Contact Us, Privacy Policy, Terms)
-  const handleLoadStarterTemplate = (template: PageTemplateInfo) => {
-    if (blocks.length > 0) {
-      if (!confirm(`This will replace your current page sections with the "${template.name}" template. Proceed?`)) {
-        return;
-      }
-    }
-    setBlocks(template.blocks);
-    setShowTemplatesDropdown(false);
-
-    // Auto-fill title, slug, and meta if newly created
-    if (!title || title.toLowerCase().includes('untitled') || title.toLowerCase().includes('new page')) {
-      setTitle(template.suggestedTitle);
-      setSlug(template.suggestedSlug);
-      setMetaTitle(template.suggestedTitle);
-      setMetaDescription(template.suggestedMetaDesc);
-    }
-  };
-
-  const handleUpdateBlock = (updated: PageBlock) => {
-    setBlocks((prev) => prev.map((b) => (b.id === updated.id ? updated : b)));
-  };
-
-  const handleMoveBlock = (index: number, direction: 'up' | 'down') => {
-    const targetIndex = direction === 'up' ? index - 1 : index + 1;
-    if (targetIndex < 0 || targetIndex >= blocks.length) return;
-    const next = [...blocks];
-    const [moved] = next.splice(index, 1);
-    next.splice(targetIndex, 0, moved);
-    setBlocks(next);
-  };
-
-  const handleDuplicateBlock = (index: number) => {
-    const original = blocks[index];
-    const clone: PageBlock = {
-      id: `block-${original.type.toLowerCase()}-${Date.now()}`,
-      type: original.type,
-      data: JSON.parse(JSON.stringify(original.data)),
-    };
-    const next = [...blocks];
-    next.splice(index + 1, 0, clone);
-    setBlocks(next);
-  };
-
-  const handleDeleteBlock = (index: number) => {
-    if (confirm('Are you sure you want to delete this section?')) {
-      setBlocks((prev) => prev.filter((_, i) => i !== index));
-    }
-  };
-
-  const filteredPaletteBlocks = PALETTE_BLOCKS.filter(
-    (b) =>
-      b.title.toLowerCase().includes(paletteSearch.toLowerCase()) ||
-      b.category.toLowerCase().includes(paletteSearch.toLowerCase()) ||
-      b.description.toLowerCase().includes(paletteSearch.toLowerCase())
-  );
+  // Filtered widgets based on search & category
+  const filteredWidgets = useMemo(() => {
+    return ELEMENTOR_WIDGETS.filter((w) => {
+      const matchesCat = activeCategory === 'All' || w.category === activeCategory;
+      const matchesSearch =
+        !widgetSearchQuery.trim() ||
+        w.title.toLowerCase().includes(widgetSearchQuery.toLowerCase()) ||
+        w.description.toLowerCase().includes(widgetSearchQuery.toLowerCase());
+      return matchesCat && matchesSearch;
+    });
+  }, [activeCategory, widgetSearchQuery]);
 
   if (loading) {
     return (
-      <div className="h-screen flex items-center justify-center text-xs text-muted-foreground flex-col gap-3">
-        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-        <span className="font-semibold tracking-wider uppercase">Loading WordPress-Style Customizer...</span>
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center space-y-4">
+        <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-[#e2285c] to-rose-400 text-white font-bold flex items-center justify-center text-xl shadow-lg animate-pulse">
+          E
+        </div>
+        <p className="text-sm font-medium text-muted-foreground animate-pulse">Loading Elementor Builder...</p>
       </div>
     );
   }
 
   return (
-    <div className="h-screen flex flex-col bg-background text-foreground overflow-hidden">
-      {/* ─── TOP WORDPRESS-STYLE BUILDER HEADER ───────────────────────────────── */}
-      <header className="h-16 border-b border-border bg-card/95 backdrop-blur-md px-4 sm:px-6 flex items-center justify-between z-30 shrink-0">
-        <div className="flex items-center gap-3 min-w-0">
-          <Link
-            href="/admin/pages"
-            className="p-2 rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground transition cursor-pointer shrink-0"
-            title="Back to Pages List"
-          >
-            <ArrowLeft size={16} />
-          </Link>
-
-          {/* Sidebar Toggle Button */}
+    <div className="h-screen w-screen overflow-hidden flex flex-col bg-[#edf0f5] text-slate-800 font-sans select-none">
+      {/* ══════════════════════════════════════════════════════════════════════
+          TOP ELEMENTOR APP BAR (Light Theme)
+         ══════════════════════════════════════════════════════════════════════ */}
+      <header className="h-12 bg-white border-b border-slate-200 px-4 flex items-center justify-between z-30 shrink-0 shadow-2xs text-slate-800">
+        {/* Left: Branding & Page Name */}
+        <div className="flex items-center gap-3">
           <button
             type="button"
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className={`p-2 rounded-lg border text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer ${
-              isSidebarOpen
-                ? 'bg-primary/10 border-primary/30 text-primary'
-                : 'border-border bg-card text-muted-foreground hover:text-foreground'
-            }`}
-            title={isSidebarOpen ? 'Collapse Left Customizer' : 'Expand Left Customizer'}
+            onClick={() => router.push('/admin/pages')}
+            className="p-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition cursor-pointer"
+            title="Exit to Pages Dashboard"
           >
-            {isSidebarOpen ? <PanelLeftClose size={16} /> : <PanelLeft size={16} />}
-            <span className="hidden md:inline">{isSidebarOpen ? 'Hide Panel' : 'Show Panel'}</span>
+            <ArrowLeft size={16} />
           </button>
 
-          {/* Page Title & Live Slug */}
-          <div className="flex flex-col min-w-0">
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Page Title (e.g. About Us)"
-              className="bg-transparent font-serif font-bold text-sm sm:text-base text-foreground focus:outline-none focus:border-b border-primary truncate max-w-[260px] sm:max-w-md"
-            />
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <span className="font-mono text-[11px] truncate">/{slug}</span>
-              <button
-                type="button"
-                onClick={() => setIsSlugLocked(!isSlugLocked)}
-                className="text-muted-foreground hover:text-foreground cursor-pointer"
-                title={isSlugLocked ? 'Edit URL slug' : 'Lock slug'}
-              >
-                {isSlugLocked ? <Lock size={10} /> : <Unlock size={10} className="text-primary" />}
-              </button>
-              {!isSlugLocked && (
-                <input
-                  type="text"
-                  value={slug}
-                  onChange={(e) => setSlug(e.target.value)}
-                  className="bg-background border border-border rounded px-1.5 py-0.5 text-xs font-mono w-28"
-                />
-              )}
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded bg-[#e2285c] text-white font-bold text-xs flex items-center justify-center shadow-xs">
+              E
             </div>
+            <span className="font-semibold text-xs tracking-wider uppercase text-slate-600">
+              Elementor
+            </span>
+            <span className="text-slate-300">/</span>
+            <span className="text-xs font-bold text-slate-900 truncate max-w-[200px] sm:max-w-[300px]">
+              {pageTitle || `Page #${pageId}`}
+            </span>
           </div>
+
+          <span
+            className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
+              isPublished
+                ? 'bg-emerald-500/15 text-emerald-700 border border-emerald-500/30'
+                : 'bg-amber-500/15 text-amber-700 border border-amber-500/30'
+            }`}
+          >
+            {isPublished ? 'Live' : 'Draft'}
+          </span>
         </div>
 
-        {/* Device Viewport Selector (Middle) */}
-        <div className="hidden lg:flex items-center gap-1 bg-background/80 p-1 rounded-lg border border-border shadow-xs">
+        {/* Center: Device Viewport Switcher */}
+        <div className="flex items-center bg-slate-100 border border-slate-200 rounded-lg p-0.5">
           <button
             type="button"
             onClick={() => setDeviceView('desktop')}
-            className={`p-1.5 px-3 rounded text-xs flex items-center gap-1.5 transition cursor-pointer ${
-              deviceView === 'desktop'
-                ? 'bg-primary text-primary-foreground font-semibold shadow-xs'
-                : 'text-muted-foreground hover:text-foreground'
+            className={`p-1.5 rounded-md transition cursor-pointer ${
+              deviceView === 'desktop' ? 'bg-[#e2285c] text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
             }`}
+            title="Desktop (100%)"
           >
-            <Monitor size={13} />
-            <span>Desktop</span>
+            <Monitor size={15} />
           </button>
           <button
             type="button"
             onClick={() => setDeviceView('tablet')}
-            className={`p-1.5 px-3 rounded text-xs flex items-center gap-1.5 transition cursor-pointer ${
-              deviceView === 'tablet'
-                ? 'bg-primary text-primary-foreground font-semibold shadow-xs'
-                : 'text-muted-foreground hover:text-foreground'
+            className={`p-1.5 rounded-md transition cursor-pointer ${
+              deviceView === 'tablet' ? 'bg-[#e2285c] text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
             }`}
+            title="Tablet (768px)"
           >
-            <Tablet size={13} />
-            <span>Tablet</span>
+            <Tablet size={15} />
           </button>
           <button
             type="button"
             onClick={() => setDeviceView('mobile')}
-            className={`p-1.5 px-3 rounded text-xs flex items-center gap-1.5 transition cursor-pointer ${
-              deviceView === 'mobile'
-                ? 'bg-primary text-primary-foreground font-semibold shadow-xs'
-                : 'text-muted-foreground hover:text-foreground'
+            className={`p-1.5 rounded-md transition cursor-pointer ${
+              deviceView === 'mobile' ? 'bg-[#e2285c] text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
             }`}
+            title="Mobile (375px)"
           >
-            <Smartphone size={13} />
-            <span>Mobile</span>
+            <Smartphone size={15} />
           </button>
         </div>
 
-        {/* Actions Toolbar (Right) */}
-        <div className="flex items-center gap-2 sm:gap-3">
-          {/* 1-Click Starter Templates Dropdown */}
-          <div className="relative">
+        {/* Right: History, Preview, Page Settings & Save */}
+        <div className="flex items-center gap-2">
+          {/* Undo / Redo */}
+          <div className="flex items-center text-slate-500 border-r border-slate-200 pr-2 mr-1">
             <button
               type="button"
-              onClick={() => setShowTemplatesDropdown(!showTemplatesDropdown)}
-              className="px-3 py-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer shadow-xs"
-              title="Load Pre-designed Boutique Templates"
+              disabled={historyIndex <= 0}
+              onClick={handleUndo}
+              className="p-1.5 rounded hover:bg-slate-100 hover:text-slate-900 disabled:opacity-30 transition cursor-pointer"
+              title="Undo (Ctrl+Z)"
             >
-              <Sparkles size={14} />
-              <span className="hidden sm:inline">Starter Templates</span>
-              <ChevronDown size={12} />
+              <RotateCcw size={14} />
             </button>
+            <button
+              type="button"
+              disabled={historyIndex >= history.length - 1}
+              onClick={handleRedo}
+              className="p-1.5 rounded hover:bg-slate-100 hover:text-slate-900 disabled:opacity-30 transition cursor-pointer"
+              title="Redo (Ctrl+Y)"
+            >
+              <RotateCw size={14} />
+            </button>
+          </div>
 
-            {showTemplatesDropdown && (
-              <div className="absolute right-0 mt-2 w-72 bg-card border border-border rounded-xl shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95 space-y-1">
-                <div className="px-3 py-2 border-b border-border">
-                  <p className="text-xs font-bold text-foreground">1-Click Starter Templates</p>
-                  <p className="text-[11px] text-muted-foreground">Select a pre-built luxury layout</p>
-                </div>
-                {PAGE_TEMPLATES.map((tmpl) => (
+          {/* Navigator toggle */}
+          <button
+            type="button"
+            onClick={() => setShowNavigatorDrawer(!showNavigatorDrawer)}
+            className={`p-1.5 rounded-md text-xs font-medium transition cursor-pointer flex items-center gap-1 ${
+              showNavigatorDrawer ? 'bg-slate-200 text-slate-900' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+            }`}
+            title="DOM Structure Navigator"
+          >
+            <Layers size={15} />
+          </button>
+
+          {/* Page Settings */}
+          <button
+            type="button"
+            onClick={() => setShowPageSettingsModal(true)}
+            className="p-1.5 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition cursor-pointer"
+            title="Page SEO & Settings"
+          >
+            <Settings2 size={15} />
+          </button>
+
+          {/* View Published Page */}
+          <Link
+            href={`/${pageSlug}`}
+            target="_blank"
+            className="p-1.5 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition cursor-pointer"
+            title="Preview Live Page in New Tab"
+          >
+            <Eye size={15} />
+          </Link>
+
+          {/* Iconic Elementor Green UPDATE / PUBLISH Button */}
+          <button
+            type="button"
+            disabled={saving}
+            onClick={() => handleSavePage()}
+            className="px-4 py-1.5 bg-[#008a20] hover:bg-[#00a32a] text-white text-xs font-bold uppercase tracking-wider rounded-md transition shadow-md flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+          >
+            {saving ? (
+              <span>Saving...</span>
+            ) : saveSuccess ? (
+              <>
+                <Check size={14} />
+                <span>Saved</span>
+              </>
+            ) : (
+              <span>Update</span>
+            )}
+          </button>
+        </div>
+      </header>
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          MAIN WORKSPACE: LEFT ELEMENTOR PANEL + RIGHT LIVE CANVAS
+         ══════════════════════════════════════════════════════════════════════ */}
+      <div className="flex-1 flex overflow-hidden relative">
+        {/* ─── DOCKED LEFT ELEMENTOR PANEL (Light Theme) ───────────────────── */}
+        <aside
+          className={`bg-slate-50 border-r border-slate-200 text-slate-800 flex flex-col shrink-0 transition-all duration-300 z-20 shadow-sm ${
+            sidebarOpen ? 'w-[340px] sm:w-[380px]' : 'w-0 overflow-hidden'
+          }`}
+        >
+          {/* Panel Top Navigation */}
+          <div className="h-11 bg-white border-b border-slate-200 px-3 flex items-center justify-between text-xs text-slate-700">
+            {selectedBlock ? (
+              <div className="flex items-center gap-2 w-full">
+                <button
+                  type="button"
+                  onClick={() => setSelectedBlockId(null)}
+                  className="p-1 rounded text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition cursor-pointer flex items-center gap-1"
+                  title="Back to all widgets"
+                >
+                  <ArrowLeft size={14} />
+                  <span className="font-semibold">Widgets</span>
+                </button>
+                <span className="text-slate-300">/</span>
+                <span className="font-bold text-slate-900 truncate flex-1">
+                  Edit {selectedBlock.type.replace('_', ' ')}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => handleDuplicateBlock(selectedBlock.id)}
+                  className="p-1 rounded text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition cursor-pointer"
+                  title="Duplicate Element"
+                >
+                  <Copy size={13} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleDeleteBlock(selectedBlock.id)}
+                  className="p-1 rounded text-red-500 hover:text-red-700 hover:bg-red-50 transition cursor-pointer"
+                  title="Delete Element"
+                >
+                  <Trash2 size={13} />
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between w-full">
+                <span className="font-bold text-slate-800 text-xs uppercase tracking-wider flex items-center gap-1.5">
+                  <Grid size={14} className="text-[#e2285c]" />
+                  <span>Elements</span>
+                </span>
+                <div className="flex items-center gap-1">
                   <button
-                    key={tmpl.id}
                     type="button"
-                    onClick={() => handleLoadStarterTemplate(tmpl)}
-                    className="w-full text-left p-2.5 rounded-lg hover:bg-accent transition text-xs flex items-start gap-2.5 cursor-pointer group"
+                    onClick={() => setShowTemplateLibraryModal(true)}
+                    className="px-2.5 py-1 bg-white border border-slate-200 hover:bg-slate-50 rounded text-[11px] font-semibold text-slate-700 hover:text-slate-900 transition flex items-center gap-1 cursor-pointer shadow-2xs"
                   >
-                    <div className="mt-0.5 p-1 rounded bg-primary/10 text-primary shrink-0">
-                      {tmpl.id === 'about-us' && <Sparkles size={14} />}
-                      {tmpl.id === 'contact-us' && <Phone size={14} />}
-                      {tmpl.id === 'privacy-policy' && <Shield size={14} />}
-                      {tmpl.id === 'terms-of-service' && <FileCheck size={14} />}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="font-semibold text-foreground group-hover:text-primary transition-colors flex items-center justify-between">
-                        <span className="truncate">{tmpl.name}</span>
-                        <span className="text-[10px] px-1.5 py-0.2 rounded bg-primary/10 text-primary font-mono">{tmpl.badge}</span>
-                      </div>
-                      <p className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5">{tmpl.description}</p>
-                    </div>
+                    <FolderOpen size={12} className="text-[#e2285c]" />
+                    <span>Templates</span>
                   </button>
-                ))}
+                </div>
               </div>
             )}
           </div>
 
-          {/* SEO Modal Trigger */}
-          <button
-            type="button"
-            onClick={() => setShowSeoModal(true)}
-            className="p-2 sm:px-3 sm:py-1.5 rounded-lg border border-border hover:bg-accent text-xs font-medium inline-flex items-center gap-1.5 cursor-pointer text-muted-foreground hover:text-foreground"
-            title="Configure SEO & Social Meta Tags"
-          >
-            <Settings2 size={14} />
-            <span className="hidden md:inline">SEO</span>
-          </button>
-
-          {/* Publish / Draft Switch */}
-          <button
-            type="button"
-            onClick={() => {
-              const next = !isPublished;
-              setIsPublished(next);
-              handleSavePage(next);
-            }}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 transition cursor-pointer shadow-xs ${
-              isPublished
-                ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/30'
-                : 'bg-amber-500/10 text-amber-500 border border-amber-500/30'
-            }`}
-          >
-            <Globe size={13} />
-            <span>{isPublished ? 'Published' : 'Draft'}</span>
-          </button>
-
-          {/* Save Button with Ctrl+S */}
-          <button
-            type="button"
-            onClick={() => handleSavePage()}
-            disabled={saving}
-            className="px-4 py-1.5 btn-luxury rounded-lg text-xs font-semibold uppercase tracking-wider inline-flex items-center gap-2 cursor-pointer shadow-md disabled:opacity-50"
-            title="Save Page Changes (Ctrl + S)"
-          >
-            <Save size={14} />
-            <span>{saving ? 'Saving...' : 'Save'}</span>
-          </button>
-
-          {/* View Live Page */}
-          <Link
-            href={`/${slug}`}
-            target="_blank"
-            className="p-2 rounded-lg border border-border hover:bg-accent text-muted-foreground hover:text-foreground transition cursor-pointer"
-            title="Preview Live Page in New Window"
-          >
-            <ExternalLink size={15} />
-          </Link>
-        </div>
-      </header>
-
-      {/* ─── WORKSPACE (LEFT CUSTOMIZER PANEL + CANVAS) ─────────────────────────── */}
-      <div className="flex-1 flex overflow-hidden relative">
-        {/* Left WordPress-Style Customizer Panel */}
-        {isSidebarOpen && (
-          <aside className="w-80 sm:w-96 border-r border-border bg-card/95 backdrop-blur-md flex flex-col z-20 shrink-0 shadow-xl transition-all">
-            {/* Panel Tabs Header */}
-            <div className="flex items-center border-b border-border p-1.5 bg-background/50 text-xs">
-              <button
-                type="button"
-                onClick={() => setSidebarTab('elements')}
-                className={`flex-1 py-2 rounded-lg font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer ${
-                  sidebarTab === 'elements'
-                    ? 'bg-primary text-primary-foreground shadow-xs'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                <Plus size={14} />
-                <span>Blocks</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setSidebarTab('outline')}
-                className={`flex-1 py-2 rounded-lg font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer ${
-                  sidebarTab === 'outline'
-                    ? 'bg-primary text-primary-foreground shadow-xs'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                <Layers size={14} />
-                <span>Layers ({blocks.length})</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setSidebarTab('settings')}
-                className={`flex-1 py-2 rounded-lg font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer ${
-                  sidebarTab === 'settings'
-                    ? 'bg-primary text-primary-foreground shadow-xs'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                <Settings2 size={14} />
-                <span>Settings</span>
-              </button>
-            </div>
-
-            {/* TAB 1: ELEMENTS PALETTE */}
-            {sidebarTab === 'elements' && (
-              <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                {/* Search Blocks */}
-                <div className="relative">
-                  <Search size={14} className="absolute left-3 top-2.5 text-muted-foreground" />
-                  <input
-                    type="text"
-                    value={paletteSearch}
-                    onChange={(e) => setPaletteSearch(e.target.value)}
-                    placeholder="Search blocks (hero, map, faq...)"
-                    className="w-full bg-background border border-border rounded-lg pl-9 pr-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground"
-                  />
-                </div>
-
-                {/* 1-Click Starter Kits Quick Buttons */}
-                <div className="space-y-2">
-                  <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
-                    Quick Templates
-                  </span>
-                  <div className="grid grid-cols-2 gap-2">
-                    {PAGE_TEMPLATES.map((tmpl) => (
-                      <button
-                        key={tmpl.id}
-                        type="button"
-                        onClick={() => handleLoadStarterTemplate(tmpl)}
-                        className="p-2.5 rounded-lg border border-border bg-background hover:border-primary hover:bg-primary/5 text-left transition cursor-pointer group shadow-2xs"
-                      >
-                        <div className="text-xs font-bold text-foreground group-hover:text-primary transition-colors truncate">
-                          {tmpl.id === 'about-us' && '🌟 About Us'}
-                          {tmpl.id === 'contact-us' && '📞 Contact Us'}
-                          {tmpl.id === 'privacy-policy' && '🔒 Privacy Policy'}
-                          {tmpl.id === 'terms-of-service' && '📜 Terms of Service'}
-                        </div>
-                        <div className="text-[10px] text-muted-foreground mt-0.5">
-                          {tmpl.blocks.length} sections
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Blocks Grid */}
-                <div className="space-y-2">
-                  <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
-                    Add Sections &amp; Blocks
-                  </span>
-                  <div className="grid grid-cols-1 gap-2">
-                    {filteredPaletteBlocks.map((blockDef) => {
-                      const Icon = blockDef.icon;
-                      return (
-                        <button
-                          key={blockDef.type}
-                          type="button"
-                          onClick={() => handleQuickAddBlock(blockDef)}
-                          className="w-full p-2.5 rounded-lg border border-border bg-background hover:bg-accent/40 hover:border-primary/60 transition text-left flex items-center justify-between gap-3 cursor-pointer group shadow-2xs"
-                        >
-                          <div className="flex items-center gap-3 min-w-0">
-                            <div className="w-8 h-8 rounded-md bg-primary/10 text-primary flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                              <Icon size={16} />
-                            </div>
-                            <div className="min-w-0">
-                              <h4 className="text-xs font-bold text-foreground group-hover:text-primary transition-colors truncate">
-                                {blockDef.title}
-                              </h4>
-                              <p className="text-[11px] text-muted-foreground truncate">
-                                {blockDef.description}
-                              </p>
-                            </div>
-                          </div>
-                          <Plus size={14} className="text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* TAB 2: OUTLINE & LAYERS NAVIGATOR */}
-            {sidebarTab === 'outline' && (
-              <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                    Page Sections ({blocks.length})
-                  </span>
+          {/* ─── VIEW A: WIDGETS PALETTE (When no block is selected) ─────────── */}
+          {!selectedBlock ? (
+            <div className="flex-1 overflow-y-auto flex flex-col p-3 space-y-4">
+              {/* Search Widget input */}
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Search Widget..."
+                  value={widgetSearchQuery}
+                  onChange={(e) => setWidgetSearchQuery(e.target.value)}
+                  className="w-full pl-8 pr-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#e2285c] shadow-2xs"
+                />
+                <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                {widgetSearchQuery && (
                   <button
                     type="button"
-                    onClick={() => {
-                      setInsertIndex(blocks.length);
-                      setShowAddModal(true);
-                    }}
-                    className="text-xs font-semibold text-primary hover:underline flex items-center gap-1 cursor-pointer"
+                    onClick={() => setWidgetSearchQuery('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-800"
                   >
-                    <Plus size={12} /> Add
+                    <X size={12} />
                   </button>
-                </div>
+                )}
+              </div>
 
-                {blocks.length === 0 ? (
-                  <div className="p-8 text-center text-xs text-muted-foreground border border-dashed border-border rounded-xl">
-                    No blocks added yet. Click Blocks to insert.
-                  </div>
-                ) : (
-                  <div className="space-y-1.5">
-                    {blocks.map((block, idx) => {
-                      const blockTitle =
-                        block.data.heading ||
-                        block.data.title ||
-                        block.data.badge ||
-                        `${block.type} Section`;
+              {/* Category Pills */}
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-[11px]">
+                {(['All', 'Layout', 'Basic', 'eCommerce'] as const).map((cat) => (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => setActiveCategory(cat)}
+                    className={`px-2.5 py-1 rounded-md font-semibold transition cursor-pointer whitespace-nowrap ${
+                      activeCategory === cat
+                        ? 'bg-[#e2285c] text-white shadow-2xs'
+                        : 'bg-white border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
 
-                      return (
-                        <div
-                          key={block.id}
-                          className="p-2.5 rounded-lg border border-border bg-background hover:border-primary/40 transition flex items-center justify-between gap-2 text-xs group"
-                        >
-                          <div
-                            onClick={() => setEditingBlock(block)}
-                            className="flex items-center gap-2 min-w-0 flex-1 cursor-pointer"
-                            title="Click to edit block properties"
-                          >
-                            <span className="font-mono text-[11px] text-muted-foreground w-4">
-                              {idx + 1}.
-                            </span>
-                            <span className="font-semibold text-foreground truncate">
-                              {blockTitle}
-                            </span>
+              {/* Widgets Grid */}
+              <div className="grid grid-cols-2 gap-2">
+                {filteredWidgets.map((w) => {
+                  const Icon = w.icon;
+                  return (
+                    <button
+                      key={w.type + w.title}
+                      type="button"
+                      onClick={() => handleAddWidget(w)}
+                      className="p-3 bg-white hover:bg-slate-50 border border-slate-200 hover:border-[#e2285c]/60 rounded-xl flex flex-col items-center justify-center text-center space-y-2 group transition cursor-pointer shadow-2xs"
+                    >
+                      <div className="w-9 h-9 rounded-lg bg-slate-100 group-hover:bg-[#e2285c]/10 text-slate-600 group-hover:text-[#e2285c] flex items-center justify-center transition">
+                        <Icon size={18} />
+                      </div>
+                      <span className="text-xs font-semibold text-slate-700 group-hover:text-[#e2285c] transition">
+                        {w.title}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            /* ─── VIEW B: ELEMENT EDIT PANEL (Content, Style, Advanced) ─────── */
+            <div className="flex-1 flex flex-col overflow-hidden">
+              {/* Tabs: Content | Style | Advanced (Light Theme) */}
+              <div className="flex border-b border-slate-200 bg-slate-50 text-xs font-semibold">
+                <button
+                  type="button"
+                  onClick={() => setActiveElementTab('content')}
+                  className={`flex-1 py-2.5 text-center transition cursor-pointer border-b-2 ${
+                    activeElementTab === 'content'
+                      ? 'border-[#e2285c] text-[#e2285c] font-bold bg-white'
+                      : 'border-transparent text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  Content
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveElementTab('style')}
+                  className={`flex-1 py-2.5 text-center transition cursor-pointer border-b-2 ${
+                    activeElementTab === 'style'
+                      ? 'border-[#e2285c] text-[#e2285c] font-bold bg-white'
+                      : 'border-transparent text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  Style
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveElementTab('advanced')}
+                  className={`flex-1 py-2.5 text-center transition cursor-pointer border-b-2 ${
+                    activeElementTab === 'advanced'
+                      ? 'border-[#e2285c] text-[#e2285c] font-bold bg-white'
+                      : 'border-transparent text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  Advanced
+                </button>
+              </div>
+
+              {/* Tab Body (Light Theme) */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-5 text-xs text-slate-700 bg-white">
+                {/* ─── 1. CONTENT TAB ────────────────────────────────────────── */}
+                {activeElementTab === 'content' && (
+                  <div className="space-y-4">
+                    {/* For HEADING */}
+                    {selectedBlock.type === 'HEADING' && (
+                      <>
+                        <div>
+                          <label className="block text-slate-700 font-semibold mb-1">Title Text</label>
+                          <textarea
+                            rows={3}
+                            value={selectedBlock.data.title || ''}
+                            onChange={(e) =>
+                              updateSelectedBlock((b) => {
+                                b.data.title = e.target.value;
+                                return b;
+                              })
+                            }
+                            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs focus:ring-1 focus:ring-[#e2285c] focus:border-[#e2285c]"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-slate-700 font-semibold mb-1">HTML Tag</label>
+                            <select
+                              value={selectedBlock.data.tag || 'h2'}
+                              onChange={(e) =>
+                                updateSelectedBlock((b) => {
+                                  b.data.tag = e.target.value;
+                                  return b;
+                                })
+                              }
+                              className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded text-slate-900 text-xs"
+                            >
+                              <option value="h1">H1</option>
+                              <option value="h2">H2</option>
+                              <option value="h3">H3</option>
+                              <option value="h4">H4</option>
+                              <option value="h5">H5</option>
+                              <option value="h6">H6</option>
+                              <option value="div">div</option>
+                              <option value="span">span</option>
+                              <option value="p">p</option>
+                            </select>
                           </div>
+                          <div>
+                            <label className="block text-slate-700 font-semibold mb-1">Link URL</label>
+                            <input
+                              type="text"
+                              placeholder="https://..."
+                              value={selectedBlock.data.link_url || ''}
+                              onChange={(e) =>
+                                updateSelectedBlock((b) => {
+                                  b.data.link_url = e.target.value;
+                                  return b;
+                                })
+                              }
+                              className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded text-slate-900 text-xs"
+                            />
+                          </div>
+                        </div>
+                      </>
+                    )}
 
-                          <div className="flex items-center gap-1 shrink-0">
+                    {/* For TEXT_EDITOR: WordPress Classic Editor */}
+                    {selectedBlock.type === 'TEXT_EDITOR' && (
+                      <div className="space-y-2">
+                        <label className="block text-slate-700 font-semibold">
+                          WordPress Classic Text Editor
+                        </label>
+                        <div className="border border-slate-300 rounded-lg overflow-hidden bg-white text-black shadow-2xs">
+                          <WordPressEditor
+                            value={selectedBlock.data.content || selectedBlock.data.html_content || ''}
+                            onChange={(val) =>
+                              updateSelectedBlock((b) => {
+                                b.data.content = val;
+                                b.data.html_content = val;
+                                return b;
+                              })
+                            }
+                            minHeight={250}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* For BUTTON */}
+                    {selectedBlock.type === 'BUTTON' && (
+                      <>
+                        <div>
+                          <label className="block text-slate-700 font-semibold mb-1">Button Text</label>
+                          <input
+                            type="text"
+                            value={selectedBlock.data.label || selectedBlock.data.text || ''}
+                            onChange={(e) =>
+                              updateSelectedBlock((b) => {
+                                b.data.label = e.target.value;
+                                b.data.text = e.target.value;
+                                return b;
+                              })
+                            }
+                            className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs focus:border-[#e2285c]"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-slate-700 font-semibold mb-1">Link URL</label>
+                          <input
+                            type="text"
+                            value={selectedBlock.data.url || selectedBlock.data.link || ''}
+                            onChange={(e) =>
+                              updateSelectedBlock((b) => {
+                                b.data.url = e.target.value;
+                                b.data.link = e.target.value;
+                                return b;
+                              })
+                            }
+                            className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs focus:border-[#e2285c]"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-slate-700 font-semibold mb-1">Variant</label>
+                            <select
+                              value={selectedBlock.data.variant || 'luxury'}
+                              onChange={(e) =>
+                                updateSelectedBlock((b) => {
+                                  b.data.variant = e.target.value;
+                                  return b;
+                                })
+                              }
+                              className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded text-slate-900 text-xs"
+                            >
+                              <option value="luxury">Luxury Gold</option>
+                              <option value="outline">Outline</option>
+                              <option value="dark">Dark</option>
+                              <option value="light">Light</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-slate-700 font-semibold mb-1">Size</label>
+                            <select
+                              value={selectedBlock.data.size || 'md'}
+                              onChange={(e) =>
+                                updateSelectedBlock((b) => {
+                                  b.data.size = e.target.value;
+                                  return b;
+                                })
+                              }
+                              className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded text-slate-900 text-xs"
+                            >
+                              <option value="sm">Small</option>
+                              <option value="md">Medium</option>
+                              <option value="lg">Large</option>
+                              <option value="xl">Extra Large</option>
+                            </select>
+                          </div>
+                        </div>
+                      </>
+                    )}
+
+                    {/* For IMAGE (Full Add, Remove, Resize Controls) */}
+                    {selectedBlock.type === 'IMAGE' && (
+                      <div className="space-y-3">
+                        <ImageControlGroup
+                          label="Image Settings"
+                          imageUrl={selectedBlock.data.image_url}
+                          onImageChange={(url) =>
+                            updateSelectedBlock((b) => {
+                              b.data.image_url = url;
+                              return b;
+                            })
+                          }
+                          onRemove={() =>
+                            updateSelectedBlock((b) => {
+                              b.data.image_url = '';
+                              return b;
+                            })
+                          }
+                          widthPercent={selectedBlock.data.width_percent || selectedBlock.data.width || 100}
+                          onWidthChange={(w) =>
+                            updateSelectedBlock((b) => {
+                              b.data.width_percent = w;
+                              b.data.width = w;
+                              return b;
+                            })
+                          }
+                          alignment={selectedBlock.data.alignment || 'center'}
+                          onAlignmentChange={(a) =>
+                            updateSelectedBlock((b) => {
+                              b.data.alignment = a;
+                              if (!b.style) b.style = {};
+                              b.style.alignment = a;
+                              return b;
+                            })
+                          }
+                          aspectRatio={selectedBlock.data.aspect_ratio || '16/9'}
+                          onAspectRatioChange={(r) =>
+                            updateSelectedBlock((b) => {
+                              b.data.aspect_ratio = r;
+                              return b;
+                            })
+                          }
+                          altText={selectedBlock.data.alt_text || ''}
+                          onAltTextChange={(t) =>
+                            updateSelectedBlock((b) => {
+                              b.data.alt_text = t;
+                              return b;
+                            })
+                          }
+                          caption={selectedBlock.data.caption || ''}
+                          onCaptionChange={(c) =>
+                            updateSelectedBlock((b) => {
+                              b.data.caption = c;
+                              return b;
+                            })
+                          }
+                        />
+
+                        <div>
+                          <label className="block text-slate-700 font-semibold mb-1">Click Link URL (Optional)</label>
+                          <input
+                            type="text"
+                            placeholder="https://..."
+                            value={selectedBlock.data.link_url || ''}
+                            onChange={(e) =>
+                              updateSelectedBlock((b) => {
+                                b.data.link_url = e.target.value;
+                                return b;
+                              })
+                            }
+                            className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs focus:border-[#e2285c]"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* For HERO */}
+                    {selectedBlock.type === 'HERO' && (
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-slate-700 font-semibold mb-1">Badge / Tagline</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. Atelier Dubai 2026"
+                            value={selectedBlock.data.badge || ''}
+                            onChange={(e) =>
+                              updateSelectedBlock((b) => {
+                                b.data.badge = e.target.value;
+                                return b;
+                              })
+                            }
+                            className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs focus:border-[#e2285c]"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-slate-700 font-semibold mb-1">Main Title</label>
+                          <textarea
+                            rows={2}
+                            value={selectedBlock.data.title || ''}
+                            onChange={(e) =>
+                              updateSelectedBlock((b) => {
+                                b.data.title = e.target.value;
+                                return b;
+                              })
+                            }
+                            className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs focus:border-[#e2285c]"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-slate-700 font-semibold mb-1">Subtitle</label>
+                          <textarea
+                            rows={3}
+                            value={selectedBlock.data.subtitle || ''}
+                            onChange={(e) =>
+                              updateSelectedBlock((b) => {
+                                b.data.subtitle = e.target.value;
+                                return b;
+                              })
+                            }
+                            className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs focus:border-[#e2285c]"
+                          />
+                        </div>
+
+                        {/* Primary Button */}
+                        <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                          <span className="font-bold text-slate-800 text-[11px] block">Primary Button</span>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="block text-[10px] text-slate-600 font-semibold mb-1">Label</label>
+                              <input
+                                type="text"
+                                value={selectedBlock.data.primary_button?.label || ''}
+                                onChange={(e) =>
+                                  updateSelectedBlock((b) => {
+                                    if (!b.data.primary_button) b.data.primary_button = {};
+                                    b.data.primary_button.label = e.target.value;
+                                    return b;
+                                  })
+                                }
+                                className="w-full px-2 py-1 bg-white border border-slate-300 rounded text-slate-900 text-xs"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] text-slate-600 font-semibold mb-1">Link URL</label>
+                              <input
+                                type="text"
+                                value={selectedBlock.data.primary_button?.url || ''}
+                                onChange={(e) =>
+                                  updateSelectedBlock((b) => {
+                                    if (!b.data.primary_button) b.data.primary_button = {};
+                                    b.data.primary_button.url = e.target.value;
+                                    return b;
+                                  })
+                                }
+                                className="w-full px-2 py-1 bg-white border border-slate-300 rounded text-slate-900 text-xs"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Secondary Button */}
+                        <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                          <span className="font-bold text-slate-800 text-[11px] block">Secondary Button</span>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="block text-[10px] text-slate-600 font-semibold mb-1">Label</label>
+                              <input
+                                type="text"
+                                value={selectedBlock.data.secondary_button?.label || ''}
+                                onChange={(e) =>
+                                  updateSelectedBlock((b) => {
+                                    if (!b.data.secondary_button) b.data.secondary_button = {};
+                                    b.data.secondary_button.label = e.target.value;
+                                    return b;
+                                  })
+                                }
+                                className="w-full px-2 py-1 bg-white border border-slate-300 rounded text-slate-900 text-xs"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] text-slate-600 font-semibold mb-1">Link URL</label>
+                              <input
+                                type="text"
+                                value={selectedBlock.data.secondary_button?.url || ''}
+                                onChange={(e) =>
+                                  updateSelectedBlock((b) => {
+                                    if (!b.data.secondary_button) b.data.secondary_button = {};
+                                    b.data.secondary_button.url = e.target.value;
+                                    return b;
+                                  })
+                                }
+                                className="w-full px-2 py-1 bg-white border border-slate-300 rounded text-slate-900 text-xs"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Hero Background Image */}
+                        <ImageControlGroup
+                          label="Hero Background Image"
+                          imageUrl={selectedBlock.data.bg_image || selectedBlock.data.image_url}
+                          onImageChange={(url) =>
+                            updateSelectedBlock((b) => {
+                              b.data.bg_type = 'image';
+                              b.data.bg_image = url;
+                              b.data.image_url = url;
+                              return b;
+                            })
+                          }
+                          onRemove={() =>
+                            updateSelectedBlock((b) => {
+                              b.data.bg_image = '';
+                              b.data.image_url = '';
+                              return b;
+                            })
+                          }
+                        />
+                      </div>
+                    )}
+
+                    {/* For TWO_COLUMN */}
+                    {selectedBlock.type === 'TWO_COLUMN' && (
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-slate-700 font-semibold mb-1">Eyebrow / Subheading</label>
+                          <input
+                            type="text"
+                            value={selectedBlock.data.subheading || ''}
+                            onChange={(e) =>
+                              updateSelectedBlock((b) => {
+                                b.data.subheading = e.target.value;
+                                return b;
+                              })
+                            }
+                            className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs focus:border-[#e2285c]"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-slate-700 font-semibold mb-1">Main Heading</label>
+                          <input
+                            type="text"
+                            value={selectedBlock.data.heading || selectedBlock.data.title || ''}
+                            onChange={(e) =>
+                              updateSelectedBlock((b) => {
+                                b.data.heading = e.target.value;
+                                b.data.title = e.target.value;
+                                return b;
+                              })
+                            }
+                            className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs focus:border-[#e2285c]"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-slate-700 font-semibold mb-1">Content / Paragraph</label>
+                          <textarea
+                            rows={4}
+                            value={selectedBlock.data.content || ''}
+                            onChange={(e) =>
+                              updateSelectedBlock((b) => {
+                                b.data.content = e.target.value;
+                                return b;
+                              })
+                            }
+                            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs focus:border-[#e2285c]"
+                          />
+                        </div>
+
+                        {/* Image Position Toggle */}
+                        <div>
+                          <label className="block text-slate-700 font-semibold mb-1">Image Position</label>
+                          <div className="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200">
                             <button
                               type="button"
-                              onClick={() => setEditingBlock(block)}
-                              className="p-1 rounded hover:bg-accent text-muted-foreground hover:text-foreground cursor-pointer"
-                              title="Settings"
+                              onClick={() =>
+                                updateSelectedBlock((b) => {
+                                  b.data.image_position = 'left';
+                                  return b;
+                                })
+                              }
+                              className={`flex-1 py-1 text-center rounded text-xs font-semibold cursor-pointer ${
+                                selectedBlock.data.image_position === 'left'
+                                  ? 'bg-white text-slate-900 shadow-2xs'
+                                  : 'text-slate-600 hover:text-slate-900'
+                              }`}
                             >
-                              <Settings2 size={13} />
+                              Image on Left
                             </button>
                             <button
                               type="button"
-                              disabled={idx === 0}
-                              onClick={() => handleMoveBlock(idx, 'up')}
-                              className="p-1 rounded hover:bg-accent text-muted-foreground hover:text-foreground disabled:opacity-30 cursor-pointer"
-                              title="Move Up"
+                              onClick={() =>
+                                updateSelectedBlock((b) => {
+                                  b.data.image_position = 'right';
+                                  return b;
+                                })
+                              }
+                              className={`flex-1 py-1 text-center rounded text-xs font-semibold cursor-pointer ${
+                                selectedBlock.data.image_position !== 'left'
+                                  ? 'bg-white text-slate-900 shadow-2xs'
+                                  : 'text-slate-600 hover:text-slate-900'
+                              }`}
                             >
-                              <ChevronUp size={13} />
-                            </button>
-                            <button
-                              type="button"
-                              disabled={idx === blocks.length - 1}
-                              onClick={() => handleMoveBlock(idx, 'down')}
-                              className="p-1 rounded hover:bg-accent text-muted-foreground hover:text-foreground disabled:opacity-30 cursor-pointer"
-                              title="Move Down"
-                            >
-                              <ChevronDown size={13} />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleDuplicateBlock(idx)}
-                              className="p-1 rounded hover:bg-accent text-muted-foreground hover:text-foreground cursor-pointer"
-                              title="Duplicate"
-                            >
-                              <Copy size={13} />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteBlock(idx)}
-                              className="p-1 rounded hover:bg-red-500/10 text-muted-foreground hover:text-red-500 cursor-pointer"
-                              title="Delete"
-                            >
-                              <Trash2 size={13} />
+                              Image on Right
                             </button>
                           </div>
                         </div>
-                      );
-                    })}
+
+                        {/* Story Image Controls */}
+                        <ImageControlGroup
+                          label="Story Image"
+                          imageUrl={selectedBlock.data.image_url}
+                          onImageChange={(url) =>
+                            updateSelectedBlock((b) => {
+                              b.data.image_url = url;
+                              return b;
+                            })
+                          }
+                          onRemove={() =>
+                            updateSelectedBlock((b) => {
+                              b.data.image_url = '';
+                              return b;
+                            })
+                          }
+                          widthPercent={selectedBlock.data.width_percent || 100}
+                          onWidthChange={(w) =>
+                            updateSelectedBlock((b) => {
+                              b.data.width_percent = w;
+                              return b;
+                            })
+                          }
+                        />
+
+                        {/* Highlights Repeater */}
+                        <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2.5">
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-slate-800 text-[11px]">Key Highlights</span>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                updateSelectedBlock((b) => {
+                                  if (!Array.isArray(b.data.highlights)) b.data.highlights = [];
+                                  b.data.highlights.push('New key highlight point');
+                                  return b;
+                                })
+                              }
+                              className="text-[11px] text-[#e2285c] hover:underline font-bold flex items-center gap-1 cursor-pointer"
+                            >
+                              <Plus size={12} />
+                              <span>Add Bullet</span>
+                            </button>
+                          </div>
+                          {Array.isArray(selectedBlock.data.highlights) &&
+                            selectedBlock.data.highlights.map((hl: string, idx: number) => (
+                              <div key={idx} className="flex items-center gap-1.5">
+                                <input
+                                  type="text"
+                                  value={hl}
+                                  onChange={(e) =>
+                                    updateSelectedBlock((b) => {
+                                      b.data.highlights[idx] = e.target.value;
+                                      return b;
+                                    })
+                                  }
+                                  className="flex-1 px-2.5 py-1 bg-white border border-slate-300 rounded text-slate-900 text-xs focus:border-[#e2285c]"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    updateSelectedBlock((b) => {
+                                      b.data.highlights.splice(idx, 1);
+                                      return b;
+                                    })
+                                  }
+                                  className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded"
+                                >
+                                  <Trash2 size={13} />
+                                </button>
+                              </div>
+                            ))}
+                        </div>
+
+                        {/* CTA Button */}
+                        <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                          <span className="font-bold text-slate-800 text-[11px] block">CTA Button</span>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="block text-[10px] text-slate-600 font-semibold mb-1">Label</label>
+                              <input
+                                type="text"
+                                value={selectedBlock.data.cta_button?.label || ''}
+                                onChange={(e) =>
+                                  updateSelectedBlock((b) => {
+                                    if (!b.data.cta_button) b.data.cta_button = {};
+                                    b.data.cta_button.label = e.target.value;
+                                    return b;
+                                  })
+                                }
+                                className="w-full px-2 py-1 bg-white border border-slate-300 rounded text-slate-900 text-xs"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] text-slate-600 font-semibold mb-1">Link URL</label>
+                              <input
+                                type="text"
+                                value={selectedBlock.data.cta_button?.url || ''}
+                                onChange={(e) =>
+                                  updateSelectedBlock((b) => {
+                                    if (!b.data.cta_button) b.data.cta_button = {};
+                                    b.data.cta_button.url = e.target.value;
+                                    return b;
+                                  })
+                                }
+                                className="w-full px-2 py-1 bg-white border border-slate-300 rounded text-slate-900 text-xs"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* For FEATURES_GRID */}
+                    {selectedBlock.type === 'FEATURES_GRID' && (
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-slate-700 font-semibold mb-1">Section Title</label>
+                          <input
+                            type="text"
+                            value={selectedBlock.data.heading || selectedBlock.data.title || ''}
+                            onChange={(e) =>
+                              updateSelectedBlock((b) => {
+                                b.data.heading = e.target.value;
+                                b.data.title = e.target.value;
+                                return b;
+                              })
+                            }
+                            className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs focus:border-[#e2285c]"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-slate-700 font-semibold mb-1">Subtitle</label>
+                          <textarea
+                            rows={2}
+                            value={selectedBlock.data.subtitle || ''}
+                            onChange={(e) =>
+                              updateSelectedBlock((b) => {
+                                b.data.subtitle = e.target.value;
+                                return b;
+                              })
+                            }
+                            className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs focus:border-[#e2285c]"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-slate-700 font-semibold mb-1">Columns</label>
+                          <select
+                            value={selectedBlock.data.columns || 4}
+                            onChange={(e) =>
+                              updateSelectedBlock((b) => {
+                                b.data.columns = parseInt(e.target.value, 10);
+                                return b;
+                              })
+                            }
+                            className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded text-slate-900 text-xs"
+                          >
+                            <option value={2}>2 Columns</option>
+                            <option value={3}>3 Columns</option>
+                            <option value={4}>4 Columns</option>
+                          </select>
+                        </div>
+
+                        {/* Features Repeater */}
+                        <div className="space-y-3 pt-1">
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-slate-800 text-[11px]">Feature Cards</span>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                updateSelectedBlock((b) => {
+                                  if (!Array.isArray(b.data.items)) b.data.items = [];
+                                  b.data.items.push({
+                                    icon: 'Sparkles',
+                                    title: 'Feature Title',
+                                    description: 'Description of this craft or service value.',
+                                  });
+                                  return b;
+                                })
+                              }
+                              className="text-[11px] text-[#e2285c] hover:underline font-bold flex items-center gap-1 cursor-pointer"
+                            >
+                              <Plus size={12} />
+                              <span>Add Card</span>
+                            </button>
+                          </div>
+
+                          {Array.isArray(selectedBlock.data.items) &&
+                            selectedBlock.data.items.map((it: any, idx: number) => (
+                              <div key={idx} className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <span className="font-semibold text-slate-700 text-[11px]">Card #{idx + 1}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      updateSelectedBlock((b) => {
+                                        b.data.items.splice(idx, 1);
+                                        return b;
+                                      })
+                                    }
+                                    className="text-red-500 hover:text-red-700 p-1"
+                                  >
+                                    <Trash2 size={12} />
+                                  </button>
+                                </div>
+                                <div className="grid grid-cols-3 gap-2">
+                                  <div className="col-span-2">
+                                    <input
+                                      type="text"
+                                      placeholder="Title"
+                                      value={it.title || ''}
+                                      onChange={(e) =>
+                                        updateSelectedBlock((b) => {
+                                          b.data.items[idx].title = e.target.value;
+                                          return b;
+                                        })
+                                      }
+                                      className="w-full px-2 py-1 bg-white border border-slate-300 rounded text-slate-900 text-xs"
+                                    />
+                                  </div>
+                                  <div>
+                                    <select
+                                      value={it.icon || 'Sparkles'}
+                                      onChange={(e) =>
+                                        updateSelectedBlock((b) => {
+                                          b.data.items[idx].icon = e.target.value;
+                                          return b;
+                                        })
+                                      }
+                                      className="w-full px-1.5 py-1 bg-white border border-slate-300 rounded text-slate-900 text-xs"
+                                    >
+                                      <option value="Sparkles">Sparkles</option>
+                                      <option value="Shield">Shield</option>
+                                      <option value="Truck">Truck</option>
+                                      <option value="Award">Award</option>
+                                      <option value="Heart">Heart</option>
+                                      <option value="Star">Star</option>
+                                      <option value="Headset">Headset</option>
+                                    </select>
+                                  </div>
+                                </div>
+                                <textarea
+                                  rows={2}
+                                  placeholder="Description..."
+                                  value={it.description || ''}
+                                  onChange={(e) =>
+                                    updateSelectedBlock((b) => {
+                                      b.data.items[idx].description = e.target.value;
+                                      return b;
+                                    })
+                                  }
+                                  className="w-full px-2 py-1 bg-white border border-slate-300 rounded text-slate-900 text-xs"
+                                />
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* For STATS_COUNTER */}
+                    {selectedBlock.type === 'STATS_COUNTER' && (
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-slate-700 font-semibold mb-1">Section Title</label>
+                          <input
+                            type="text"
+                            value={selectedBlock.data.title || ''}
+                            onChange={(e) =>
+                              updateSelectedBlock((b) => {
+                                b.data.title = e.target.value;
+                                return b;
+                              })
+                            }
+                            className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs focus:border-[#e2285c]"
+                          />
+                        </div>
+
+                        {/* Stats Repeater */}
+                        <div className="space-y-2.5">
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-slate-800 text-[11px]">Stats Counters</span>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                updateSelectedBlock((b) => {
+                                  if (!Array.isArray(b.data.stats)) b.data.stats = [];
+                                  b.data.stats.push({ number: '100+', label: 'New Metric' });
+                                  return b;
+                                })
+                              }
+                              className="text-[11px] text-[#e2285c] hover:underline font-bold flex items-center gap-1 cursor-pointer"
+                            >
+                              <Plus size={12} />
+                              <span>Add Stat</span>
+                            </button>
+                          </div>
+
+                          {Array.isArray(selectedBlock.data.stats) &&
+                            selectedBlock.data.stats.map((st: any, idx: number) => (
+                              <div key={idx} className="flex items-center gap-2 p-2 bg-slate-50 border border-slate-200 rounded-lg">
+                                <input
+                                  type="text"
+                                  placeholder="e.g. 50K+"
+                                  value={st.number || ''}
+                                  onChange={(e) =>
+                                    updateSelectedBlock((b) => {
+                                      b.data.stats[idx].number = e.target.value;
+                                      return b;
+                                    })
+                                  }
+                                  className="w-24 px-2 py-1 bg-white border border-slate-300 rounded text-slate-900 text-xs font-bold"
+                                />
+                                <input
+                                  type="text"
+                                  placeholder="Label (e.g. Happy Clients)"
+                                  value={st.label || ''}
+                                  onChange={(e) =>
+                                    updateSelectedBlock((b) => {
+                                      b.data.stats[idx].label = e.target.value;
+                                      return b;
+                                    })
+                                  }
+                                  className="flex-1 px-2 py-1 bg-white border border-slate-300 rounded text-slate-900 text-xs"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    updateSelectedBlock((b) => {
+                                      b.data.stats.splice(idx, 1);
+                                      return b;
+                                    })
+                                  }
+                                  className="text-red-500 hover:text-red-700 p-1"
+                                >
+                                  <Trash2 size={13} />
+                                </button>
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* For TESTIMONIALS */}
+                    {selectedBlock.type === 'TESTIMONIALS' && (
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-slate-700 font-semibold mb-1">Section Title</label>
+                          <input
+                            type="text"
+                            value={selectedBlock.data.title || ''}
+                            onChange={(e) =>
+                              updateSelectedBlock((b) => {
+                                b.data.title = e.target.value;
+                                return b;
+                              })
+                            }
+                            className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs focus:border-[#e2285c]"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-slate-700 font-semibold mb-1">Subtitle</label>
+                          <input
+                            type="text"
+                            value={selectedBlock.data.subtitle || ''}
+                            onChange={(e) =>
+                              updateSelectedBlock((b) => {
+                                b.data.subtitle = e.target.value;
+                                return b;
+                              })
+                            }
+                            className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs focus:border-[#e2285c]"
+                          />
+                        </div>
+
+                        {/* Testimonials Repeater */}
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-slate-800 text-[11px]">Testimonials</span>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                updateSelectedBlock((b) => {
+                                  if (!Array.isArray(b.data.items)) b.data.items = [];
+                                  b.data.items.push({
+                                    quote: 'The craftsmanship exceeded my expectations completely.',
+                                    author: 'Client Name',
+                                    role: 'Dubai, UAE',
+                                    rating: 5,
+                                  });
+                                  return b;
+                                })
+                              }
+                              className="text-[11px] text-[#e2285c] hover:underline font-bold flex items-center gap-1 cursor-pointer"
+                            >
+                              <Plus size={12} />
+                              <span>Add Review</span>
+                            </button>
+                          </div>
+
+                          {Array.isArray(selectedBlock.data.items) &&
+                            selectedBlock.data.items.map((it: any, idx: number) => (
+                              <div key={idx} className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <span className="font-semibold text-slate-700 text-[11px]">Review #{idx + 1}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      updateSelectedBlock((b) => {
+                                        b.data.items.splice(idx, 1);
+                                        return b;
+                                      })
+                                    }
+                                    className="text-red-500 hover:text-red-700 p-1"
+                                  >
+                                    <Trash2 size={12} />
+                                  </button>
+                                </div>
+                                <textarea
+                                  rows={2}
+                                  placeholder="Review quote..."
+                                  value={it.quote || ''}
+                                  onChange={(e) =>
+                                    updateSelectedBlock((b) => {
+                                      b.data.items[idx].quote = e.target.value;
+                                      return b;
+                                    })
+                                  }
+                                  className="w-full px-2 py-1 bg-white border border-slate-300 rounded text-slate-900 text-xs"
+                                />
+                                <div className="grid grid-cols-2 gap-2">
+                                  <input
+                                    type="text"
+                                    placeholder="Author"
+                                    value={it.author || ''}
+                                    onChange={(e) =>
+                                      updateSelectedBlock((b) => {
+                                        b.data.items[idx].author = e.target.value;
+                                        return b;
+                                      })
+                                    }
+                                    className="px-2 py-1 bg-white border border-slate-300 rounded text-slate-900 text-xs"
+                                  />
+                                  <input
+                                    type="text"
+                                    placeholder="Role / City"
+                                    value={it.role || ''}
+                                    onChange={(e) =>
+                                      updateSelectedBlock((b) => {
+                                        b.data.items[idx].role = e.target.value;
+                                        return b;
+                                      })
+                                    }
+                                    className="px-2 py-1 bg-white border border-slate-300 rounded text-slate-900 text-xs"
+                                  />
+                                </div>
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* For FAQ_ACCORDION */}
+                    {selectedBlock.type === 'FAQ_ACCORDION' && (
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-slate-700 font-semibold mb-1">Section Title</label>
+                          <input
+                            type="text"
+                            value={selectedBlock.data.title || ''}
+                            onChange={(e) =>
+                              updateSelectedBlock((b) => {
+                                b.data.title = e.target.value;
+                                return b;
+                              })
+                            }
+                            className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs focus:border-[#e2285c]"
+                          />
+                        </div>
+
+                        {/* FAQs Repeater */}
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-slate-800 text-[11px]">Frequently Asked Questions</span>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                updateSelectedBlock((b) => {
+                                  if (!Array.isArray(b.data.items)) b.data.items = [];
+                                  b.data.items.push({
+                                    question: 'New Question Here?',
+                                    answer: 'Detailed answer or policy explanation goes here.',
+                                  });
+                                  return b;
+                                })
+                              }
+                              className="text-[11px] text-[#e2285c] hover:underline font-bold flex items-center gap-1 cursor-pointer"
+                            >
+                              <Plus size={12} />
+                              <span>Add Question</span>
+                            </button>
+                          </div>
+
+                          {Array.isArray(selectedBlock.data.items) &&
+                            selectedBlock.data.items.map((it: any, idx: number) => (
+                              <div key={idx} className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <span className="font-semibold text-slate-700 text-[11px]">FAQ #{idx + 1}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      updateSelectedBlock((b) => {
+                                        b.data.items.splice(idx, 1);
+                                        return b;
+                                      })
+                                    }
+                                    className="text-red-500 hover:text-red-700 p-1"
+                                  >
+                                    <Trash2 size={12} />
+                                  </button>
+                                </div>
+                                <input
+                                  type="text"
+                                  placeholder="Question..."
+                                  value={it.question || ''}
+                                  onChange={(e) =>
+                                    updateSelectedBlock((b) => {
+                                      b.data.items[idx].question = e.target.value;
+                                      return b;
+                                    })
+                                  }
+                                  className="w-full px-2 py-1 bg-white border border-slate-300 rounded text-slate-900 text-xs font-semibold"
+                                />
+                                <textarea
+                                  rows={2}
+                                  placeholder="Answer..."
+                                  value={it.answer || ''}
+                                  onChange={(e) =>
+                                    updateSelectedBlock((b) => {
+                                      b.data.items[idx].answer = e.target.value;
+                                      return b;
+                                    })
+                                  }
+                                  className="w-full px-2 py-1 bg-white border border-slate-300 rounded text-slate-900 text-xs"
+                                />
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* For CTA_BANNER */}
+                    {selectedBlock.type === 'CTA_BANNER' && (
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-slate-700 font-semibold mb-1">Banner Title</label>
+                          <input
+                            type="text"
+                            value={selectedBlock.data.title || ''}
+                            onChange={(e) =>
+                              updateSelectedBlock((b) => {
+                                b.data.title = e.target.value;
+                                return b;
+                              })
+                            }
+                            className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs focus:border-[#e2285c]"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-slate-700 font-semibold mb-1">Subtitle</label>
+                          <textarea
+                            rows={2}
+                            value={selectedBlock.data.subtitle || ''}
+                            onChange={(e) =>
+                              updateSelectedBlock((b) => {
+                                b.data.subtitle = e.target.value;
+                                return b;
+                              })
+                            }
+                            className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs focus:border-[#e2285c]"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="block text-slate-700 font-semibold mb-1">Button Label</label>
+                            <input
+                              type="text"
+                              value={selectedBlock.data.button_text || ''}
+                              onChange={(e) =>
+                                updateSelectedBlock((b) => {
+                                  b.data.button_text = e.target.value;
+                                  return b;
+                                })
+                              }
+                              className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded text-slate-900 text-xs"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-slate-700 font-semibold mb-1">Button Link</label>
+                            <input
+                              type="text"
+                              value={selectedBlock.data.button_link || ''}
+                              onChange={(e) =>
+                                updateSelectedBlock((b) => {
+                                  b.data.button_link = e.target.value;
+                                  return b;
+                                })
+                              }
+                              className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded text-slate-900 text-xs"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* For CONTACT_FORM */}
+                    {selectedBlock.type === 'CONTACT_FORM' && (
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-slate-700 font-semibold mb-1">Badge</label>
+                          <input
+                            type="text"
+                            value={selectedBlock.data.badge || ''}
+                            onChange={(e) =>
+                              updateSelectedBlock((b) => {
+                                b.data.badge = e.target.value;
+                                return b;
+                              })
+                            }
+                            className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-slate-700 font-semibold mb-1">Title</label>
+                          <input
+                            type="text"
+                            value={selectedBlock.data.title || ''}
+                            onChange={(e) =>
+                              updateSelectedBlock((b) => {
+                                b.data.title = e.target.value;
+                                return b;
+                              })
+                            }
+                            className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-slate-700 font-semibold mb-1">Subtitle</label>
+                          <textarea
+                            rows={2}
+                            value={selectedBlock.data.subtitle || ''}
+                            onChange={(e) =>
+                              updateSelectedBlock((b) => {
+                                b.data.subtitle = e.target.value;
+                                return b;
+                              })
+                            }
+                            className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-slate-700 font-semibold mb-1">Email</label>
+                          <input
+                            type="text"
+                            value={selectedBlock.data.email || ''}
+                            onChange={(e) =>
+                              updateSelectedBlock((b) => {
+                                b.data.email = e.target.value;
+                                return b;
+                              })
+                            }
+                            className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-slate-700 font-semibold mb-1">Business Hours</label>
+                          <textarea
+                            rows={2}
+                            value={selectedBlock.data.hours || ''}
+                            onChange={(e) =>
+                              updateSelectedBlock((b) => {
+                                b.data.hours = e.target.value;
+                                return b;
+                              })
+                            }
+                            className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* For VIDEO */}
+                    {selectedBlock.type === 'VIDEO' && (
+                      <div>
+                        <label className="block text-slate-700 font-semibold mb-1">Video Link (YouTube / Vimeo)</label>
+                        <input
+                          type="text"
+                          value={selectedBlock.data.url || selectedBlock.data.video_url || ''}
+                          onChange={(e) =>
+                            updateSelectedBlock((b) => {
+                              b.data.url = e.target.value;
+                              b.data.video_url = e.target.value;
+                              return b;
+                            })
+                          }
+                          className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs"
+                        />
+                      </div>
+                    )}
+
+                    {/* For DIVIDER */}
+                    {selectedBlock.type === 'DIVIDER' && (
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-slate-700 font-semibold mb-1">Style</label>
+                          <select
+                            value={selectedBlock.data.style || 'solid'}
+                            onChange={(e) =>
+                              updateSelectedBlock((b) => {
+                                b.data.style = e.target.value;
+                                return b;
+                              })
+                            }
+                            className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded text-slate-900 text-xs"
+                          >
+                            <option value="solid">Solid</option>
+                            <option value="dashed">Dashed</option>
+                            <option value="dotted">Dotted</option>
+                            <option value="double">Double</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-slate-700 font-semibold mb-1">
+                            Width: {selectedBlock.data.width || 100}%
+                          </label>
+                          <input
+                            type="range"
+                            min="10"
+                            max="100"
+                            value={selectedBlock.data.width || 100}
+                            onChange={(e) =>
+                              updateSelectedBlock((b) => {
+                                b.data.width = parseInt(e.target.value);
+                                return b;
+                              })
+                            }
+                            className="w-full accent-[#e2285c]"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* For SPACER */}
+                    {selectedBlock.type === 'SPACER' && (
+                      <div>
+                        <label className="block text-slate-700 font-semibold mb-1">
+                          Height: {selectedBlock.data.height || 48}px
+                        </label>
+                        <input
+                          type="range"
+                          min="10"
+                          max="250"
+                          value={selectedBlock.data.height || 48}
+                          onChange={(e) =>
+                            updateSelectedBlock((b) => {
+                              b.data.height = parseInt(e.target.value);
+                              return b;
+                            })
+                          }
+                          className="w-full accent-[#e2285c]"
+                        />
+                      </div>
+                    )}
+
+                    {/* For CONTAINER / GRID */}
+                    {(selectedBlock.type === 'CONTAINER' || selectedBlock.type === 'GRID') && (
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-slate-700 font-semibold mb-1">Columns</label>
+                          <select
+                            value={selectedBlock.data.columns || 1}
+                            onChange={(e) =>
+                              updateSelectedBlock((b) => {
+                                const val = e.target.value;
+                                b.data.columns = isNaN(Number(val)) ? val : Number(val);
+                                return b;
+                              })
+                            }
+                            className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded text-slate-900 text-xs"
+                          >
+                            <option value={1}>1 Column (100%)</option>
+                            <option value={2}>2 Columns (50% / 50%)</option>
+                            <option value={3}>3 Columns (33% / 33% / 33%)</option>
+                            <option value={4}>4 Columns (25% each)</option>
+                            <option value="1/3-2/3">1/3 + 2/3 Columns</option>
+                            <option value="2/3-1/3">2/3 + 1/3 Columns</option>
+                          </select>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* For MAP */}
+                    {selectedBlock.type === 'MAP' && (
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-slate-700 font-semibold mb-1">Map Title</label>
+                          <input
+                            type="text"
+                            value={selectedBlock.data.title || ''}
+                            onChange={(e) =>
+                              updateSelectedBlock((b) => {
+                                b.data.title = e.target.value;
+                                return b;
+                              })
+                            }
+                            className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-slate-700 font-semibold mb-1">Address</label>
+                          <textarea
+                            rows={2}
+                            value={selectedBlock.data.address || ''}
+                            onChange={(e) =>
+                              updateSelectedBlock((b) => {
+                                b.data.address = e.target.value;
+                                return b;
+                              })
+                            }
+                            className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* ─── 2. STYLE TAB (Typography, Alignment, Colors) ── */}
+                {activeElementTab === 'style' && (
+                  <div className="space-y-5">
+                    {/* Alignment */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="text-slate-700 font-semibold">Alignment</label>
+                        <span className="text-[10px] text-slate-500 uppercase">{deviceView}</span>
+                      </div>
+                      <div className="flex bg-slate-100 border border-slate-200 rounded-lg p-0.5">
+                        {(['left', 'center', 'right', 'justify'] as const).map((align) => (
+                          <button
+                            key={align}
+                            type="button"
+                            onClick={() =>
+                              updateSelectedBlock((b) => {
+                                if (!b.style) b.style = {};
+                                b.style.alignment = align;
+                                b.data.alignment = align;
+                                return b;
+                              })
+                            }
+                            className={`flex-1 py-1 text-center rounded capitalize text-xs transition cursor-pointer ${
+                              (selectedBlock.style?.alignment || selectedBlock.data.alignment) === align
+                                ? 'bg-[#e2285c] text-white font-bold shadow-xs'
+                                : 'text-slate-600 hover:text-slate-900'
+                            }`}
+                          >
+                            {align}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Text Color */}
+                    <div>
+                      <label className="block text-slate-700 font-semibold mb-1.5">Text Color</label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={selectedBlock.style?.textColor || '#000000'}
+                          onChange={(e) =>
+                            updateSelectedBlock((b) => {
+                              if (!b.style) b.style = {};
+                              b.style.textColor = e.target.value;
+                              return b;
+                            })
+                          }
+                          className="w-8 h-8 rounded border border-slate-300 cursor-pointer bg-white"
+                        />
+                        <input
+                          type="text"
+                          value={selectedBlock.style?.textColor || ''}
+                          placeholder="#000000"
+                          onChange={(e) =>
+                            updateSelectedBlock((b) => {
+                              if (!b.style) b.style = {};
+                              b.style.textColor = e.target.value;
+                              return b;
+                            })
+                          }
+                          className="flex-1 px-2.5 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-900"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Typography Box */}
+                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+                      <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                        <span className="font-bold text-slate-800 text-xs flex items-center gap-1.5">
+                          <Type size={13} className="text-[#e2285c]" />
+                          <span>Typography</span>
+                        </span>
+                      </div>
+
+                      {/* Font Family */}
+                      <div>
+                        <label className="block text-[11px] text-slate-600 mb-1">Family</label>
+                        <select
+                          value={selectedBlock.style?.typography?.family || 'Inter'}
+                          onChange={(e) =>
+                            updateSelectedBlock((b) => {
+                              if (!b.style) b.style = {};
+                              if (!b.style.typography) b.style.typography = {};
+                              b.style.typography.family = e.target.value;
+                              return b;
+                            })
+                          }
+                          className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded text-slate-900 text-xs"
+                        >
+                          {GOOGLE_FONTS.map((font) => (
+                            <option key={font} value={font} style={{ fontFamily: font }}>
+                              {font}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Font Size */}
+                      <div>
+                        <div className="flex justify-between text-[11px] text-slate-600 mb-1">
+                          <span>Size</span>
+                          <span>{selectedBlock.style?.typography?.size || 16}px</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="10"
+                          max="96"
+                          value={selectedBlock.style?.typography?.size || 16}
+                          onChange={(e) =>
+                            updateSelectedBlock((b) => {
+                              if (!b.style) b.style = {};
+                              if (!b.style.typography) b.style.typography = {};
+                              b.style.typography.size = parseInt(e.target.value);
+                              return b;
+                            })
+                          }
+                          className="w-full accent-[#e2285c]"
+                        />
+                      </div>
+
+                      {/* Font Weight */}
+                      <div className="grid grid-cols-2 gap-2 text-[11px]">
+                        <div>
+                          <label className="block text-slate-600 mb-1">Weight</label>
+                          <select
+                            value={selectedBlock.style?.typography?.weight || '400'}
+                            onChange={(e) =>
+                              updateSelectedBlock((b) => {
+                                if (!b.style) b.style = {};
+                                if (!b.style.typography) b.style.typography = {};
+                                b.style.typography.weight = e.target.value;
+                                return b;
+                              })
+                            }
+                            className="w-full px-2 py-1 bg-white border border-slate-300 rounded text-slate-900 text-xs"
+                          >
+                            <option value="300">Light 300</option>
+                            <option value="400">Regular 400</option>
+                            <option value="500">Medium 500</option>
+                            <option value="600">Semi-Bold 600</option>
+                            <option value="700">Bold 700</option>
+                            <option value="800">Extra Bold 800</option>
+                            <option value="900">Black 900</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-slate-600 mb-1">Transform</label>
+                          <select
+                            value={selectedBlock.style?.typography?.transform || 'none'}
+                            onChange={(e) =>
+                              updateSelectedBlock((b) => {
+                                if (!b.style) b.style = {};
+                                if (!b.style.typography) b.style.typography = {};
+                                b.style.typography.transform = e.target.value as any;
+                                return b;
+                              })
+                            }
+                            className="w-full px-2 py-1 bg-white border border-slate-300 rounded text-slate-900 text-xs"
+                          >
+                            <option value="none">Default</option>
+                            <option value="uppercase">Uppercase</option>
+                            <option value="lowercase">Lowercase</option>
+                            <option value="capitalize">Capitalize</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Line Height & Letter Spacing */}
+                      <div className="grid grid-cols-2 gap-2 text-[11px]">
+                        <div>
+                          <label className="block text-slate-600 mb-1">Line Height</label>
+                          <input
+                            type="number"
+                            step="0.1"
+                            min="0.8"
+                            max="3"
+                            value={selectedBlock.style?.typography?.lineHeight || 1.5}
+                            onChange={(e) =>
+                              updateSelectedBlock((b) => {
+                                if (!b.style) b.style = {};
+                                if (!b.style.typography) b.style.typography = {};
+                                b.style.typography.lineHeight = parseFloat(e.target.value);
+                                return b;
+                              })
+                            }
+                            className="w-full px-2 py-1 bg-white border border-slate-300 rounded text-slate-900 text-xs"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-slate-600 mb-1">Letter Spacing (px)</label>
+                          <input
+                            type="number"
+                            step="0.5"
+                            value={selectedBlock.style?.typography?.letterSpacing || 0}
+                            onChange={(e) =>
+                              updateSelectedBlock((b) => {
+                                if (!b.style) b.style = {};
+                                if (!b.style.typography) b.style.typography = {};
+                                b.style.typography.letterSpacing = parseFloat(e.target.value);
+                                return b;
+                              })
+                            }
+                            className="w-full px-2 py-1 bg-white border border-slate-300 rounded text-slate-900 text-xs"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Background Color & Gradient */}
+                    <div>
+                      <label className="block text-slate-700 font-semibold mb-1.5">Background</label>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            value={selectedBlock.style?.backgroundColor || '#ffffff'}
+                            onChange={(e) =>
+                              updateSelectedBlock((b) => {
+                                if (!b.style) b.style = {};
+                                b.style.backgroundColor = e.target.value;
+                                return b;
+                              })
+                            }
+                            className="w-8 h-8 rounded border border-slate-300 cursor-pointer bg-white"
+                          />
+                          <input
+                            type="text"
+                            placeholder="Solid color hex (e.g. #f8fafc)"
+                            value={selectedBlock.style?.backgroundColor || ''}
+                            onChange={(e) =>
+                              updateSelectedBlock((b) => {
+                                if (!b.style) b.style = {};
+                                b.style.backgroundColor = e.target.value;
+                                return b;
+                              })
+                            }
+                            className="flex-1 px-2.5 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-900"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* ─── 3. ADVANCED TAB (Margins, Paddings, Z-Index, Responsive) ─── */}
+                {activeElementTab === 'advanced' && (
+                  <div className="space-y-5">
+                    {/* Margins */}
+                    <div>
+                      <label className="block text-slate-700 font-semibold mb-1.5">Margin (px)</label>
+                      <div className="grid grid-cols-4 gap-2 text-center text-[10px]">
+                        <div>
+                          <input
+                            type="number"
+                            placeholder="0"
+                            value={selectedBlock.advanced?.margin?.top ?? ''}
+                            onChange={(e) =>
+                              updateSelectedBlock((b) => {
+                                if (!b.advanced) b.advanced = {};
+                                if (!b.advanced.margin) b.advanced.margin = {};
+                                b.advanced.margin.top = parseInt(e.target.value) || 0;
+                                return b;
+                              })
+                            }
+                            className="w-full py-1 text-center bg-white border border-slate-300 rounded text-slate-900"
+                          />
+                          <span className="text-slate-500">Top</span>
+                        </div>
+                        <div>
+                          <input
+                            type="number"
+                            placeholder="0"
+                            value={selectedBlock.advanced?.margin?.right ?? ''}
+                            onChange={(e) =>
+                              updateSelectedBlock((b) => {
+                                if (!b.advanced) b.advanced = {};
+                                if (!b.advanced.margin) b.advanced.margin = {};
+                                b.advanced.margin.right = parseInt(e.target.value) || 0;
+                                return b;
+                              })
+                            }
+                            className="w-full py-1 text-center bg-white border border-slate-300 rounded text-slate-900"
+                          />
+                          <span className="text-slate-500">Right</span>
+                        </div>
+                        <div>
+                          <input
+                            type="number"
+                            placeholder="0"
+                            value={selectedBlock.advanced?.margin?.bottom ?? ''}
+                            onChange={(e) =>
+                              updateSelectedBlock((b) => {
+                                if (!b.advanced) b.advanced = {};
+                                if (!b.advanced.margin) b.advanced.margin = {};
+                                b.advanced.margin.bottom = parseInt(e.target.value) || 0;
+                                return b;
+                              })
+                            }
+                            className="w-full py-1 text-center bg-white border border-slate-300 rounded text-slate-900"
+                          />
+                          <span className="text-slate-500">Bottom</span>
+                        </div>
+                        <div>
+                          <input
+                            type="number"
+                            placeholder="0"
+                            value={selectedBlock.advanced?.margin?.left ?? ''}
+                            onChange={(e) =>
+                              updateSelectedBlock((b) => {
+                                if (!b.advanced) b.advanced = {};
+                                if (!b.advanced.margin) b.advanced.margin = {};
+                                b.advanced.margin.left = parseInt(e.target.value) || 0;
+                                return b;
+                              })
+                            }
+                            className="w-full py-1 text-center bg-white border border-slate-300 rounded text-slate-900"
+                          />
+                          <span className="text-slate-500">Left</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Paddings */}
+                    <div>
+                      <label className="block text-slate-700 font-semibold mb-1.5">Padding (px)</label>
+                      <div className="grid grid-cols-4 gap-2 text-center text-[10px]">
+                        <div>
+                          <input
+                            type="number"
+                            placeholder="0"
+                            value={selectedBlock.advanced?.padding?.top ?? ''}
+                            onChange={(e) =>
+                              updateSelectedBlock((b) => {
+                                if (!b.advanced) b.advanced = {};
+                                if (!b.advanced.padding) b.advanced.padding = {};
+                                b.advanced.padding.top = parseInt(e.target.value) || 0;
+                                return b;
+                              })
+                            }
+                            className="w-full py-1 text-center bg-white border border-slate-300 rounded text-slate-900"
+                          />
+                          <span className="text-slate-500">Top</span>
+                        </div>
+                        <div>
+                          <input
+                            type="number"
+                            placeholder="0"
+                            value={selectedBlock.advanced?.padding?.right ?? ''}
+                            onChange={(e) =>
+                              updateSelectedBlock((b) => {
+                                if (!b.advanced) b.advanced = {};
+                                if (!b.advanced.padding) b.advanced.padding = {};
+                                b.advanced.padding.right = parseInt(e.target.value) || 0;
+                                return b;
+                              })
+                            }
+                            className="w-full py-1 text-center bg-white border border-slate-300 rounded text-slate-900"
+                          />
+                          <span className="text-slate-500">Right</span>
+                        </div>
+                        <div>
+                          <input
+                            type="number"
+                            placeholder="0"
+                            value={selectedBlock.advanced?.padding?.bottom ?? ''}
+                            onChange={(e) =>
+                              updateSelectedBlock((b) => {
+                                if (!b.advanced) b.advanced = {};
+                                if (!b.advanced.padding) b.advanced.padding = {};
+                                b.advanced.padding.bottom = parseInt(e.target.value) || 0;
+                                return b;
+                              })
+                            }
+                            className="w-full py-1 text-center bg-white border border-slate-300 rounded text-slate-900"
+                          />
+                          <span className="text-slate-500">Bottom</span>
+                        </div>
+                        <div>
+                          <input
+                            type="number"
+                            placeholder="0"
+                            value={selectedBlock.advanced?.padding?.left ?? ''}
+                            onChange={(e) =>
+                              updateSelectedBlock((b) => {
+                                if (!b.advanced) b.advanced = {};
+                                if (!b.advanced.padding) b.advanced.padding = {};
+                                b.advanced.padding.left = parseInt(e.target.value) || 0;
+                                return b;
+                              })
+                            }
+                            className="w-full py-1 text-center bg-white border border-slate-300 rounded text-slate-900"
+                          />
+                          <span className="text-slate-500">Left</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Z-Index & CSS ID */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-slate-700 font-semibold mb-1">Z-Index</label>
+                        <input
+                          type="number"
+                          placeholder="0"
+                          value={selectedBlock.advanced?.zIndex ?? ''}
+                          onChange={(e) =>
+                            updateSelectedBlock((b) => {
+                              if (!b.advanced) b.advanced = {};
+                              b.advanced.zIndex = parseInt(e.target.value) || 0;
+                              return b;
+                            })
+                          }
+                          className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded text-slate-900 text-xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-slate-700 font-semibold mb-1">CSS ID</label>
+                        <input
+                          type="text"
+                          placeholder="my-section"
+                          value={selectedBlock.advanced?.cssId || ''}
+                          onChange={(e) =>
+                            updateSelectedBlock((b) => {
+                              if (!b.advanced) b.advanced = {};
+                              b.advanced.cssId = e.target.value;
+                              return b;
+                            })
+                          }
+                          className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded text-slate-900 text-xs"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Responsive Visibility Toggles */}
+                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2.5">
+                      <span className="font-bold text-slate-800 text-xs block">Responsive Visibility</span>
+                      <label className="flex items-center justify-between cursor-pointer">
+                        <span className="text-slate-600">Hide on Desktop</span>
+                        <input
+                          type="checkbox"
+                          checked={Boolean(selectedBlock.advanced?.hideOnDesktop)}
+                          onChange={(e) =>
+                            updateSelectedBlock((b) => {
+                              if (!b.advanced) b.advanced = {};
+                              b.advanced.hideOnDesktop = e.target.checked;
+                              return b;
+                            })
+                          }
+                          className="rounded text-[#e2285c] focus:ring-[#e2285c]"
+                        />
+                      </label>
+                      <label className="flex items-center justify-between cursor-pointer">
+                        <span className="text-slate-600">Hide on Tablet</span>
+                        <input
+                          type="checkbox"
+                          checked={Boolean(selectedBlock.advanced?.hideOnTablet)}
+                          onChange={(e) =>
+                            updateSelectedBlock((b) => {
+                              if (!b.advanced) b.advanced = {};
+                              b.advanced.hideOnTablet = e.target.checked;
+                              return b;
+                            })
+                          }
+                          className="rounded text-[#e2285c] focus:ring-[#e2285c]"
+                        />
+                      </label>
+                      <label className="flex items-center justify-between cursor-pointer">
+                        <span className="text-slate-600">Hide on Mobile</span>
+                        <input
+                          type="checkbox"
+                          checked={Boolean(selectedBlock.advanced?.hideOnMobile)}
+                          onChange={(e) =>
+                            updateSelectedBlock((b) => {
+                              if (!b.advanced) b.advanced = {};
+                              b.advanced.hideOnMobile = e.target.checked;
+                              return b;
+                            })
+                          }
+                          className="rounded text-[#e2285c] focus:ring-[#e2285c]"
+                        />
+                      </label>
+                    </div>
+
+                    {/* Custom CSS */}
+                    <div>
+                      <label className="block text-slate-700 font-semibold mb-1">Custom CSS</label>
+                      <textarea
+                        rows={3}
+                        placeholder="color: #e2285c; transform: rotate(1deg);"
+                        value={selectedBlock.advanced?.customCss || ''}
+                        onChange={(e) =>
+                          updateSelectedBlock((b) => {
+                            if (!b.advanced) b.advanced = {};
+                            b.advanced.customCss = e.target.value;
+                            return b;
+                          })
+                        }
+                        className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded font-mono text-[11px] text-slate-900"
+                      />
+                    </div>
                   </div>
                 )}
               </div>
-            )}
+            </div>
+          )}
 
-            {/* TAB 3: PAGE SETTINGS & LIVE SEO PREVIEW */}
-            {sidebarTab === 'settings' && (
-              <div className="flex-1 overflow-y-auto p-4 space-y-4 text-xs">
-                <div>
-                  <label className="block font-semibold mb-1 text-foreground">Page Title</label>
-                  <input
-                    type="text"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder="e.g. About Us"
-                    className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground font-medium"
-                  />
+          {/* Panel Bottom Footer */}
+          <div className="h-11 bg-white border-t border-slate-200 px-3 flex items-center justify-between text-xs shrink-0 shadow-xs">
+            <button
+              type="button"
+              onClick={() => setShowPageSettingsModal(true)}
+              className="p-1.5 rounded hover:bg-slate-100 text-slate-600 hover:text-slate-900 transition cursor-pointer"
+              title="Page Settings"
+            >
+              <Settings2 size={16} />
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowNavigatorDrawer(!showNavigatorDrawer)}
+              className="p-1.5 rounded hover:bg-slate-100 text-slate-600 hover:text-slate-900 transition cursor-pointer"
+              title="Navigator"
+            >
+              <Layers size={16} />
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowTemplateLibraryModal(true)}
+              className="p-1.5 rounded hover:bg-slate-100 text-slate-600 hover:text-slate-900 transition cursor-pointer"
+              title="Template Library"
+            >
+              <FolderOpen size={16} />
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSavePage()}
+              disabled={saving}
+              className="px-3.5 py-1 bg-[#008a20] hover:bg-[#00a32a] text-white font-bold rounded text-xs transition cursor-pointer shadow-xs disabled:opacity-50"
+            >
+              {saving ? 'Saving...' : 'Update'}
+            </button>
+          </div>
+        </aside>
+
+        {/* ─── SIDEBAR TOGGLE ARROW (Iconic Elementor collapse handle) ────── */}
+        <button
+          type="button"
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className="absolute left-[340px] sm:left-[380px] top-1/2 -translate-y-1/2 z-40 w-4 h-12 bg-white hover:bg-[#e2285c] text-slate-600 hover:text-white border border-slate-300 border-l-0 rounded-r flex items-center justify-center transition cursor-pointer shadow-md font-bold text-xs"
+          style={{ left: sidebarOpen ? undefined : 0 }}
+          title={sidebarOpen ? 'Hide Panel' : 'Show Panel'}
+        >
+          {sidebarOpen ? '‹' : '›'}
+        </button>
+
+        {/* ─── RIGHT CANVAS: DIRECT LIVE SITE RENDERING ───────────────────── */}
+        <main className="flex-1 overflow-y-auto bg-[#edf0f5] p-4 sm:p-6 flex flex-col items-center">
+          <div
+            className={`transition-all duration-300 w-full min-h-full bg-white text-slate-900 shadow-xl relative ${
+              deviceView === 'tablet'
+                ? 'max-w-[768px] my-6 rounded-2xl border-8 border-slate-300'
+                : deviceView === 'mobile'
+                ? 'max-w-[375px] my-6 rounded-3xl border-8 border-slate-300'
+                : 'max-w-full rounded-none'
+            }`}
+          >
+            {/* Live Block Elements List */}
+            {blocks.length === 0 ? (
+              <div className="p-16 text-center space-y-4">
+                <div className="w-16 h-16 rounded-2xl bg-rose-50 mx-auto flex items-center justify-center text-[#e2285c]">
+                  <Layout size={32} />
                 </div>
-
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="font-semibold text-foreground">URL Slug</label>
-                    <button
-                      type="button"
-                      onClick={() => setIsSlugLocked(!isSlugLocked)}
-                      className="text-primary text-[11px] hover:underline cursor-pointer"
-                    >
-                      {isSlugLocked ? 'Unlock to Edit' : 'Lock Slug'}
-                    </button>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-muted-foreground font-mono">/</span>
-                    <input
-                      type="text"
-                      disabled={isSlugLocked}
-                      value={slug}
-                      onChange={(e) => setSlug(e.target.value)}
-                      className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground font-mono disabled:opacity-60"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block font-semibold mb-1 text-foreground">Publication Status</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setIsPublished(false)}
-                      className={`p-2 rounded-lg border text-xs font-semibold cursor-pointer transition ${
-                        !isPublished
-                          ? 'bg-amber-500/15 border-amber-500/50 text-amber-500'
-                          : 'border-border bg-background text-muted-foreground'
-                      }`}
-                    >
-                      Draft
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setIsPublished(true)}
-                      className={`p-2 rounded-lg border text-xs font-semibold cursor-pointer transition ${
-                        isPublished
-                          ? 'bg-emerald-500/15 border-emerald-500/50 text-emerald-500'
-                          : 'border-border bg-background text-muted-foreground'
-                      }`}
-                    >
-                      Published
-                    </button>
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t border-border">
-                  <h4 className="font-bold text-foreground mb-2 flex items-center gap-1.5">
-                    <Settings2 size={13} className="text-primary" />
-                    SEO Search Engine Preview
-                  </h4>
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block font-semibold mb-1 text-muted-foreground">Meta Title</label>
-                      <input
-                        type="text"
-                        value={metaTitle}
-                        onChange={(e) => setMetaTitle(e.target.value)}
-                        placeholder={title}
-                        className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground"
-                      />
-                    </div>
-                    <div>
-                      <label className="block font-semibold mb-1 text-muted-foreground">Meta Description</label>
-                      <textarea
-                        rows={3}
-                        value={metaDescription}
-                        onChange={(e) => setMetaDescription(e.target.value)}
-                        placeholder="Concise summary for Google search results..."
-                        className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground"
-                      />
-                    </div>
-
-                    {/* Google SERP Snippet Preview */}
-                    <div className="p-3 rounded-lg bg-background border border-border space-y-1">
-                      <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
-                        Google Search Preview
-                      </span>
-                      <p className="text-blue-500 font-medium text-xs truncate">
-                        {metaTitle || title || 'Page Title'} | Saba Al Wadi
-                      </p>
-                      <p className="text-emerald-600 text-[11px] truncate">
-                        https://sabaalwadi.com/{slug}
-                      </p>
-                      <p className="text-muted-foreground text-[11px] line-clamp-2">
-                        {metaDescription || 'Discover our luxury modest abayas and bespoke couture collections in Dubai.'}
-                      </p>
-                    </div>
-                  </div>
+                <h3 className="font-serif text-xl font-bold text-slate-800">Start Building Your Page</h3>
+                <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                  Drag widgets from the left panel or choose from our pre-designed luxury atelier templates.
+                </p>
+                <div className="pt-2 flex items-center justify-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowTemplateLibraryModal(true)}
+                    className="px-5 py-2.5 bg-[#e2285c] text-white font-semibold rounded-lg text-xs shadow-md hover:bg-rose-600 transition cursor-pointer flex items-center gap-2"
+                  >
+                    <FolderOpen size={14} />
+                    <span>Browse Templates</span>
+                  </button>
                 </div>
               </div>
-            )}
-          </aside>
-        )}
+            ) : (
+              <div className="space-y-0">
+                {blocks.map((block, index) => {
+                  const isSelected = selectedBlockId === block.id;
 
-        {/* Live Canvas Area with Device Viewport */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <PageBuilderCanvas
-            blocks={blocks}
-            onChangeBlocks={setBlocks}
-            onEditBlock={(block) => setEditingBlock(block)}
-            onOpenAddModal={(idx) => {
-              setInsertIndex(idx);
-              setShowAddModal(true);
-            }}
-            onLoadTemplate={(tmpl) => handleLoadStarterTemplate(tmpl)}
-            deviceView={deviceView}
-            onDeviceViewChange={(v) => setDeviceView(v)}
-          />
-        </div>
+                  return (
+                    <div
+                      key={block.id}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedBlockId(block.id);
+                        if (!sidebarOpen) setSidebarOpen(true);
+                      }}
+                      className={`group relative transition ${
+                        isSelected
+                          ? 'ring-2 ring-[#e2285c] z-10'
+                          : 'hover:ring-1 hover:ring-[#2271b1]'
+                      }`}
+                    >
+                      {/* Section Top Controls (Iconic Elementor [+] [:::] [x]) */}
+                      <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 opacity-0 group-hover:opacity-100 transition flex items-center bg-[#2271b1] text-white rounded-md shadow-md text-[11px] overflow-hidden">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setStructureInsertIndex(index);
+                          }}
+                          className="px-2 py-1 hover:bg-[#135e96] transition cursor-pointer"
+                          title="Add Section Above"
+                        >
+                          <Plus size={12} />
+                        </button>
+                        <div
+                          className="px-2.5 py-1 bg-[#135e96] font-bold cursor-move flex items-center gap-1 select-none"
+                          title="Section Handle"
+                        >
+                          <span className="tracking-widest">:::</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteBlock(block.id);
+                          }}
+                          className="px-2 py-1 hover:bg-red-600 transition cursor-pointer"
+                          title="Delete Section"
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+
+                      {/* Element Type Tag on Top Left */}
+                      <div
+                        className={`absolute top-0 left-2 -translate-y-1/2 z-20 px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase transition shadow-xs ${
+                          isSelected ? 'bg-[#e2285c] text-white' : 'bg-[#2271b1] text-white opacity-0 group-hover:opacity-100'
+                        }`}
+                      >
+                        {block.type.replace('_', ' ')}
+                      </div>
+
+                      {/* Rendered Live Block */}
+                      <BlockRenderer
+                        block={block}
+                        isInteractive={false}
+                        deviceView={deviceView}
+                        onDataChange={handleInlineBlockDataChange}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* ─── ICONIC ELEMENTOR DASHER ADD SECTION ── */}
+            <div className="p-8 my-6 mx-4 border-2 border-dashed border-slate-300 rounded-2xl flex flex-col items-center justify-center space-y-4 bg-slate-50/70">
+              <div className="flex items-center gap-3">
+                {/* Pink Add (+) Button */}
+                <button
+                  type="button"
+                  onClick={() => setStructureInsertIndex(blocks.length)}
+                  className="w-12 h-12 rounded-full bg-[#e2285c] hover:bg-rose-600 text-white flex items-center justify-center transition shadow-lg cursor-pointer transform hover:scale-105"
+                  title="Add New Section / Container"
+                >
+                  <Plus size={24} />
+                </button>
+
+                {/* Light Template (Folder) Button */}
+                <button
+                  type="button"
+                  onClick={() => setShowTemplateLibraryModal(true)}
+                  className="w-12 h-12 rounded-full bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 hover:text-slate-900 flex items-center justify-center transition shadow-md cursor-pointer transform hover:scale-105"
+                  title="Add Template from Library"
+                >
+                  <FolderOpen size={20} />
+                </button>
+              </div>
+
+              <span className="text-xs text-slate-500 font-medium tracking-wide">
+                Drag widget here or click + to add structure
+              </span>
+
+              {/* Structure Selector (If (+) was clicked) */}
+              {structureInsertIndex !== null && (
+                <div className="w-full max-w-xl bg-white border border-slate-200 rounded-xl p-4 space-y-3 animate-fade-in shadow-xl">
+                  <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                    <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                      Select Your Structure
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setStructureInsertIndex(null)}
+                      className="text-slate-400 hover:text-slate-700"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 pt-1">
+                    {/* 1 Col */}
+                    <button
+                      type="button"
+                      onClick={() => handleAddContainerStructure(1, structureInsertIndex)}
+                      className="p-2 border border-slate-200 hover:border-[#e2285c] bg-slate-50 hover:bg-rose-50/40 rounded-lg flex flex-col items-center gap-1.5 transition cursor-pointer group"
+                    >
+                      <div className="w-full h-8 bg-slate-200 group-hover:bg-[#e2285c]/20 rounded" />
+                      <span className="text-[10px] text-slate-600">1 Col</span>
+                    </button>
+
+                    {/* 2 Cols 50/50 */}
+                    <button
+                      type="button"
+                      onClick={() => handleAddContainerStructure(2, structureInsertIndex)}
+                      className="p-2 border border-slate-200 hover:border-[#e2285c] bg-slate-50 hover:bg-rose-50/40 rounded-lg flex flex-col items-center gap-1.5 transition cursor-pointer group"
+                    >
+                      <div className="w-full h-8 flex gap-1">
+                        <div className="flex-1 bg-slate-200 group-hover:bg-[#e2285c]/20 rounded" />
+                        <div className="flex-1 bg-slate-200 group-hover:bg-[#e2285c]/20 rounded" />
+                      </div>
+                      <span className="text-[10px] text-slate-600">2 Cols</span>
+                    </button>
+
+                    {/* 3 Cols */}
+                    <button
+                      type="button"
+                      onClick={() => handleAddContainerStructure(3, structureInsertIndex)}
+                      className="p-2 border border-slate-200 hover:border-[#e2285c] bg-slate-50 hover:bg-rose-50/40 rounded-lg flex flex-col items-center gap-1.5 transition cursor-pointer group"
+                    >
+                      <div className="w-full h-8 flex gap-1">
+                        <div className="flex-1 bg-slate-200 group-hover:bg-[#e2285c]/20 rounded" />
+                        <div className="flex-1 bg-slate-200 group-hover:bg-[#e2285c]/20 rounded" />
+                        <div className="flex-1 bg-slate-200 group-hover:bg-[#e2285c]/20 rounded" />
+                      </div>
+                      <span className="text-[10px] text-slate-600">3 Cols</span>
+                    </button>
+
+                    {/* 4 Cols */}
+                    <button
+                      type="button"
+                      onClick={() => handleAddContainerStructure(4, structureInsertIndex)}
+                      className="p-2 border border-slate-200 hover:border-[#e2285c] bg-slate-50 hover:bg-rose-50/40 rounded-lg flex flex-col items-center gap-1.5 transition cursor-pointer group"
+                    >
+                      <div className="w-full h-8 flex gap-0.5">
+                        <div className="flex-1 bg-slate-200 group-hover:bg-[#e2285c]/20 rounded" />
+                        <div className="flex-1 bg-slate-200 group-hover:bg-[#e2285c]/20 rounded" />
+                        <div className="flex-1 bg-slate-200 group-hover:bg-[#e2285c]/20 rounded" />
+                        <div className="flex-1 bg-slate-200 group-hover:bg-[#e2285c]/20 rounded" />
+                      </div>
+                      <span className="text-[10px] text-slate-600">4 Cols</span>
+                    </button>
+
+                    {/* 1/3 + 2/3 */}
+                    <button
+                      type="button"
+                      onClick={() => handleAddContainerStructure('1/3-2/3', structureInsertIndex)}
+                      className="p-2 border border-slate-200 hover:border-[#e2285c] bg-slate-50 hover:bg-rose-50/40 rounded-lg flex flex-col items-center gap-1.5 transition cursor-pointer group"
+                    >
+                      <div className="w-full h-8 flex gap-1">
+                        <div className="w-1/3 bg-slate-200 group-hover:bg-[#e2285c]/20 rounded" />
+                        <div className="w-2/3 bg-slate-200 group-hover:bg-[#e2285c]/20 rounded" />
+                      </div>
+                      <span className="text-[10px] text-slate-600">1/3 + 2/3</span>
+                    </button>
+
+                    {/* 2/3 + 1/3 */}
+                    <button
+                      type="button"
+                      onClick={() => handleAddContainerStructure('2/3-1/3', structureInsertIndex)}
+                      className="p-2 border border-slate-200 hover:border-[#e2285c] bg-slate-50 hover:bg-rose-50/40 rounded-lg flex flex-col items-center gap-1.5 transition cursor-pointer group"
+                    >
+                      <div className="w-full h-8 flex gap-1">
+                        <div className="w-2/3 bg-slate-200 group-hover:bg-[#e2285c]/20 rounded" />
+                        <div className="w-1/3 bg-slate-200 group-hover:bg-[#e2285c]/20 rounded" />
+                      </div>
+                      <span className="text-[10px] text-slate-600">2/3 + 1/3</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </main>
       </div>
 
-      {/* Floating Save Success Toast */}
-      {saveSuccess && (
-        <div className="fixed bottom-6 right-6 z-50 bg-emerald-600 text-white text-xs font-bold px-4 py-2.5 rounded-lg shadow-2xl flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2 duration-200">
-          <CheckCircle2 size={16} />
-          Page changes saved successfully!
-        </div>
-      )}
+      {/* ══════════════════════════════════════════════════════════════════════
+          MODAL A: PAGE SEO & SETTINGS MODAL
+         ══════════════════════════════════════════════════════════════════════ */}
+      {showPageSettingsModal && (
+        <div className="fixed inset-0 z-99999 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 animate-fade-in text-slate-900">
+          <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col">
+            <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+              <h3 className="font-bold text-sm flex items-center gap-2 text-slate-800">
+                <Settings2 size={16} className="text-[#e2285c]" />
+                <span>Page Settings & SEO</span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowPageSettingsModal(false)}
+                className="text-slate-400 hover:text-slate-700"
+              >
+                <X size={16} />
+              </button>
+            </div>
 
-      {/* Modal: Add Block / Template */}
-      <AddBlockModal
-        isOpen={showAddModal}
-        onClose={() => setShowAddModal(false)}
-        onAddBlock={handleAddBlock}
-        onLoadTemplate={(tmplBlocks) => {
-          if (blocks.length > 0) {
-            if (!confirm('This will replace current blocks with the template. Continue?')) return;
-          }
-          setBlocks(tmplBlocks);
-        }}
-      />
-
-      {/* Modal: Block Settings Inspector */}
-      <BlockSettingsModal
-        block={editingBlock}
-        isOpen={Boolean(editingBlock)}
-        onClose={() => setEditingBlock(null)}
-        onSave={handleUpdateBlock}
-      />
-
-      {/* Modal: SEO Settings Standalone Modal */}
-      {showSeoModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="bg-card border border-border w-full max-w-lg rounded-xl shadow-2xl p-6 space-y-4">
-            <h3 className="font-serif text-lg font-bold flex items-center gap-2">
-              <Settings2 size={18} className="text-primary" />
-              SEO &amp; Social Metadata
-            </h3>
-            <p className="text-xs text-muted-foreground">
-              Optimize how this page appears on Google search results and social shares.
-            </p>
-            <div className="space-y-4 text-xs">
+            <div className="p-6 space-y-4 text-xs">
               <div>
-                <label className="block font-semibold mb-1">Meta Title</label>
+                <label className="block text-slate-700 font-semibold mb-1">Page Title</label>
+                <input
+                  type="text"
+                  value={pageTitle}
+                  onChange={(e) => setPageTitle(e.target.value)}
+                  className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-900"
+                />
+              </div>
+              <div>
+                <label className="block text-slate-700 font-semibold mb-1">URL Slug</label>
+                <input
+                  type="text"
+                  value={pageSlug}
+                  onChange={(e) => setPageSlug(e.target.value)}
+                  className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-900 font-mono"
+                />
+              </div>
+              <div>
+                <label className="block text-slate-700 font-semibold mb-1">Meta SEO Title</label>
                 <input
                   type="text"
                   value={metaTitle}
                   onChange={(e) => setMetaTitle(e.target.value)}
-                  placeholder={title}
-                  className="w-full bg-background border border-border rounded px-3 py-2"
+                  placeholder="e.g. Luxury Modest Couture Dubai | Saba Al Wadi"
+                  className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-900"
                 />
               </div>
               <div>
-                <label className="block font-semibold mb-1">Meta Description</label>
+                <label className="block text-slate-700 font-semibold mb-1">Meta SEO Description</label>
                 <textarea
                   rows={3}
                   value={metaDescription}
                   onChange={(e) => setMetaDescription(e.target.value)}
-                  placeholder="A concise summary of this page for search engines..."
-                  className="w-full bg-background border border-border rounded px-3 py-2"
+                  className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-900"
                 />
               </div>
+              <label className="flex items-center gap-2 pt-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={isPublished}
+                  onChange={(e) => setIsPublished(e.target.checked)}
+                  className="rounded text-[#e2285c] focus:ring-[#e2285c]"
+                />
+                <span className="font-semibold text-slate-800">Publish this page to the public website</span>
+              </label>
             </div>
-            <div className="flex justify-end gap-2 pt-2 border-t border-border">
+
+            <div className="px-6 py-3 border-t border-slate-200 bg-slate-50 flex justify-end gap-2">
               <button
                 type="button"
-                onClick={() => setShowSeoModal(false)}
-                className="px-4 py-2 border border-border rounded hover:bg-accent cursor-pointer text-xs font-semibold"
+                onClick={() => setShowPageSettingsModal(false)}
+                className="px-4 py-2 border border-slate-200 rounded-lg text-xs font-semibold hover:bg-slate-100 text-slate-700"
               >
-                Done
+                Close
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  handleSavePage();
+                  setShowPageSettingsModal(false);
+                }}
+                className="px-5 py-2 bg-[#008a20] text-white rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-[#00a32a]"
+              >
+                Save Settings
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          MODAL B: TEMPLATE LIBRARY MODAL
+         ══════════════════════════════════════════════════════════════════════ */}
+      {showTemplateLibraryModal && (
+        <div className="fixed inset-0 z-99999 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 animate-fade-in text-slate-900">
+          <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-4xl max-h-[85vh] overflow-hidden shadow-2xl flex flex-col">
+            <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+              <div className="flex items-center gap-2">
+                <FolderOpen size={18} className="text-[#e2285c]" />
+                <h3 className="font-bold text-sm text-slate-800">Saba Al Wadi Atelier Template Library</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowTemplateLibraryModal(false)}
+                className="text-slate-400 hover:text-slate-700"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto grid grid-cols-1 md:grid-cols-2 gap-4">
+              {PAGE_TEMPLATES.map((tmpl) => (
+                <div
+                  key={tmpl.id}
+                  className="bg-white border border-slate-200 hover:border-[#e2285c] rounded-xl p-5 space-y-3 flex flex-col justify-between transition group shadow-xs hover:shadow-md"
+                >
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] px-2 py-0.5 rounded bg-rose-50 text-[#e2285c] font-bold uppercase tracking-wider">
+                        {tmpl.badge}
+                      </span>
+                      <span className="text-xs text-slate-500">{tmpl.blocks.length} Sections</span>
+                    </div>
+                    <h4 className="font-serif font-bold text-base text-slate-900 group-hover:text-[#e2285c] transition">
+                      {tmpl.name}
+                    </h4>
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      {tmpl.description}
+                    </p>
+                  </div>
+
+                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+                    <span className="text-[11px] text-slate-500 font-mono">/{tmpl.suggestedSlug}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (confirm(`Load "${tmpl.name}"? This will append the template sections.`)) {
+                          updateBlocksWithHistory([...blocks, ...tmpl.blocks]);
+                          setShowTemplateLibraryModal(false);
+                        }
+                      }}
+                      className="px-4 py-1.5 bg-[#e2285c] hover:bg-rose-600 text-white rounded-lg text-xs font-semibold transition cursor-pointer shadow-xs"
+                    >
+                      Insert Template
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          DRAWER C: DOM STRUCTURE NAVIGATOR
+         ══════════════════════════════════════════════════════════════════════ */}
+      {showNavigatorDrawer && (
+        <div className="fixed right-4 bottom-16 z-50 w-72 bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden flex flex-col text-xs text-slate-900">
+          <div className="px-3 py-2 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+            <span className="font-bold text-[11px] uppercase tracking-wider flex items-center gap-1.5 text-slate-800">
+              <Layers size={13} className="text-[#e2285c]" />
+              <span>Navigator</span>
+            </span>
+            <button
+              type="button"
+              onClick={() => setShowNavigatorDrawer(false)}
+              className="text-slate-400 hover:text-slate-700"
+            >
+              <X size={12} />
+            </button>
+          </div>
+          <div className="max-h-72 overflow-y-auto divide-y divide-slate-100 p-1">
+            {blocks.map((b, idx) => {
+              const isSelected = selectedBlockId === b.id;
+              return (
+                <div
+                  key={b.id}
+                  onClick={() => {
+                    setSelectedBlockId(b.id);
+                    if (!sidebarOpen) setSidebarOpen(true);
+                  }}
+                  className={`px-2.5 py-2 flex items-center justify-between rounded cursor-pointer transition ${
+                    isSelected ? 'bg-[#e2285c] text-white font-bold' : 'hover:bg-slate-50 text-slate-700'
+                  }`}
+                >
+                  <span className="truncate">
+                    {idx + 1}. {b.type.replace('_', ' ')}
+                  </span>
+                  <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      type="button"
+                      disabled={idx === 0}
+                      onClick={() => handleMoveBlock(b.id, 'up')}
+                      className="p-0.5 hover:text-slate-900 text-slate-400 disabled:opacity-30"
+                    >
+                      <ChevronUp size={12} />
+                    </button>
+                    <button
+                      type="button"
+                      disabled={idx === blocks.length - 1}
+                      onClick={() => handleMoveBlock(b.id, 'down')}
+                      className="p-0.5 hover:text-slate-900 text-slate-400 disabled:opacity-30"
+                    >
+                      <ChevronDown size={12} />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

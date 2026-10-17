@@ -13,185 +13,63 @@ export interface PageTemplateInfo {
 }
 
 export const PAGE_TEMPLATES: PageTemplateInfo[] = [
-  // ─── 1. ABOUT US TEMPLATE ───────────────────────────────────────────────────
-  {
-    id: 'about-us',
-    name: 'About Us (Haute Couture Heritage)',
-    category: 'Brand & Story',
-    description: 'Complete brand narrative with luxury hero banner, atelier story, craftsmanship metrics, core values, client testimonials, and FAQ.',
-    badge: 'Popular',
-    suggestedSlug: 'about-us',
-    suggestedTitle: 'About Us | Saba Al Wadi Luxury Abayas Dubai',
-    suggestedMetaDesc: 'Discover the heritage, atelier craftsmanship, and bespoke modest couture of Saba Al Wadi — based in Dubai, UAE.',
-    blocks: [
-      {
-        id: 'about-hero',
-        type: 'HERO',
-        data: {
-          badge: 'The House of Modesty & Prestige',
-          title: 'Elegance Rooted in Grace, Modesty & Perfection',
-          subtitle: 'Crafted for connoisseurs of timeless modest luxury. Every stitch celebrates Arabian heritage married with contemporary architectural silhouettes.',
-          alignment: 'center',
-          background_type: 'gradient',
-          primary_button: { label: 'Explore Collections', url: '/catalog' },
-          secondary_button: { label: 'Our Heritage', url: '#heritage' },
-        },
-      },
-      {
-        id: 'about-story',
-        type: 'TWO_COLUMN',
-        data: {
-          heading: 'Our Craftsmanship & Heritage',
-          subheading: 'DUBAI ATELIER — BESPOKE MODESTY',
-          content: 'Saba Al Wadi was founded with an unyielding commitment to elevate modest attire into haute couture art. Working with master artisans in Dubai, we hand-source genuine Japanese crepe, pure Korean Nida, and French Chantilly lace to craft garments that empower women with grace, dignity, and confidence.',
-          image_url: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=1200&q=80',
-          image_position: 'left',
-          highlights: [
-            '100% Breathable, lightweight Japanese & Korean textiles',
-            'Hand-finished zardozi embroidery and Swarovski crystal accents',
-            'Tailored flowing drape designed for supreme modesty',
-            'Custom length alteration available for bespoke orders',
-          ],
-          cta_button: { label: 'View Abaya Collections', url: '/catalog' },
-        },
-      },
-      {
-        id: 'about-stats',
-        type: 'STATS_COUNTER',
-        data: {
-          title: 'A Legacy of Excellence in Numbers',
-          stats: [
-            { number: '25,000+', label: 'Discerning Clients' },
-            { number: '100%', label: 'Imported Premium Fabrics' },
-            { number: '3', label: 'Dubai Showroom Suites' },
-            { number: '4.9 / 5', label: 'Client Satisfaction Rating' },
-          ],
-        },
-      },
-      {
-        id: 'about-values',
-        type: 'FEATURES_GRID',
-        data: {
-          heading: 'The Four Pillars of Our Maison',
-          subtitle: 'Guided by reverence for both faith and high fashion',
-          columns: 4,
-          items: [
-            { icon: 'Sparkles', title: 'Master Tailoring', description: 'Architectural cuts that drape naturally without clinging.' },
-            { icon: 'Shield', title: 'Pure Materials', description: 'Certified breathable Nida, matte silks, and Japanese crepes.' },
-            { icon: 'Truck', title: 'Worldwide Express', description: 'Complimentary shipping across UAE & rapid global delivery.' },
-            { icon: 'Award', title: 'Flawless Finish', description: 'Each piece undergoes a 12-point inspection before presentation.' },
-          ],
-        },
-      },
-      {
-        id: 'about-testimonials',
-        type: 'TESTIMONIALS',
-        data: {
-          title: 'Words from Our Privileged Patrons',
-          subtitle: 'Read authentic experiences from women around the world',
-          items: [
-            {
-              quote: 'The fabric quality of Saba Al Wadi abayas is unmatched. Even in the Dubai summer heat, the Japanese crepe remains cool and exquisitely structured.',
-              author: 'Fatima Al Mansoori',
-              role: 'Dubai, UAE',
-              rating: 5,
-            },
-            {
-              quote: 'Fast international delivery to London and the tailoring fit was absolutely divine. The packaging felt like opening a piece of high jewelry.',
-              author: 'Amina Rahman',
-              role: 'London, UK',
-              rating: 5,
-            },
-            {
-              quote: 'I ordered the Midnight Luxe cape abaya for Eid and received endless compliments. Truly the definition of understated luxury.',
-              author: 'Maryam Qureshi',
-              role: 'Abu Dhabi, UAE',
-              rating: 5,
-            },
-          ],
-        },
-      },
-      {
-        id: 'about-faq',
-        type: 'FAQ_ACCORDION',
-        data: {
-          title: 'Frequently Asked Questions',
-          subtitle: 'Answers regarding our sizing, atelier processes, and fabric care',
-          items: [
-            {
-              question: 'How do I choose the correct abaya size?',
-              answer: 'Our sizes correspond to garment length in inches: Size 52 (Height 5\'0" - 5\'2"), Size 54 (Height 5\'3" - 5\'4"), Size 56 (Height 5\'5" - 5\'6"), Size 58 (Height 5\'7" - 5\'8"), and Size 60 (Height 5\'9"+).',
-            },
-            {
-              question: 'What is the recommended fabric care?',
-              answer: 'We recommend gentle dry cleaning or cold hand washing with mild detergent for silk and embellished abayas to preserve delicate embroidery.',
-            },
-            {
-              question: 'Do you offer worldwide delivery?',
-              answer: 'Yes! We ship globally via DHL Express and Aramex with tracking provided directly to your phone and email upon dispatch.',
-            },
-          ],
-        },
-      },
-      {
-        id: 'about-cta',
-        type: 'CTA_BANNER',
-        data: {
-          title: 'Experience The Pinnacle of Modest Luxury',
-          subtitle: 'Discover our newest seasonal collection crafted in our Dubai atelier.',
-          button_text: 'Shop New Arrivals',
-          button_link: '/catalog',
-        },
-      },
-    ],
-  },
-
-  // ─── 2. CONTACT US TEMPLATE ─────────────────────────────────────────────────
+  // ─── 1. CONTACT US TEMPLATE ─────────────────────────────────────────────────
   {
     id: 'contact-us',
-    name: 'Contact Us (Boutique & Concierge)',
+    name: 'Contact Us (Boutique & Showrooms)',
     category: 'Communication',
-    description: 'Comprehensive contact page with 24/7 concierge banner, direct phone & WhatsApp cards, showroom suite locations, Google Maps, and inquiry FAQ.',
+    description: 'Get in Touch with our branches in Abu Hail Centre Deira-Dubai, email, call numbers, operating hours, interactive message form, and Google Maps.',
     badge: 'Essential',
     suggestedSlug: 'contact-us',
-    suggestedTitle: 'Contact Us | Saba Al Wadi Boutique Dubai',
-    suggestedMetaDesc: 'Connect with Saba Al Wadi luxury abaya concierge. Visit our Abu Hail showrooms in Deira-Dubai or contact via WhatsApp and phone.',
+    suggestedTitle: 'Contact Us | SABA AL WADI Dubai',
+    suggestedMetaDesc: 'Get in touch with SABA AL WADI. Visit our showroom branches in Abu Hail Centre, Deira-Dubai or contact via telephone and email.',
     blocks: [
       {
         id: 'contact-hero',
         type: 'HERO',
         data: {
-          badge: '24/7 Dedicated Client Concierge',
-          title: 'We Are Delighted to Assist You',
-          subtitle: 'Have questions regarding bespoke sizing, tracking an existing order, or visiting our Dubai showrooms? Our atelier consultants are at your service.',
+          badge: 'Get in Touch',
+          title: 'Have a question or need support?',
+          subtitle: 'We are here to help. Fill out the form below and we will get back to you as soon as possible.',
           alignment: 'center',
           background_type: 'gradient',
-          primary_button: { label: 'Message on WhatsApp', url: 'https://wa.me/971557917409' },
-          secondary_button: { label: 'Our Showroom Locations', url: '#locations' },
+          primary_button: { label: 'Call Us Now', url: 'tel:+971556424758' },
+          secondary_button: { label: 'Send a Message', url: '#contact-form-section' },
         },
       },
       {
-        id: 'contact-channels',
-        type: 'FEATURES_GRID',
+        id: 'contact-form-block',
+        type: 'CONTACT_FORM',
         data: {
-          heading: 'Direct Concierge Channels',
-          subtitle: 'Choose your preferred method to reach our customer care specialists',
-          columns: 3,
-          items: [
-            { icon: 'Phone', title: 'Telephone & WhatsApp', description: 'Tel: +971 55 642 4758\nMob: +971 55 79 17 409\nMob: +971 50 93 75 919' },
-            { icon: 'Mail', title: 'Electronic Mail', description: 'General: contact@sabaalwadi.com\nOrders: concierge@sabaalwadi.com\nReplies within 4 business hours.' },
-            { icon: 'Clock', title: 'Operating Hours', description: 'Saturday – Thursday: 09:00 AM – 11:00 PM\nFriday: 04:00 PM – 10:00 PM\n(Gulf Standard Time)' },
+          contact_info_badge: 'Contact Information',
+          contact_info_title: 'Get in Touch with Our Team',
+          contact_info_subtitle: 'Have a question or need support? We are here to help. Fill out the form below and we will get back to you as soon as possible.',
+          branches: [
+            'Suit No: M-49, 2nd Floor, Al Habtoor Building (Abu Hail Centre), Abu Hail, Deira-Dubai, P.O Box-67242',
+            'Suit No: M-104, 2nd Floor, Al Habtoor Building (Abu Hail Centre), Abu Hail, Deira-Dubai, P.O Box-67242',
+            'Suit No: M-16, 2nd Floor, Al Habtoor Building (Abu Hail Centre), Abu Hail, Deira-Dubai, P.O Box-67242',
           ],
+          email: 'contact@sabaalwadi.com',
+          phones: [
+            { label: 'Tel', number: '+971 55 642 4758' },
+            { label: 'Mob', number: '+971 55 79 17 409' },
+            { label: 'Mob', number: '+971 55 467 5285', note: 'Suit No: M-16 Contact Number' },
+            { label: 'Mob', number: '+971 50 93 75 919' },
+          ],
+          business_hours: 'Sat-Thu 09:00am-11:00pm (09:00-23:00) Friday 04:00pm-10:00pm (16:00-22:00)',
+          timezone: '(UTC+4:00) Abu Dhabi, Muscat',
+          form_title: 'Send us a Message',
+          form_subtitle: 'We love to hear from you. Fill out the form below to get in touch.',
         },
       },
       {
         id: 'contact-map',
         type: 'MAP',
         data: {
-          title: 'Saba Al Wadi Flagship Showrooms',
-          subtitle: 'Visit us in person to experience our luxury textiles and bespoke fitting',
+          title: 'Our Location',
+          subtitle: 'Visit our flagship showrooms in Abu Hail Centre, Deira-Dubai',
           map_url: 'https://maps.google.com/maps?q=Abu+Hail+Centre+Deira+Dubai&t=&z=15&ie=UTF8&iwloc=&output=embed',
-          address: 'Suit No: M-49, M-104 & M-16, 2nd Floor, Al Habtoor Building (Abu Hail Centre), Abu Hail Street, Deira-Dubai, P.O Box: 67242, UAE',
+          address: 'Al Habtoor Building (Abu Hail Centre), Abu Hail, Deira-Dubai, P.O Box-67242',
           phone: '+971 55 642 4758 / +971 55 79 17 409',
           email: 'contact@sabaalwadi.com',
           hours: 'Sat-Thu: 09:00am - 11:00pm | Fri: 04:00pm - 10:00pm',
@@ -200,36 +78,132 @@ export const PAGE_TEMPLATES: PageTemplateInfo[] = [
           show_card: true,
         },
       },
+    ],
+  },
+
+  // ─── 2. ABOUT US TEMPLATE ───────────────────────────────────────────────────
+  {
+    id: 'about-us',
+    name: 'About Us (SABA AL WADI Story)',
+    category: 'Brand & Story',
+    description: 'Complete brand story, who we are, services, why choose us, mission & vision, and team commitment.',
+    badge: 'Popular',
+    suggestedSlug: 'about-us',
+    suggestedTitle: 'About SABA AL WADI | Your Trusted E-Commerce Partner',
+    suggestedMetaDesc: 'Discover SABA AL WADI — your trusted e-commerce partner dedicated to exceptional products, quality assurance, and customer-first services.',
+    blocks: [
       {
-        id: 'contact-faq',
-        type: 'FAQ_ACCORDION',
+        id: 'about-hero',
+        type: 'HERO',
         data: {
-          title: 'Common Inquiries',
-          subtitle: 'Quick answers before you reach out to our team',
+          badge: 'About SABA AL WADI',
+          title: 'Your Trusted E-Commerce Partner',
+          subtitle: 'Dedicated to providing exceptional products and services tailored to meet your unique needs.',
+          alignment: 'center',
+          background_type: 'gradient',
+          primary_button: { label: 'Explore Products', url: '/catalog' },
+          secondary_button: { label: 'Who We Are', url: '#who-we-are' },
+        },
+      },
+      {
+        id: 'about-who-we-are',
+        type: 'TWO_COLUMN',
+        data: {
+          heading: 'Who We Are',
+          subheading: 'SABA AL WADI PREMIER ONLINE DESTINATION',
+          content: 'SABA AL WADI is a premier online shopping destination, known for our wide range of high-quality products and our dedication to customer satisfaction. Our platform is built on trust, innovation, and a passion for providing exceptional shopping experiences.\n\nSince our inception, we have been committed to offering top-quality products and excellent customer service, tailored to meet the unique needs of every shopper.',
+          image_url: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=1200&q=80',
+          image_position: 'left',
+          highlights: [
+            'Premier online shopping destination',
+            'Wide range of high-quality products',
+            'Built on trust, innovation, and passion',
+            'Tailored customer service for every shopper',
+          ],
+          cta_button: { label: 'Shop Collections', url: '/catalog' },
+        },
+      },
+      {
+        id: 'about-services',
+        type: 'FEATURES_GRID',
+        data: {
+          heading: 'Our Services',
+          subtitle: 'Comprehensive solutions designed to elevate your shopping experience',
+          columns: 3,
           items: [
             {
-              question: 'Can I visit without an appointment?',
-              answer: 'Yes! Walk-in visitors are warmly welcomed at all our Abu Hail Centre suites during operating hours for ready-to-wear purchases and fittings.',
+              icon: 'Sparkles',
+              title: 'Wide Range of Products',
+              description: 'From fashion and electronics to home essentials, we have everything you need.',
             },
             {
-              question: 'How do I check the status of my order?',
-              answer: 'You can track your order status in real time by logging into your profile or by providing your 4-digit order number to our WhatsApp concierge.',
+              icon: 'Truck',
+              title: 'Fast & Reliable Delivery',
+              description: 'We ensure your orders reach you on time, every time.',
             },
             {
-              question: 'Do you offer cash on delivery (COD)?',
-              answer: 'Yes, Cash on Delivery is gladly available across the entire United Arab Emirates.',
+              icon: 'Headset',
+              title: '24/7 Customer Support',
+              description: "We're here for you anytime you need assistance.",
             },
           ],
         },
       },
       {
-        id: 'contact-cta',
+        id: 'about-why-choose-us',
+        type: 'FEATURES_GRID',
+        data: {
+          heading: 'Why Choose Us?',
+          subtitle: 'Principles and commitments that define our standard of excellence',
+          columns: 4,
+          items: [
+            {
+              icon: 'Heart',
+              title: 'Customer-Centric Approach',
+              description: 'Your satisfaction is our top priority. We listen to your feedback and continuously improve our services.',
+            },
+            {
+              icon: 'Shield',
+              title: 'Quality Assurance',
+              description: 'We only offer products we believe in, thoroughly testing each item for quality and durability.',
+            },
+            {
+              icon: 'CheckCircle2',
+              title: 'Transparency',
+              description: 'No hidden costs or surprises. We maintain clear and transparent communication at every step.',
+            },
+            {
+              icon: 'Award',
+              title: 'Innovative Solutions',
+              description: 'We leverage the latest technology to provide a seamless and enjoyable online shopping experience.',
+            },
+          ],
+        },
+      },
+      {
+        id: 'about-mission-vision',
+        type: 'TWO_COLUMN',
+        data: {
+          heading: 'Our Mission & Vision',
+          subheading: 'INTEGRITY & CONTINUOUS INNOVATION',
+          content: 'Our Mission:\nTo provide exceptional products and services, exceeding customer expectations and creating lasting relationships through integrity and innovation.\n\nOur Vision:\nTo become a leading e-commerce brand known for integrity, innovation, and outstanding service, setting new standards in the industry.',
+          image_url: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=1200&q=80',
+          image_position: 'right',
+          highlights: [
+            'Exceeding customer expectations at every touchpoint',
+            'Creating lasting relationships through integrity',
+            'Setting new benchmarks in modern e-commerce',
+          ],
+        },
+      },
+      {
+        id: 'about-team',
         type: 'CTA_BANNER',
         data: {
-          title: 'Looking for a Custom Design or Bridal Order?',
-          subtitle: 'Connect with our master designer to commission one-of-a-kind bespoke creations.',
-          button_text: 'Chat on WhatsApp',
-          button_link: 'https://wa.me/971557917409',
+          title: 'Meet Our Team',
+          subtitle: 'Behind every successful business is a team of dedicated professionals. At SABA AL WADI, our diverse team brings together expertise from various fields to create an exceptional shopping experience for you. From our customer service representatives to our logistics experts, each member of our team is committed to delivering.',
+          button_text: 'Explore Our Catalog',
+          button_link: '/catalog',
         },
       },
     ],
@@ -238,88 +212,110 @@ export const PAGE_TEMPLATES: PageTemplateInfo[] = [
   // ─── 3. PRIVACY POLICY TEMPLATE ─────────────────────────────────────────────
   {
     id: 'privacy-policy',
-    name: 'Privacy Policy (Data Security & GDPR)',
+    name: 'Privacy Policy & Returns',
     category: 'Legal & Compliance',
-    description: 'Formatted luxury legal policy covering data collection, payment security (Stripe & 3D Secure), cookie disclosure, return terms, and client rights.',
+    description: 'Complete privacy policy, order cancellation terms, refund policy, data security, and contact information.',
     badge: 'Legal',
     suggestedSlug: 'privacy-policy',
-    suggestedTitle: 'Privacy Policy | Saba Al Wadi Luxury Abayas',
-    suggestedMetaDesc: 'Read the privacy policy of Saba Al Wadi. Learn how we safeguard your personal information, order data, and payment confidentiality.',
+    suggestedTitle: 'Privacy Policy | SABA AL WADI',
+    suggestedMetaDesc: 'Learn how SABA AL WADI collects, protects, and handles your personal data, order cancellations, and refunds.',
     blocks: [
       {
         id: 'privacy-hero',
         type: 'HERO',
         data: {
-          badge: 'Security & Confidentiality',
-          title: 'Privacy Policy & Data Protection',
-          subtitle: 'Your privacy, financial security, and confidence are the foundation of our client relationship. Last updated: October 2026.',
+          badge: 'Privacy & Data Protection',
+          title: 'Privacy Policy & Customer Rights',
+          subtitle: 'At Saba Al Wadi, we respect your privacy and are committed to protecting your personal data.',
           alignment: 'center',
           background_type: 'gradient',
-          primary_button: { label: 'Contact Privacy Officer', url: 'mailto:privacy@sabaalwadi.com' },
-          secondary_button: { label: 'Security Pillars', url: '#security' },
-        },
-      },
-      {
-        id: 'privacy-security-grid',
-        type: 'FEATURES_GRID',
-        data: {
-          heading: 'Our Data Protection Commitments',
-          subtitle: 'Bank-grade standards ensuring your personal information is never compromised',
-          columns: 4,
-          items: [
-            { icon: 'Shield', title: '256-Bit SSL Encryption', description: 'All web traffic and checkout transactions are protected by high-grade TLS.' },
-            { icon: 'Award', title: 'PCI-DSS Compliant', description: 'Credit card data is processed directly via Stripe with zero merchant storage.' },
-            { icon: 'CheckCircle2', title: 'Cloudflare Turnstile', description: 'Non-intrusive bot mitigation keeping your account safe from unauthorized intrusion.' },
-            { icon: 'Sparkles', title: 'Never Sold to Third Parties', description: 'Your email, phone, and delivery addresses are kept strictly confidential.' },
-          ],
+          primary_button: { label: 'Read Privacy Terms', url: '#privacy-article' },
+          secondary_button: { label: 'Contact Support', url: 'mailto:contact@sabalwadi.com' },
         },
       },
       {
         id: 'privacy-article',
         type: 'RICH_TEXT',
         data: {
-          title: 'Detailed Privacy Disclosure',
+          title: 'Official Privacy Policy',
           max_width: 'normal',
           html_content: `
-            <h3>1. Introduction and Scope</h3>
-            <p>Saba Al Wadi Abaya & Shaila L.L.C ("Saba Al Wadi", "we", "us", or "our") respects your privacy and is dedicated to safeguarding your personal data. This policy outlines how we collect, store, and process your information when you visit our website, purchase garments, or contact our atelier concierge.</p>
+            <h2>Introduction</h2>
+            <p>At Saba Al Wadi, we respect your privacy and are committed to protecting your personal data. This Privacy Policy will inform you about how we look after your personal data when you visit our website and tell you about your privacy rights and how the law protects you.</p>
+            <p>This privacy policy applies to all information collected through our website, mobile applications, and/or any related services, sales, marketing, or events.</p>
 
-            <h3>2. Information We Collect</h3>
-            <p>We may collect and process the following categories of information:</p>
+            <h2>Information We Collect</h2>
+            <h3>Personal Information</h3>
             <ul>
-              <li><strong>Identity & Contact Details:</strong> Full name, email address, telephone number, and physical shipping address.</li>
-              <li><strong>Transaction Data:</strong> Details of orders placed, product variants selected, invoices, and payment confirmations.</li>
-              <li><strong>Technical & Usage Data:</strong> IP address, device viewport, browser type, and interaction metrics to optimize performance.</li>
+              <li>Name and contact information</li>
+              <li>Billing and shipping address</li>
+              <li>Payment information</li>
+              <li>Account credentials</li>
             </ul>
 
-            <h3>3. How We Use Your Information</h3>
-            <p>Your data is used strictly for legitimate business purposes:</p>
+            <h3>Automatically Collected Information</h3>
             <ul>
-              <li>Fulfilling, packaging, and dispatching your orders to your doorstep.</li>
-              <li>Sending automated SMS and email notifications regarding delivery status.</li>
-              <li>Providing responsive customer care via WhatsApp or telephone.</li>
-              <li>Preventing fraudulent transactions and mitigating bot activity.</li>
+              <li>Device information and IP address</li>
+              <li>Browsing history and interactions</li>
+              <li>Cookies and similar technologies</li>
+              <li>Purchase history</li>
+            </ul>
+            <p>We use this information to provide our services, process transactions, improve our website, communicate with you, and comply with legal obligations.</p>
+
+            <h2>Order Cancellation Policy</h2>
+            <p>Order cancellation requests must be made within <strong>24 hours</strong> of placing your order.</p>
+            <p>Orders that have been shipped or have entered the fulfillment process cannot be cancelled.</p>
+
+            <h3>Cancellation Process</h3>
+            <ol>
+              <li>Log in to your account and navigate to your order history.</li>
+              <li>Select the order you wish to cancel and click on the "Cancel Order" button.</li>
+              <li>Select a reason for cancellation from the dropdown menu.</li>
+              <li>Submit your cancellation request.</li>
+              <li>You will receive a confirmation email once your cancellation is processed.</li>
+            </ol>
+            <p>If you are unable to cancel your order online, please contact our customer service team at <strong>contact@sabalwadi.com</strong> or call <strong>+971 55 642 4758</strong> for assistance.</p>
+
+            <h2>Refund Policy</h2>
+            <p>Refund requests must be initiated within <strong>10 days</strong> of receiving your order.</p>
+            <p>Items must be returned in their original condition with tags attached and in original packaging.</p>
+
+            <h3>Eligible Items for Refund</h3>
+            <ul>
+              <li>Unworn and unwashed items with all original tags attached</li>
+              <li>Items in original packaging (if applicable)</li>
+              <li>Items that are defective or materially different from their description</li>
             </ul>
 
-            <h3>4. Payment & Financial Security</h3>
-            <p>We never store, see, or transmit raw credit card or debit card numbers on our servers. All digital payments are handled through Stripe Inc., a PCI-DSS Level 1 certified payment service provider. Cash on Delivery (COD) orders are verified prior to courier dispatch.</p>
+            <h3>Non-Refundable Items</h3>
+            <ul>
+              <li>Items that have been worn, washed, or altered</li>
+              <li>Items marked as 'Final Sale' or 'Non-Returnable'</li>
+              <li>Gift cards and downloadable digital products</li>
+            </ul>
 
-            <h3>5. Cookies and Bot Mitigation</h3>
-            <p>We use essential cookies for cart persistence, currency selection (AED base), and authentication sessions. We also employ Cloudflare Turnstile to protect checkout forms from automated spam without storing intrusive personal trackers.</p>
+            <h3>Refund Process</h3>
+            <ol>
+              <li>Initiate a return request through your account or by contacting customer service.</li>
+              <li>Package your items securely with all original tags and packaging.</li>
+              <li>Ship your return using the provided return label or your preferred shipping method.</li>
+              <li>Once we receive and inspect your return, we will process your refund.</li>
+              <li>Refunds will be issued to the original payment method and may take 5-10 business days to appear in your account.</li>
+            </ol>
+            <p>For any questions regarding our refund policy, please contact our customer service team at <strong>returns@sabalwadu.com</strong>.</p>
 
-            <h3>6. Your Statutory Rights</h3>
-            <p>Under applicable UAE Data Protection Law and international standards, you have the right to request access to your personal data, request corrections, or request deletion of your account. For any privacy requests, please contact our Data Protection Officer at <strong>privacy@sabaalwadi.com</strong>.</p>
+            <h2>Data Security</h2>
+            <p>We have implemented appropriate technical and organizational security measures designed to protect the security of any personal information we process. However, despite our safeguards and efforts to secure your information, no electronic transmission over the Internet or information storage technology can be guaranteed to be 100% secure.</p>
+
+            <h2>Contact Us</h2>
+            <p>If you have questions or concerns about this Privacy Policy, our data practices, or would like to exercise your rights, please contact us at:</p>
+            <div style="padding: 1rem; border: 1px solid var(--border, #333); border-radius: 8px; margin: 1rem 0;">
+              <p><strong>Saba Al Wadi</strong></p>
+              <p>Email: <a href="mailto:contact@sabalwadi.com">contact@sabalwadi.com</a></p>
+              <p>Phone: <a href="tel:+971556424758">+971 55 642 4758</a></p>
+              <p>Address: Suit No: M-49, 2nd Floor, Al Habtoor Building, Deira-Dubai</p>
+            </div>
           `,
-        },
-      },
-      {
-        id: 'privacy-cta',
-        type: 'CTA_BANNER',
-        data: {
-          title: 'Questions Regarding Your Personal Data?',
-          subtitle: 'Our legal and compliance team is readily available to answer any questions.',
-          button_text: 'Email Privacy Concierge',
-          button_link: 'mailto:contact@sabaalwadi.com',
         },
       },
     ],
@@ -328,62 +324,67 @@ export const PAGE_TEMPLATES: PageTemplateInfo[] = [
   // ─── 4. TERMS OF SERVICE TEMPLATE ───────────────────────────────────────────
   {
     id: 'terms-of-service',
-    name: 'Terms of Service & Atelier Policies',
+    name: 'Terms and Conditions',
     category: 'Legal & Compliance',
-    description: 'Complete legal terms covering order confirmation, exchange & return timelines, bespoke alterations, pricing in AED, and intellectual property.',
+    description: 'Official Terms and Conditions agreement governing order placement, booking, pricing in AED, secure transactions, and returns.',
     badge: 'Legal',
-    suggestedSlug: 'terms-and-conditions',
-    suggestedTitle: 'Terms & Conditions | Saba Al Wadi Dubai',
-    suggestedMetaDesc: 'Review the official terms of service, returns policy, and purchasing conditions for Saba Al Wadi Luxury Abayas.',
+    suggestedSlug: 'terms-conditions',
+    suggestedTitle: 'Terms and Conditions | SABA AL WADI',
+    suggestedMetaDesc: 'Review the official terms and conditions for SABA AL WADI, including order placement, pricing, payment security, and cancellation terms.',
     blocks: [
       {
         id: 'terms-hero',
         type: 'HERO',
         data: {
-          badge: 'Official Storefront Conditions',
-          title: 'Terms & Conditions of Sale',
-          subtitle: 'Please review our terms governing purchases, tailoring conditions, delivery, and exchange procedures.',
+          badge: 'Official Agreement',
+          title: 'Terms and Conditions',
+          subtitle: 'Welcome to SABA AL WADI. Please read these terms and conditions carefully before accessing or using our platform.',
           alignment: 'center',
           background_type: 'gradient',
-          primary_button: { label: 'Explore Storefront', url: '/catalog' },
-          secondary_button: { label: 'Read Terms', url: '#terms' },
+          primary_button: { label: 'Read Terms', url: '#terms-article' },
+          secondary_button: { label: 'Contact Support', url: 'mailto:contact@sabalwadi.com' },
         },
       },
       {
         id: 'terms-article',
         type: 'RICH_TEXT',
         data: {
-          title: 'Storefront & Atelier Terms',
+          title: 'Storefront Terms and Conditions',
           max_width: 'normal',
           html_content: `
-            <h3>1. Agreement to Terms</h3>
-            <p>By browsing, accessing, or placing an order through Saba Al Wadi (admin.sabaalwadi.com and affiliated domains), you agree to be bound by these Terms of Service and all applicable laws of the Emirate of Dubai and the United Arab Emirates.</p>
+            <h2>Introduction & Acceptance of Terms</h2>
+            <p>Welcome to SABA AL WADI. These Terms and Conditions constitute a legally binding agreement made between you, whether personally or on behalf of an entity, and SABA AL WADI, concerning your access to and use of our website located at <a href="https://www.sabaalwadi.com" target="_blank" rel="noopener noreferrer">https://www.sabaalwadi.com</a>, as well as any other media form, media channel, mobile website, or mobile application related, linked, or otherwise connected thereto. By accessing, browsing, registering, or purchasing from our platform, you explicitly acknowledge that you have read, understood, and agree to be bound by all of these Terms and Conditions. If you do not agree with all of these terms, then you are expressly prohibited from using our site and you must discontinue use immediately.</p>
+            <p>SABA AL WADI reserves the right, in its sole discretion, to modify, amend, or replace these Terms and Conditions at any time and for any reason. We will alert you about any changes by updating the 'Last Updated' date of these Terms and Conditions, and you waive any right to receive specific notice of each such change. It is your responsibility to periodically review these Terms and Conditions to stay informed of updates. Your continued use of the Site after the date such revised Terms and Conditions are posted will be deemed to constitute your acceptance of and agreement to the changes.</p>
 
-            <h3>2. Pricing, Currency & Orders</h3>
-            <p>All prices are quoted in <strong>United Arab Emirates Dirham (AED)</strong> as the base currency. Any conversion to USD, GBP, or EUR is provided as an estimation based on live interbank exchange rates. We reserve the right to correct any pricing or typographical errors prior to order fulfillment.</p>
+            <h2>General Disclaimer & Service Description</h2>
+            <p>SABA AL WADI operates as a premier boutique e-commerce marketplace specialized in women's modest clothing and elegant abayas designed in Dubai, UAE. We act as an intermediary connecting talented designers, boutique sellers, and customers globally. While we make every effort to ensure that all details, sizing charts, fabric specifications, product colors, and inventory levels displayed on the website are correct and complete, the information is provided on an 'as is' and 'as available' basis without any warranties of any kind.</p>
+            <p>Product images are for illustrative purposes only. Due to differences in monitors, screen resolutions, and lighting during photography, the actual color of products may vary slightly from the images shown. SABA AL WADI does not warrant that product descriptions, images, or pricing content are entirely error-free or complete. In the event of errors, we reserve the right to correct them and update listings accordingly.</p>
 
-            <h3>3. Alterations and Bespoke Tailoring</h3>
-            <p>Standard abayas are produced according to our published size chart (length 50 to 60 inches). Items customized with bespoke length, bust, or sleeve measurements upon client request are made specifically for the client and are non-refundable once cutting has commenced.</p>
+            <h2>Order Placement & Booking Terms</h2>
+            <p>To purchase products on SABA AL WADI, you must follow the online checkout process. When you place an order, you are making an offer to purchase the selected items from the respective designer under these terms. All orders are subject to product availability and confirmation of the order price. Upon completing a transaction, you will receive an automated email receipt and order number. This email is only an acknowledgment of receipt and does not constitute acceptance or confirmation of your order.</p>
+            <p>A binding contract is only formed once your order is processed, payment is authorized, and the item has been shipped by the designer. SABA AL WADI reserves the right to reject or cancel any order at our sole discretion, including cases where fraud is suspected, stock is depleted, or billing details cannot be verified. Customers are responsible for verifying their custom sizing requirements before placing an order to ensure a proper fit.</p>
 
-            <h3>4. Delivery & Risk of Loss</h3>
-            <p>Orders within the UAE are delivered within 1 to 3 business days via our courier partners. International delivery is handled via DHL Express within 3 to 7 business days. Risk of loss passes to the customer upon delivery to the specified address.</p>
+            <h2>Pricing, Taxes, & Promotions</h2>
+            <p>All prices listed on our platform are displayed in United Arab Emirates Dirhams (AED) and are inclusive of standard local Value Added Tax (VAT) where applicable, unless stated otherwise. Shipping rates, delivery fees, and customs duties for international deliveries are calculated at checkout and are the sole responsibility of the customer. While we endeavor to ensure all pricing information is correct, errors can occur. If we discover a pricing error on any item you ordered, we will inform you immediately and give you the option to reconfirm the order at the correct price or cancel it for a full refund.</p>
+            <p>Promotional codes, seasonal discount vouchers, and special sale events are offered at the sole discretion of SABA AL WADI. They are subject to specific terms, validity dates, and minimum order requirements. Promo codes cannot be applied retroactively to completed orders or combined with other promotions unless explicitly allowed. SABA AL WADI reserves the right to modify, suspend, or terminate any discount campaign or voucher without prior notice.</p>
 
-            <h3>5. Exchanges & Returns</h3>
-            <p>Unworn, unaltered ready-to-wear garments in original packaging with intact security tags may be exchanged within <strong>7 days</strong> of delivery. Return courier fees may apply unless the garment was received with a defect.</p>
+            <h2>Payment Terms & Secure Transactions</h2>
+            <p>SABA AL WADI provides a secure, fully encrypted checkout experience for our customers. We accept payment through major credit cards, debit cards, and secure online payment gateways. By submitting your billing information, you guarantee that you are authorized to use the chosen payment method and authorize our secure payment processing partners to charge the full amount of your purchase, including shipping and taxes.</p>
+            <p>All cardholders are subject to validation checks and authorization by the card issuer. If the issuer of your card refuses to authorize payment, we will not be held liable for order delays or cancellation. To protect against unauthorized transactions and online fraud, SABA AL WADI reserves the right to perform extra verification and security checks, which may include requesting additional proof of identity for high-value transactions.</p>
 
-            <h3>6. Intellectual Property</h3>
-            <p>All original garment designs, photographs, monograms, trademarks, and text content remain the exclusive property of Saba Al Wadi Abaya & Shaila L.L.C.</p>
+            <h2>Cancellation, Returns, & Refund Policy</h2>
+            <p>Please review our strict guidelines regarding order cancellations and product returns:</p>
+            <ul>
+              <li><strong>Cancellation Window:</strong> Because many designer abayas are custom tailored or handmade to order, cancellation requests must be made within 48 hours of order placement. Once shipping preparation has begun, the order cannot be cancelled.</li>
+              <li><strong>Refund Processing Time:</strong> Refunds for successfully cancelled orders or approved returns will be credited back to your original payment method. The processing can take 3 to 5 business days, depending on bank clearance times.</li>
+              <li><strong>Non-Refundable Charges:</strong> Delivery fees, international customs duties, convenience charges, and transaction fees charged by payment providers are non-refundable unless the item sent is verified to be damaged or incorrect.</li>
+              <li><strong>Exceptions & Force Majeure:</strong> In the event of global custom delays, extreme weather conditions, or unforeseen logistics issues, delivery timelines may be altered, and cancellation policies will be reviewed case-by-case.</li>
+            </ul>
+
+            <h2>Contact Our Legal & Support Team</h2>
+            <p>If you have any questions, clarifications, or disputes regarding these Terms and Conditions, or if you need assistance with refunds and order cancellations, please feel free to reach out to our dedicated client support team in Dubai. We are committed to providing you with the best modest shopping experience.</p>
+            <p>Email: <a href="mailto:contact@sabalwadi.com">contact@sabalwadi.com</a></p>
           `,
-        },
-      },
-      {
-        id: 'terms-cta',
-        type: 'CTA_BANNER',
-        data: {
-          title: 'Ready to Experience Saba Al Wadi Haute Couture?',
-          subtitle: 'Browse our latest bespoke arrivals crafted in Deira-Dubai.',
-          button_text: 'Explore Catalog',
-          button_link: '/catalog',
         },
       },
     ],
