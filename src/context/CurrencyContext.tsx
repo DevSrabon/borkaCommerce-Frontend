@@ -2,6 +2,8 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
+import { API_BASE_URL } from '@/config/api';
+
 export type Currency = 'AED' | 'USD' | 'GBP' | 'EUR';
 
 interface CurrencyContextType {
@@ -10,14 +12,15 @@ interface CurrencyContextType {
   symbol: string;
   formatPrice: (aedPrice: number | string) => string;
   convertPrice: (aedPrice: number | string) => number;
+  rates: Record<Currency, number>;
 }
 
-// Static conversion rates from AED (base currency)
-const RATES: Record<Currency, number> = {
+// Fallback conversion rates from AED (Base AED = 1)
+const DEFAULT_RATES: Record<Currency, number> = {
   AED: 1,
-  USD: 1 / 3.67,
-  GBP: 1 / 4.70,
-  EUR: 1 / 4.00,
+  USD: 0.2723,
+  GBP: 0.2132,
+  EUR: 0.2520,
 };
 
 const SYMBOLS: Record<Currency, string> = {
@@ -33,17 +36,53 @@ const CurrencyContext = createContext<CurrencyContextType>({
   symbol: 'AED',
   formatPrice: (p) => `AED ${Number(p || 0).toFixed(2)}`,
   convertPrice: (p) => Number(p || 0),
+  rates: DEFAULT_RATES,
 });
 
 export function CurrencyProvider({ children }: { children: ReactNode }) {
   const [currency, setCurrencyState] = useState<Currency>('AED');
+  const [rates, setRates] = useState<Record<Currency, number>>(DEFAULT_RATES);
 
-  // Persist currency preference across page loads
+  // Load preferred currency and dynamic exchange rates from site settings
   useEffect(() => {
+    // 1. Restore cached rates if available
+    try {
+      const cached = localStorage.getItem('cached_currency_rates');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed && typeof parsed === 'object') {
+          setRates({
+            AED: 1, // Fixed base AED
+            USD: Number(parsed.USD) || DEFAULT_RATES.USD,
+            GBP: Number(parsed.GBP) || DEFAULT_RATES.GBP,
+            EUR: Number(parsed.EUR) || DEFAULT_RATES.EUR,
+          });
+        }
+      }
+    } catch {}
+
+    // 2. Fetch fresh dynamic rates from backend site-settings
+    fetch(`${API_BASE_URL}/ecommerce/site-settings`)
+      .then((res) => res.json())
+      .then((settings) => {
+        if (settings) {
+          const freshRates: Record<Currency, number> = {
+            AED: 1, // Fixed base AED
+            USD: Number(settings.currency_rate_usd) || DEFAULT_RATES.USD,
+            GBP: Number(settings.currency_rate_gbp) || DEFAULT_RATES.GBP,
+            EUR: Number(settings.currency_rate_eur) || DEFAULT_RATES.EUR,
+          };
+          setRates(freshRates);
+          localStorage.setItem('cached_currency_rates', JSON.stringify(freshRates));
+        }
+      })
+      .catch(() => {});
+
+    // 3. Persist currency preference across page loads
     const stored = localStorage.getItem('preferred_currency') as Currency | null;
-    if (stored && stored !== ('SAR' as any) && RATES[stored]) {
+    if (stored && stored !== ('SAR' as any) && (stored === 'AED' || stored === 'USD' || stored === 'GBP' || stored === 'EUR')) {
       setCurrencyState(stored);
-    } else if (stored === ('SAR' as any)) {
+    } else {
       setCurrencyState('AED');
       localStorage.setItem('preferred_currency', 'AED');
     }
@@ -55,13 +94,13 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
   };
 
   const convertPrice = (aedPrice: number | string): number => {
-    return Number(aedPrice || 0) * (RATES[currency] || 1);
+    const rate = rates[currency] || 1;
+    return Number(aedPrice || 0) * rate;
   };
 
   const formatPrice = (aedPrice: number | string): string => {
     const converted = convertPrice(aedPrice);
     const sym = SYMBOLS[currency] || 'AED';
-    // AED shows prefix, USD/GBP show symbol prefix
     if (currency === 'AED') {
       return `AED ${converted.toFixed(2)}`;
     }
@@ -69,7 +108,7 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <CurrencyContext.Provider value={{ currency, setCurrency, symbol: SYMBOLS[currency], formatPrice, convertPrice }}>
+    <CurrencyContext.Provider value={{ currency, setCurrency, symbol: SYMBOLS[currency], formatPrice, convertPrice, rates }}>
       {children}
     </CurrencyContext.Provider>
   );

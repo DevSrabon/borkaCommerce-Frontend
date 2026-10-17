@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { API_BASE_URL } from '@/config/api';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
@@ -63,8 +64,29 @@ interface CommentAdminItem {
 }
 
 export default function AdminBlogsPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+
   const token = useSelector((state: RootState) => state.auth.token);
-  const [activeTab, setActiveTab] = useState<'blogs' | 'categories' | 'comments'>('blogs');
+  const tabParam = searchParams?.get('tab') as 'blogs' | 'categories' | 'comments' | null;
+  const [activeTab, setActiveTabState] = useState<'blogs' | 'categories' | 'comments'>(
+    tabParam && ['blogs', 'categories', 'comments'].includes(tabParam) ? tabParam : 'blogs'
+  );
+
+  const setActiveTab = (tab: 'blogs' | 'categories' | 'comments') => {
+    setActiveTabState(tab);
+    const params = new URLSearchParams(searchParams?.toString() || '');
+    params.set('tab', tab);
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  };
+
+  useEffect(() => {
+    const cur = searchParams?.get('tab') as 'blogs' | 'categories' | 'comments' | null;
+    if (cur && ['blogs', 'categories', 'comments'].includes(cur) && cur !== activeTab) {
+      setActiveTabState(cur);
+    }
+  }, [searchParams]);
 
   // Categories state
   const [categoryItems, setCategoryItems] = useState<CategoryAdminItem[]>([]);
@@ -77,9 +99,22 @@ export default function AdminBlogsPage() {
   // Blogs state
   const [blogs, setBlogs] = useState<BlogAdminItem[]>([]);
   const [loadingBlogs, setLoadingBlogs] = useState(true);
-  const [blogSearch, setBlogSearch] = useState('');
+  const [blogSearch, setBlogSearch] = useState(searchParams?.get('search') || '');
   const [categories, setCategories] = useState<string[]>([]);
-  const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
+  const [categoryFilter, setCategoryFilter] = useState<string>(searchParams?.get('category') || 'ALL');
+
+  // Sync search and categoryFilter with URL query
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams?.toString() || '');
+    if (blogSearch.trim()) params.set('search', blogSearch.trim());
+    else params.delete('search');
+
+    if (categoryFilter && categoryFilter !== 'ALL') params.set('category', categoryFilter);
+    else params.delete('category');
+
+    const query = params.toString();
+    router.replace(`${pathname}${query ? `?${query}` : ''}`, { scroll: false });
+  }, [blogSearch, categoryFilter]);
 
   // Comments state
   const [comments, setComments] = useState<CommentAdminItem[]>([]);

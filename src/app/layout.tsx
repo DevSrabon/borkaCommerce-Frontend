@@ -8,6 +8,7 @@ import NetworkStatusBanner from '../components/NetworkStatusBanner';
 import AnalyticsScripts from '../components/AnalyticsScripts';
 import { CurrencyProvider } from '../context/CurrencyContext';
 import { LanguageProvider } from '../context/LanguageContext';
+import { LuxuryModalProvider } from '../components/common/LuxuryModal';
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://sabaalwadi.com'),
@@ -51,11 +52,13 @@ export default function RootLayout({
         <LanguageProvider>
           <CurrencyProvider>
             <StoreProvider>
-              <Navbar />
-              <main className="flex-1 w-full">{children}</main>
-              <Footer />
-              <CustomerChatWidget />
-              <NetworkStatusBanner />
+              <LuxuryModalProvider>
+                <Navbar />
+                <main className="flex-1 w-full">{children}</main>
+                <Footer />
+                <CustomerChatWidget />
+                <NetworkStatusBanner />
+              </LuxuryModalProvider>
             </StoreProvider>
           </CurrencyProvider>
         </LanguageProvider>

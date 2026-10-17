@@ -8,7 +8,10 @@ export type BlockType =
   | 'FAQ_ACCORDION'
   | 'CTA_BANNER'
   | 'SPACER'
-  | 'MAP';
+  | 'MAP'
+  | 'IMAGE'
+  | 'CARDS_GRID'
+  | 'GALLERY';
 
 export interface PageBlock {
   id: string;

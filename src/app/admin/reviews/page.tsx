@@ -3,6 +3,7 @@
 import { API_BASE_URL } from '@/config/api';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../../store';
 import { Star, CheckCircle, XCircle, Trash2, ShieldCheck, Filter, RefreshCw, MessageSquare } from 'lucide-react';
@@ -29,17 +30,31 @@ interface AdminReview {
 }
 
 export default function AdminReviewsPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+
   const token = useSelector((state: RootState) => state.auth.token);
   const [reviews, setReviews] = useState<AdminReview[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filterStatus, setFilterStatus] = useState<string>('ALL');
-  const [searchTerm, setSearchTerm] = useState('');
+  const [filterStatus, setFilterStatus] = useState<string>(searchParams?.get('status') || 'ALL');
+  const [searchTerm, setSearchTerm] = useState(searchParams?.get('search') || '');
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   // Pagination states (default limit: 50, skip: 0)
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(parseInt(searchParams?.get('page') || '1', 10) || 1);
   const [limit, setLimit] = useState(50);
   const [totalReviews, setTotalReviews] = useState(0);
+
+  // Sync state changes with URL query string
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (filterStatus !== 'ALL') params.set('status', filterStatus);
+    if (searchTerm.trim()) params.set('search', searchTerm.trim());
+    if (page > 1) params.set('page', page.toString());
+    const query = params.toString();
+    router.replace(`${pathname}${query ? `?${query}` : ''}`, { scroll: false });
+  }, [filterStatus, searchTerm, page]);
 
   const fetchReviews = useCallback(async () => {
     setLoading(true);

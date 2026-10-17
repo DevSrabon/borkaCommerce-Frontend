@@ -9,7 +9,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../../store';
 import { clearCart, removeCoupon } from '../../store/cartSlice';
 import { loadStripe } from '@stripe/stripe-js';
-import { CreditCard, Truck, CheckCircle2, AlertCircle, ShoppingBag, ChevronDown, Search, Check, MapPin, Plus } from 'lucide-react';
+import { CreditCard, Truck, CheckCircle2, AlertCircle, ShoppingBag, ChevronDown, Search, Check, MapPin, Plus, Phone, ShieldCheck, Lock, Clock, ExternalLink } from 'lucide-react';
 import { useCurrency } from '../../context/CurrencyContext';
 import { COUNTRIES_LIST } from '@/constants/countries';
 
@@ -42,12 +42,50 @@ export default function CheckoutPage() {
 
   const [addressForm, setAddressForm] = useState({
     country: 'United Arab Emirates',
+    phone: '',
     city: '',
-    area: '',
+    full_address: '',
     street: '',
+    area: '',
     building: '',
     postal_code: '',
   });
+
+  const [cardDetails, setCardDetails] = useState({
+    number: '',
+    expiry: '',
+    cvc: '',
+  });
+
+  const selectedCountryObj =
+    COUNTRIES_LIST.find((c) => c.name.toLowerCase() === addressForm.country?.toLowerCase()) ||
+    COUNTRIES_LIST[0];
+
+  const [phoneDialCode, setPhoneDialCode] = useState(selectedCountryObj?.dial_code || '+971');
+  const [rawPhoneNumber, setRawPhoneNumber] = useState('');
+
+  // Pre-fill phone if user already has it in profile
+  useEffect(() => {
+    if (user?.phone && !rawPhoneNumber) {
+      const p = user.phone.trim();
+      const matched = COUNTRIES_LIST.find((c) => p.startsWith(c.dial_code));
+      if (matched) {
+        setPhoneDialCode(matched.dial_code);
+        setRawPhoneNumber(p.slice(matched.dial_code.length).trim());
+        setAddressForm((prev) => ({
+          ...prev,
+          country: matched.name,
+          phone: p,
+        }));
+      } else {
+        setRawPhoneNumber(p);
+        setAddressForm((prev) => ({
+          ...prev,
+          phone: `${phoneDialCode} ${p}`.trim(),
+        }));
+      }
+    }
+  }, [user]);
 
   const [loading, setLoading] = useState(false);
   const [checkoutError, setCheckoutError] = useState('');
@@ -76,6 +114,14 @@ export default function CheckoutPage() {
 
   const isCodAvailable = cartItems.length > 0 && cartItems.every((item) => (item as any).is_cod_allowed !== false);
   const [paymentMethod, setPaymentMethod] = useState<'CASH_ON_DELIVERY' | 'STRIPE'>('CASH_ON_DELIVERY');
+  const [siteSettings, setSiteSettings] = useState<Record<string, string> | null>(null);
+
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/ecommerce/site-settings`)
+      .then((res) => res.json())
+      .then((data) => setSiteSettings(data))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (!isCodAvailable && paymentMethod === 'CASH_ON_DELIVERY') {
@@ -188,11 +234,19 @@ export default function CheckoutPage() {
 
       // 1. Resolve or Create Address
       if (useNewAddress || !addressId) {
-        if (!addressForm.city.trim() || !addressForm.area.trim() || !addressForm.street.trim() || !addressForm.building.trim()) {
-          setCheckoutError('Please fill in all required address fields (City, Area, Street, Building).');
+        if (!addressForm.city.trim() || !addressForm.full_address.trim()) {
+          setCheckoutError('Please fill in your City and Full Delivery Address.');
           setLoading(false);
           return;
         }
+
+        if (!rawPhoneNumber.trim()) {
+          setCheckoutError('Please provide a contact phone number for delivery updates & courier call.');
+          setLoading(false);
+          return;
+        }
+
+        const fullPhone = `${phoneDialCode} ${rawPhoneNumber.trim()}`.trim();
 
         const addressRes = await fetch(`${API_BASE_URL}/ecommerce/addresses`, {
           method: 'POST',
@@ -201,7 +255,13 @@ export default function CheckoutPage() {
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
-            ...addressForm,
+            country: addressForm.country,
+            city: addressForm.city.trim(),
+            area: addressForm.city.trim(),
+            street: addressForm.full_address.trim(),
+            building: '',
+            postal_code: addressForm.postal_code.trim() || null,
+            phone: fullPhone,
             is_default: isDefaultAddress,
           }),
         });
@@ -215,6 +275,22 @@ export default function CheckoutPage() {
 
         const addressData = await addressRes.json();
         addressId = addressData.id;
+
+        // Sync customer profile with the confirmed phone number
+        if (token && fullPhone) {
+          fetch(`${API_BASE_URL}/ecommerce/auth/profile`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              first_name: user?.first_name || 'Valued',
+              last_name: user?.last_name || 'Customer',
+              phone: fullPhone,
+            }),
+          }).catch(() => {});
+        }
       }
 
       // 2. Perform Checkout
@@ -229,6 +305,7 @@ export default function CheckoutPage() {
           coupon_code: coupon?.code,
           currency: currency,
           payment_method: paymentMethod,
+          origin: typeof window !== 'undefined' ? window.location.origin : undefined,
           items: cartItems.map((item) => ({
             variant_id: item.id,
             quantity: item.quantity,
@@ -261,36 +338,22 @@ export default function CheckoutPage() {
         return;
       }
 
-      // 3. Confirm Stripe Payment directly via backend using Stripe Secret Key (Zero webhooks required)
-      const confirmRes = await fetch(`${API_BASE_URL}/ecommerce/orders/confirm-stripe`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({
-          order_id: checkoutData.order_id,
-          payment_intent_id: checkoutData.client_secret
-            ? checkoutData.client_secret.split('_secret_')[0]
-            : undefined,
-        }),
-      });
-
-      if (confirmRes.ok) {
+      // 3. For Stripe, redirect to official Stripe Hosted Checkout page
+      if (checkoutData.checkout_url) {
         if (useNewAddress && !saveForNextOrder && addressId) {
           fetch(`${API_BASE_URL}/ecommerce/addresses/${addressId}`, {
             method: 'DELETE',
             headers: { Authorization: `Bearer ${token}` },
           }).catch(() => {});
         }
-        setOrderNum(checkoutData.order_number);
-        setIsSuccess(true);
+
         dispatch(clearCart());
         dispatch(removeCoupon());
-      } else {
-        const errData = await confirmRes.json().catch(() => ({}));
-        setCheckoutError(errData.message || 'Payment confirmation failed.');
+        window.location.href = checkoutData.checkout_url;
+        return;
       }
+
+      setCheckoutError('Could not initialize payment with gateway. Please try again.');
     } catch (err) {
       setCheckoutError('Network connectivity error. Backend offline.');
     } finally {
@@ -372,6 +435,12 @@ export default function CheckoutPage() {
                             .filter(Boolean)
                             .join(', ')}
                         </p>
+                        {user?.phone && (
+                          <div className="flex items-center gap-1.5 pl-4 text-[11px] text-muted-foreground font-mono">
+                            <Phone size={11} className="text-primary" />
+                            <span>{user.phone}</span>
+                          </div>
+                        )}
                         <div className="flex items-center gap-2 pt-1 border-t border-border/40 text-xs font-semibold text-primary">
                           <input
                             type="radio"
@@ -422,6 +491,7 @@ export default function CheckoutPage() {
                 )}
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  {/* Country Field (Searchable) */}
                   <div className="space-y-1 relative" ref={countryDropdownRef}>
                     <label className="text-xs font-semibold text-muted-foreground uppercase flex items-center justify-between">
                       <span>Country</span>
@@ -433,8 +503,9 @@ export default function CheckoutPage() {
                       className="w-full text-sm bg-background border border-border rounded px-3 py-2.5 flex items-center justify-between text-left focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer transition hover:border-primary/50"
                     >
                       <span className="flex items-center gap-2 truncate">
-                        <span>{COUNTRIES_LIST.find((c) => c.name.toLowerCase() === addressForm.country?.toLowerCase())?.flag || '🌐'}</span>
+                        <span>{selectedCountryObj?.flag || '🌐'}</span>
                         <span className="font-medium text-foreground">{addressForm.country || 'Select Country'}</span>
+                        <span className="text-xs font-mono text-muted-foreground">({selectedCountryObj?.dial_code || phoneDialCode})</span>
                       </span>
                       <ChevronDown size={16} className={`text-muted-foreground transition-transform ${isCountryOpen ? 'rotate-180 text-primary' : ''}`} />
                     </button>
@@ -468,7 +539,12 @@ export default function CheckoutPage() {
                                   key={c.code}
                                   type="button"
                                   onClick={() => {
-                                    setAddressForm((prev) => ({ ...prev, country: c.name }));
+                                    setAddressForm((prev) => ({
+                                      ...prev,
+                                      country: c.name,
+                                      phone: rawPhoneNumber ? `${c.dial_code} ${rawPhoneNumber.trim()}`.trim() : '',
+                                    }));
+                                    setPhoneDialCode(c.dial_code);
                                     setIsCountryOpen(false);
                                     setCountrySearch('');
                                   }}
@@ -480,7 +556,8 @@ export default function CheckoutPage() {
                                 >
                                   <span className="flex items-center gap-2">
                                     <span className="text-sm">{c.flag}</span>
-                                    <span>{c.name}</span>
+                                    <span className="font-medium">{c.name}</span>
+                                    <span className="text-[11px] font-mono text-muted-foreground">({c.dial_code})</span>
                                   </span>
                                   {isSelected && <Check size={14} className="text-primary" />}
                                 </button>
@@ -492,13 +569,53 @@ export default function CheckoutPage() {
                     )}
                   </div>
 
+                  {/* Phone Number Field with Country Dial Code */}
                   <div className="space-y-1">
-                    <label className="text-xs font-semibold text-muted-foreground uppercase">City</label>
+                    <label className="text-xs font-semibold text-muted-foreground uppercase flex items-center justify-between">
+                      <span className="flex items-center gap-1.5">
+                        <Phone size={13} className="text-primary" /> Phone Number *
+                      </span>
+                      <span className="text-[11px] text-primary font-normal">Courier &amp; Delivery Call</span>
+                    </label>
+                    <div className="flex items-center bg-background border border-border rounded focus-within:ring-1 focus-within:ring-primary focus-within:border-primary overflow-hidden transition">
+                      <div className="px-3 py-2.5 bg-muted/40 border-r border-border flex items-center gap-1.5 text-xs font-semibold font-mono text-foreground shrink-0 select-none">
+                        <span>{selectedCountryObj?.flag || '🌐'}</span>
+                        <span className="text-primary">{phoneDialCode}</span>
+                      </div>
+                      <input
+                        type="tel"
+                        name="phone"
+                        placeholder={
+                          phoneDialCode === '+971'
+                            ? '50 123 4567'
+                            : phoneDialCode === '+880'
+                            ? '1712 345678'
+                            : phoneDialCode === '+966'
+                            ? '50 123 4567'
+                            : 'Mobile number'
+                        }
+                        className="w-full text-sm bg-transparent px-3 py-2.5 focus:outline-none font-mono text-foreground placeholder:text-muted-foreground"
+                        value={rawPhoneNumber}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/[^\d\s-]/g, '');
+                          setRawPhoneNumber(val);
+                          setAddressForm((prev) => ({
+                            ...prev,
+                            phone: val ? `${phoneDialCode} ${val.trim()}`.trim() : '',
+                          }));
+                        }}
+                        required={useNewAddress}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase">City *</label>
                     <input
                       type="text"
                       name="city"
-                      placeholder="e.g. Dubai, Abu Dhabi, Sharjah"
-                      className="w-full text-sm bg-background border border-border rounded px-3 py-2.5 focus:outline-none"
+                      placeholder="e.g. Dubai, Abu Dhabi, Sharjah, Dhaka"
+                      className="w-full text-sm bg-background border border-border rounded px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-primary"
                       value={addressForm.city}
                       onChange={handleInputChange}
                       required={useNewAddress}
@@ -506,40 +623,33 @@ export default function CheckoutPage() {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-xs font-semibold text-muted-foreground uppercase">Area / District</label>
+                    <label className="text-xs font-semibold text-muted-foreground uppercase">Postal Code / Zip Code</label>
                     <input
                       type="text"
-                      name="area"
-                      placeholder="e.g. Dubai Marina, Downtown, Al Barsha"
-                      className="w-full text-sm bg-background border border-border rounded px-3 py-2.5 focus:outline-none"
-                      value={addressForm.area}
+                      name="postal_code"
+                      placeholder="e.g. 1216 or 00000"
+                      className="w-full text-sm bg-background border border-border rounded px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-primary font-mono"
+                      value={addressForm.postal_code}
                       onChange={handleInputChange}
-                      required={useNewAddress}
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-xs font-semibold text-muted-foreground uppercase">Street Name</label>
-                    <input
-                      type="text"
-                      name="street"
-                      placeholder="e.g. Sheikh Zayed Road, Marina Blvd"
-                      className="w-full text-sm bg-background border border-border rounded px-3 py-2.5 focus:outline-none"
-                      value={addressForm.street}
-                      onChange={handleInputChange}
-                      required={useNewAddress}
                     />
                   </div>
 
                   <div className="sm:col-span-2 space-y-1">
-                    <label className="text-xs font-semibold text-muted-foreground uppercase">Building Name & Flat / Villa No.</label>
-                    <input
-                      type="text"
-                      name="building"
-                      placeholder="e.g. Tower 2, Flat 405 / Villa 12"
-                      className="w-full text-sm bg-background border border-border rounded px-3 py-2.5 focus:outline-none"
-                      value={addressForm.building}
-                      onChange={handleInputChange}
+                    <label className="text-xs font-semibold text-muted-foreground uppercase">Full Delivery Address *</label>
+                    <textarea
+                      rows={2}
+                      name="full_address"
+                      placeholder="House / Flat / Villa No., Building Name, Street Name, Area / Complete detailed address..."
+                      className="w-full text-sm bg-background border border-border rounded px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+                      value={addressForm.full_address}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setAddressForm((prev) => ({
+                          ...prev,
+                          full_address: val,
+                          street: val,
+                        }));
+                      }}
                       required={useNewAddress}
                     />
                   </div>
@@ -641,35 +751,47 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
-              {/* Card mock inputs if Card is selected */}
-              {paymentMethod === 'STRIPE' && (
-                <div className="bg-background border border-border p-4 rounded space-y-3 mt-3 animate-in fade-in">
-                  <div className="flex items-center justify-between text-xs text-muted mb-2">
-                    <span>Credit/Debit Card (Stripe Secured)</span>
-                    <span className="text-primary font-bold">TEST MODE ACTIVE</span>
+              {/* Stripe Hosted Checkout Notice */}
+              {paymentMethod === 'STRIPE' && (() => {
+                const isLive = siteSettings?.stripe_mode === 'LIVE';
+                return (
+                  <div className="bg-background border border-border p-4 sm:p-5 rounded-xl space-y-3 mt-3 animate-in fade-in shadow-xs">
+                    <div className="flex items-center justify-between text-xs pb-2 border-b border-border/50">
+                      <span className="font-semibold text-foreground flex items-center gap-1.5">
+                        <Lock size={13} className="text-primary" /> Official Stripe Hosted Checkout
+                      </span>
+                      {isLive ? (
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+                          <ShieldCheck size={12} /> Live Active
+                        </span>
+                      ) : (
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 flex items-center gap-1">
+                          <AlertCircle size={12} /> Test Sandbox
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="p-3 bg-muted/40 rounded-lg border border-border/60 text-xs text-muted-foreground space-y-2">
+                      <p className="leading-relaxed">
+                        You will be redirected securely to the <strong>official Stripe Hosted Checkout page</strong> to complete payment with Credit / Debit card, Apple Pay, Google Pay, or 3D Secure bank OTP.
+                      </p>
+                      <div className="flex flex-wrap items-center gap-3 pt-1 text-[11px] font-medium text-foreground">
+                        <span className="flex items-center gap-1 text-primary">
+                          <ShieldCheck size={14} /> PCI DSS Level 1 Certified
+                        </span>
+                        <span className="text-muted-foreground">• Visa, Mastercard, AMEX, Apple Pay</span>
+                      </div>
+                    </div>
+
+                    <p className="text-[11px] text-muted-foreground flex items-center gap-1.5 pt-0.5">
+                      <Clock size={12} className="text-primary shrink-0" />
+                      <span>
+                        Order reservation active for <strong>30 minutes</strong>. If payment is not completed or cancelled, you can retry anytime within 30 minutes.
+                      </span>
+                    </p>
                   </div>
-                  <input
-                    type="text"
-                    placeholder="Card Number: 4242 4242 4242 4242"
-                    className="w-full text-sm bg-card border border-border rounded px-3 py-2.5 focus:outline-none"
-                    disabled
-                  />
-                  <div className="grid grid-cols-2 gap-4">
-                    <input
-                      type="text"
-                      placeholder="MM/YY"
-                      className="w-full text-sm bg-card border border-border rounded px-3 py-2.5 focus:outline-none"
-                      disabled
-                    />
-                    <input
-                      type="text"
-                      placeholder="CVC"
-                      className="w-full text-sm bg-card border border-border rounded px-3 py-2.5 focus:outline-none"
-                      disabled
-                    />
-                  </div>
-                </div>
-              )}
+                );
+              })()}
             </div>
 
             {checkoutError && (
@@ -696,7 +818,11 @@ export default function CheckoutPage() {
               className={`w-full py-4 rounded-md uppercase font-semibold text-sm tracking-wider flex items-center justify-center gap-2 cursor-pointer ${loading ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed' : 'btn-luxury'
                 }`}
             >
-              {loading ? 'Processing Order...' : `Place Secure Order (${formatPrice(total)})`}
+              {loading
+                ? 'Processing Order...'
+                : paymentMethod === 'STRIPE'
+                ? `Proceed to Stripe Payment (${formatPrice(total)})`
+                : `Place Order (Cash on Delivery)`}
             </button>
           </form>
         </div>

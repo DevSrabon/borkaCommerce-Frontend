@@ -485,22 +485,23 @@ export default function BlockRenderer({
     }
 
     case 'CTA_BANNER': {
-      const defaultBg = !data.bg_type || data.bg_type === 'default'
-        ? 'bg-gradient-to-r from-zinc-950 via-zinc-900 to-zinc-950'
+      const isCustomBg = data.bg_type && data.bg_type !== 'default';
+      const defaultBg = !isCustomBg
+        ? 'bg-gradient-to-r from-zinc-950 via-zinc-900 to-zinc-950 text-white'
         : '';
 
       return (
-        <section className={`${layout.sectionClass} ${defaultBg}`} style={layout.style}>
+        <section className={`${layout.sectionClass} ${defaultBg} relative`} style={layout.style}>
           {bgImageLayer}
           {!layout.hasBgImage && (
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-primary/15 via-transparent to-transparent pointer-events-none" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-primary/20 via-transparent to-transparent pointer-events-none" />
           )}
-          <div className={`${layout.innerClass} text-center space-y-4 sm:space-y-6`}>
-            <h2 className={`${layout.headingFontClass} ${isMobile ? 'text-xl' : 'text-2xl sm:text-4xl'} font-bold`}>
+          <div className={`${layout.innerClass} text-center space-y-4 sm:space-y-6 text-white`}>
+            <h2 className={`${layout.headingFontClass} ${isMobile ? 'text-xl' : 'text-2xl sm:text-4xl'} font-bold !text-white tracking-tight drop-shadow-md`}>
               {data.title || 'Experience Bespoke Modesty'}
             </h2>
             {data.subtitle && (
-              <p className={`${isMobile ? 'text-xs' : 'text-sm sm:text-base'} opacity-85 max-w-2xl mx-auto`}>
+              <p className={`${isMobile ? 'text-xs' : 'text-sm sm:text-base'} !text-zinc-200 max-w-2xl mx-auto font-light leading-relaxed drop-shadow-xs`}>
                 {data.subtitle}
               </p>
             )}
@@ -743,6 +744,241 @@ export default function BlockRenderer({
                   </div>
                 </div>
               )}
+              </div>
+            </div>
+          </section>
+        );
+      }
+
+    case 'IMAGE': {
+      const aspectRatioClass =
+        data.aspect_ratio === '21/9'
+          ? 'aspect-[21/9]'
+          : data.aspect_ratio === '4/3'
+          ? 'aspect-[4/3]'
+          : data.aspect_ratio === '1/1'
+          ? 'aspect-square'
+          : data.aspect_ratio === 'auto'
+          ? 'h-auto'
+          : 'aspect-[16/9]';
+
+      const ImageContent = (
+        <div className={`relative w-full overflow-hidden ${aspectRatioClass} rounded-2xl bg-muted/40 shadow-sm group`}>
+          {data.image_url ? (
+            <img
+              src={data.image_url}
+              alt={data.alt_text || data.caption || 'Storefront visual'}
+              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.02]"
+            />
+          ) : (
+            <div className="w-full h-64 flex flex-col items-center justify-center text-muted-foreground p-8">
+              <Sparkles size={28} className="mb-2 text-primary opacity-60" />
+              <p className="text-xs font-semibold">No Image URL Configured</p>
+            </div>
+          )}
+
+          {/* Optional Overlay Text */}
+          {(data.overlay_badge || data.overlay_title) && (
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent flex flex-col justify-end p-6 sm:p-10 text-white">
+              {data.overlay_badge && (
+                <span className="inline-block px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-widest bg-primary/90 text-primary-foreground backdrop-blur-md mb-2 self-start shadow-md">
+                  {data.overlay_badge}
+                </span>
+              )}
+              {data.overlay_title && (
+                <h3 className={`${layout.headingFontClass} text-xl sm:text-3xl font-bold tracking-tight text-white drop-shadow-md`}>
+                  {data.overlay_title}
+                </h3>
+              )}
+            </div>
+          )}
+        </div>
+      );
+
+      return (
+        <section
+          style={layout.style}
+          className={`${layout.sectionClass} relative`}
+        >
+          {bgImageLayer}
+          <div className={layout.innerClass}>
+            {data.link_url ? (
+              <a
+                href={data.link_url}
+                className="block cursor-pointer focus:outline-none"
+                target={data.link_url.startsWith('http') ? '_blank' : '_self'}
+                rel="noopener noreferrer"
+              >
+                {ImageContent}
+              </a>
+            ) : (
+              ImageContent
+            )}
+
+            {data.caption && (
+              <p className="text-center text-xs text-muted-foreground mt-3 italic">
+                {data.caption}
+              </p>
+            )}
+          </div>
+        </section>
+      );
+    }
+
+    case 'CARDS_GRID': {
+      const cards = Array.isArray(data.cards) ? data.cards : [];
+      const cols = data.columns === 2 ? 'sm:grid-cols-2' : data.columns === 4 ? 'sm:grid-cols-2 lg:grid-cols-4' : 'sm:grid-cols-2 lg:grid-cols-3';
+
+      return (
+        <section
+          style={layout.style}
+          className={`${layout.sectionClass} relative`}
+        >
+          {bgImageLayer}
+          <div className={layout.innerClass}>
+            {(data.title || data.subtitle) && (
+              <div className={`text-center ${isMobile ? 'mb-6' : 'mb-12'} space-y-2`}>
+                {data.title && (
+                  <h2 className={`${layout.headingFontClass} ${isMobile ? 'text-2xl' : 'text-3xl sm:text-4xl'} font-bold tracking-tight text-foreground`}>
+                    {data.title}
+                  </h2>
+                )}
+                {data.subtitle && (
+                  <p className="text-xs sm:text-sm text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+                    {data.subtitle}
+                  </p>
+                )}
+              </div>
+            )}
+
+            <div className={`grid grid-cols-1 ${cols} gap-6`}>
+              {cards.map((c: any, idx: number) => (
+                <div
+                  key={idx}
+                  className={`group relative rounded-2xl border border-border/80 bg-card/60 backdrop-blur-sm overflow-hidden flex flex-col justify-between transition-all duration-300 hover:shadow-xl hover:border-primary/50 hover:-translate-y-1`}
+                >
+                  {/* Card Image */}
+                  <div className="relative aspect-[4/5] overflow-hidden bg-muted/40">
+                    {c.image_url ? (
+                      <img
+                        src={c.image_url}
+                        alt={c.title || 'Card Item'}
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">
+                        No Image
+                      </div>
+                    )}
+
+                    {/* Badge */}
+                    {c.badge && (
+                      <span className="absolute top-3 left-3 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-background/90 text-primary border border-primary/30 backdrop-blur-md shadow-xs">
+                        {c.badge}
+                      </span>
+                    )}
+
+                    {/* Tag / Price */}
+                    {c.tag && (
+                      <span className="absolute top-3 right-3 px-2.5 py-1 rounded-full text-xs font-bold bg-primary text-primary-foreground shadow-sm">
+                        {c.tag}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Card Content */}
+                  <div className="p-5 flex-1 flex flex-col justify-between space-y-3">
+                    <div className="space-y-1.5">
+                      <h3 className={`${layout.headingFontClass} font-bold text-base text-foreground group-hover:text-primary transition`}>
+                        {c.title}
+                      </h3>
+                      {c.description && (
+                        <p className="text-xs text-muted-foreground leading-relaxed line-clamp-3">
+                          {c.description}
+                        </p>
+                      )}
+                    </div>
+
+                    {c.button_label && (
+                      <div className="pt-2">
+                        <a
+                          href={c.button_url || '/catalog'}
+                          className="w-full py-2 px-3 rounded-lg bg-primary/10 hover:bg-primary text-primary hover:text-primary-foreground text-xs font-semibold uppercase tracking-wider inline-flex items-center justify-center gap-1.5 transition cursor-pointer"
+                        >
+                          <span>{c.button_label}</span>
+                          <ArrowRight size={13} />
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    case 'GALLERY': {
+      const images = Array.isArray(data.images) ? data.images : [];
+      const cols = data.columns === 2 ? 'sm:grid-cols-2' : data.columns === 4 ? 'sm:grid-cols-2 lg:grid-cols-4' : 'sm:grid-cols-2 lg:grid-cols-3';
+
+      return (
+        <section
+          style={layout.style}
+          className={`${layout.sectionClass} relative`}
+        >
+          {bgImageLayer}
+          <div className={layout.innerClass}>
+            {(data.title || data.subtitle) && (
+              <div className={`text-center ${isMobile ? 'mb-6' : 'mb-10'} space-y-2`}>
+                {data.title && (
+                  <h2 className={`${layout.headingFontClass} ${isMobile ? 'text-2xl' : 'text-3xl'} font-bold tracking-tight text-foreground`}>
+                    {data.title}
+                  </h2>
+                )}
+                {data.subtitle && (
+                  <p className="text-xs sm:text-sm text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+                    {data.subtitle}
+                  </p>
+                )}
+              </div>
+            )}
+
+            <div className={`grid grid-cols-1 ${cols} gap-4`}>
+              {images.map((img: any, idx: number) => {
+                const Item = (
+                  <div
+                    key={idx}
+                    className="group relative aspect-square rounded-xl overflow-hidden bg-muted/40 border border-border shadow-xs"
+                  >
+                    <img
+                      src={img.url}
+                      alt={img.caption || 'Gallery photo'}
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4 text-white">
+                      {img.caption && (
+                        <p className="text-xs font-medium text-white">{img.caption}</p>
+                      )}
+                      {img.link && (
+                        <span className="text-[10px] uppercase font-bold text-primary flex items-center gap-1 mt-1">
+                          View Details <ArrowRight size={10} />
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+
+                if (img.link) {
+                  return (
+                    <a key={idx} href={img.link} className="block cursor-pointer">
+                      {Item}
+                    </a>
+                  );
+                }
+                return Item;
+              })}
             </div>
           </div>
         </section>

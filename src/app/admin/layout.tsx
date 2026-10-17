@@ -29,9 +29,11 @@ import {
   Sun,
   Moon,
   Activity,
+  RefreshCw,
 } from 'lucide-react';
 import { clearSession } from '../../store/authSlice';
 import { useDispatch } from 'react-redux';
+import AdminNotificationsBell from '@/components/admin/AdminNotificationsBell';
 
 const NAV_MODULES = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard, exact: true },
@@ -64,6 +66,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [validating, setValidating] = useState(true);
   const [chatUnread, setChatUnread] = useState(0);
   const [adminTheme, setAdminTheme] = useState<'light' | 'dark'>('dark');
+  const [clearingCache, setClearingCache] = useState(false);
+  const [cacheStatus, setCacheStatus] = useState<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -190,6 +194,42 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const nextTheme = adminTheme === 'dark' ? 'light' : 'dark';
     setAdminTheme(nextTheme);
     localStorage.setItem('admin_theme', nextTheme);
+  };
+
+  const handleClearAllCaches = async () => {
+    if (clearingCache) return;
+    setClearingCache(true);
+    setCacheStatus(null);
+    try {
+      const res = await fetch(`${API_BASE_URL}/admin/cache/clear`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      // Purge frontend translation & local storage caches
+      try {
+        if (typeof window !== 'undefined') {
+          const keysToRemove: string[] = [];
+          for (let i = 0; i < localStorage.length; i++) {
+            const k = localStorage.key(i);
+            if (k && (k.startsWith('borka_') || k.includes('cache') || k.includes('trans'))) {
+              keysToRemove.push(k);
+            }
+          }
+          keysToRemove.forEach((k) => localStorage.removeItem(k));
+        }
+      } catch (_) {}
+
+      if (res.ok) {
+        setCacheStatus('Caches Cleared!');
+      } else {
+        setCacheStatus('Done (Local)');
+      }
+    } catch (_) {
+      setCacheStatus('Done (Local)');
+    } finally {
+      setClearingCache(false);
+      setTimeout(() => setCacheStatus(null), 3000);
+    }
   };
 
   const isActive = (href: string, exact?: boolean) => {
@@ -328,8 +368,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       {/* Main content area */}
       <div className={`flex-1 flex flex-col min-h-screen min-w-0 max-w-full overflow-x-hidden transition-all duration-300 ${collapsed ? 'ml-16' : 'ml-60'}`}>
-        {/* Top bar */}
-        <header className="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur-sm px-4 sm:px-6 py-3 flex items-center justify-between shadow-xs">
+        {/* Top bar (Fixed on scroll) */}
+        <header
+          className={`fixed top-0 right-0 z-40 h-16 border-b border-border bg-card/95 backdrop-blur-md px-4 sm:px-6 flex items-center justify-between shadow-xs transition-all duration-300 ${
+            collapsed ? 'left-16' : 'left-60'
+          }`}
+        >
           <div>
             <h2 className="text-sm font-semibold text-foreground">
               {NAV_MODULES.find((m) => isActive(m.href, m.exact))?.label ?? 'Admin'}
@@ -342,6 +386,28 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <span className="hidden sm:block text-muted-foreground font-medium">
               {new Date().toLocaleDateString('en-AE', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
             </span>
+
+            {/* Admin Real-Time Notifications Drawer */}
+            <AdminNotificationsBell />
+
+            {/* Clear All Caches Button */}
+            <button
+              type="button"
+              onClick={handleClearAllCaches}
+              disabled={clearingCache}
+              title="Purge all Redis cache, translation buffers & browser storage"
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold transition-all duration-200 shadow-xs cursor-pointer ${
+                cacheStatus
+                  ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-500 font-bold'
+                  : 'border-border bg-background hover:bg-accent text-foreground hover:text-primary hover:border-primary/40'
+              }`}
+            >
+              <RefreshCw
+                size={13}
+                className={clearingCache ? 'animate-spin text-primary' : cacheStatus ? 'text-emerald-500' : 'text-primary'}
+              />
+              <span>{clearingCache ? 'Purging...' : cacheStatus || 'Clear All Caches'}</span>
+            </button>
 
             {/* Production-Grade Theme Toggle */}
             <button
@@ -365,8 +431,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
         </header>
 
-        {/* Page content */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 min-w-0 w-full overflow-x-hidden">
+        {/* Page content with guaranteed top padding for fixed 64px navbar */}
+        <main className="flex-1 px-4 sm:px-6 lg:px-8 pb-10 pt-22 sm:pt-24 lg:pt-24 min-w-0 w-full overflow-x-hidden">
           {children}
         </main>
       </div>

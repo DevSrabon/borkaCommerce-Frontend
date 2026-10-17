@@ -963,6 +963,429 @@ function BlockForm({
                 </div>
               </>
             )}
+
+            {/* =====================================================================
+                IMAGE BLOCK
+                ===================================================================== */}
+            {block.type === 'IMAGE' && (
+              <>
+                <div>
+                  <label className="block font-semibold mb-1">Image URL *</label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.image_url || ''}
+                    onChange={(e) => updateField('image_url', e.target.value)}
+                    placeholder="https://... or upload to media library"
+                    className="w-full bg-card border border-border rounded-lg px-3 py-2 text-foreground font-mono text-xs"
+                  />
+                  {formData.image_url && (
+                    <div className="mt-2 relative rounded-lg overflow-hidden border border-border h-40 max-w-sm bg-muted/40">
+                      <img
+                        src={formData.image_url}
+                        alt="Preview"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block font-semibold mb-1">Caption (Displayed below)</label>
+                    <input
+                      type="text"
+                      value={formData.caption || ''}
+                      onChange={(e) => updateField('caption', e.target.value)}
+                      placeholder="e.g. Saba Al Wadi Haute Couture Collection"
+                      className="w-full bg-card border border-border rounded-lg px-3 py-2 text-foreground"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-semibold mb-1">Image Alt Text (SEO)</label>
+                    <input
+                      type="text"
+                      value={formData.alt_text || ''}
+                      onChange={(e) => updateField('alt_text', e.target.value)}
+                      placeholder="e.g. Model wearing black royal abaya"
+                      className="w-full bg-card border border-border rounded-lg px-3 py-2 text-foreground"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block font-semibold mb-1">Aspect Ratio</label>
+                    <select
+                      value={formData.aspect_ratio || '16/9'}
+                      onChange={(e) => updateField('aspect_ratio', e.target.value)}
+                      className="w-full bg-card border border-border rounded-lg px-3 py-2 text-foreground cursor-pointer"
+                    >
+                      <option value="16/9">Landscape 16:9 (Standard Banner)</option>
+                      <option value="21/9">Cinematic 21:9 (Wide Banner)</option>
+                      <option value="4/3">Standard 4:3</option>
+                      <option value="1/1">Square 1:1</option>
+                      <option value="auto">Natural Image Ratio</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block font-semibold mb-1">Click Through Link (Optional)</label>
+                    <input
+                      type="text"
+                      value={formData.link_url || ''}
+                      onChange={(e) => updateField('link_url', e.target.value)}
+                      placeholder="e.g. /catalog or https://..."
+                      className="w-full bg-card border border-border rounded-lg px-3 py-2 text-foreground"
+                    />
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-xl border border-border bg-card/60 space-y-3">
+                  <span className="font-bold text-xs uppercase tracking-wider text-primary">
+                    Optional Text Overlay On Image
+                  </span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block font-semibold mb-1 text-xs">Overlay Badge</label>
+                      <input
+                        type="text"
+                        value={formData.overlay_badge || ''}
+                        onChange={(e) => updateField('overlay_badge', e.target.value)}
+                        placeholder="e.g. Limited Edition"
+                        className="w-full bg-background border border-border rounded-lg px-3 py-1.5 text-foreground"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-semibold mb-1 text-xs">Overlay Title</label>
+                      <input
+                        type="text"
+                        value={formData.overlay_title || ''}
+                        onChange={(e) => updateField('overlay_title', e.target.value)}
+                        placeholder="e.g. Handcrafted In Dubai"
+                        className="w-full bg-background border border-border rounded-lg px-3 py-1.5 text-foreground"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* =====================================================================
+                CARDS_GRID BLOCK
+                ===================================================================== */}
+            {block.type === 'CARDS_GRID' && (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block font-semibold mb-1">Section Title</label>
+                    <input
+                      type="text"
+                      value={formData.title || ''}
+                      onChange={(e) => updateField('title', e.target.value)}
+                      placeholder="e.g. Curated Highlights"
+                      className="w-full bg-card border border-border rounded-lg px-3 py-2 font-serif font-bold text-sm text-foreground"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-semibold mb-1">Grid Columns</label>
+                    <select
+                      value={formData.columns || 3}
+                      onChange={(e) => updateField('columns', parseInt(e.target.value))}
+                      className="w-full bg-card border border-border rounded-lg px-3 py-2 text-foreground cursor-pointer"
+                    >
+                      <option value={2}>2 Columns (Large Cards)</option>
+                      <option value={3}>3 Columns (Standard)</option>
+                      <option value={4}>4 Columns (Compact)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block font-semibold mb-1">Section Subtitle</label>
+                  <textarea
+                    rows={2}
+                    value={formData.subtitle || ''}
+                    onChange={(e) => updateField('subtitle', e.target.value)}
+                    placeholder="e.g. Discover our most coveted creations"
+                    className="w-full bg-card border border-border rounded-lg px-3 py-2 text-foreground"
+                  />
+                </div>
+
+                {/* Card Items */}
+                <div className="space-y-3 pt-2">
+                  <div className="flex items-center justify-between">
+                    <label className="font-bold text-xs uppercase tracking-wider text-primary">
+                      Cards in Grid ({(formData.cards || []).length})
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        updateField('cards', [
+                          ...(formData.cards || []),
+                          {
+                            image_url: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=800&q=80',
+                            badge: 'New Item',
+                            title: 'Bespoke Creation',
+                            description: 'Description of this card item or collection piece.',
+                            tag: 'AED 450',
+                            button_label: 'View Details',
+                            button_url: '/catalog',
+                          },
+                        ])
+                      }
+                      className="text-primary text-xs font-bold inline-flex items-center gap-1 cursor-pointer hover:underline"
+                    >
+                      <Plus size={13} /> Add Card
+                    </button>
+                  </div>
+
+                  <div className="space-y-3">
+                    {(formData.cards || []).map((card: any, idx: number) => (
+                      <div key={idx} className="p-4 border border-border rounded-xl bg-card/60 space-y-3 shadow-xs">
+                        <div className="flex items-center justify-between border-b border-border/50 pb-2">
+                          <span className="font-bold text-xs text-foreground">Card #{idx + 1}</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const next = formData.cards.filter((_: any, i: number) => i !== idx);
+                              updateField('cards', next);
+                            }}
+                            className="p-1 text-muted-foreground hover:text-destructive cursor-pointer"
+                            title="Remove Card"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+
+                        <div>
+                          <label className="block font-semibold mb-1 text-xs">Card Image URL</label>
+                          <input
+                            type="text"
+                            value={card.image_url || ''}
+                            onChange={(e) => {
+                              const next = [...formData.cards];
+                              next[idx].image_url = e.target.value;
+                              updateField('cards', next);
+                            }}
+                            placeholder="https://images.unsplash.com/..."
+                            className="w-full bg-background border border-border rounded px-2.5 py-1 text-xs font-mono text-foreground"
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                          <div className="sm:col-span-2">
+                            <label className="block font-semibold mb-1 text-xs">Card Title *</label>
+                            <input
+                              type="text"
+                              value={card.title || ''}
+                              onChange={(e) => {
+                                const next = [...formData.cards];
+                                next[idx].title = e.target.value;
+                                updateField('cards', next);
+                              }}
+                              className="w-full bg-background border border-border rounded px-2.5 py-1 font-bold text-foreground text-xs"
+                            />
+                          </div>
+                          <div>
+                            <label className="block font-semibold mb-1 text-xs">Badge / Pill</label>
+                            <input
+                              type="text"
+                              value={card.badge || ''}
+                              onChange={(e) => {
+                                const next = [...formData.cards];
+                                next[idx].badge = e.target.value;
+                                updateField('cards', next);
+                              }}
+                              placeholder="e.g. Best Seller"
+                              className="w-full bg-background border border-border rounded px-2.5 py-1 text-xs text-foreground"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block font-semibold mb-1 text-xs">Description</label>
+                          <textarea
+                            rows={2}
+                            value={card.description || ''}
+                            onChange={(e) => {
+                              const next = [...formData.cards];
+                              next[idx].description = e.target.value;
+                              updateField('cards', next);
+                            }}
+                            className="w-full bg-background border border-border rounded px-2.5 py-1 text-xs text-foreground"
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                          <div>
+                            <label className="block font-semibold mb-1 text-xs">Tag / Price</label>
+                            <input
+                              type="text"
+                              value={card.tag || ''}
+                              onChange={(e) => {
+                                const next = [...formData.cards];
+                                next[idx].tag = e.target.value;
+                                updateField('cards', next);
+                              }}
+                              placeholder="e.g. AED 450"
+                              className="w-full bg-background border border-border rounded px-2.5 py-1 text-xs font-semibold text-primary"
+                            />
+                          </div>
+                          <div>
+                            <label className="block font-semibold mb-1 text-xs">Button Label</label>
+                            <input
+                              type="text"
+                              value={card.button_label || ''}
+                              onChange={(e) => {
+                                const next = [...formData.cards];
+                                next[idx].button_label = e.target.value;
+                                updateField('cards', next);
+                              }}
+                              placeholder="e.g. View Piece"
+                              className="w-full bg-background border border-border rounded px-2.5 py-1 text-xs text-foreground"
+                            />
+                          </div>
+                          <div>
+                            <label className="block font-semibold mb-1 text-xs">Button URL</label>
+                            <input
+                              type="text"
+                              value={card.button_url || ''}
+                              onChange={(e) => {
+                                const next = [...formData.cards];
+                                next[idx].button_url = e.target.value;
+                                updateField('cards', next);
+                              }}
+                              placeholder="/catalog"
+                              className="w-full bg-background border border-border rounded px-2.5 py-1 text-xs text-foreground"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* =====================================================================
+                GALLERY BLOCK
+                ===================================================================== */}
+            {block.type === 'GALLERY' && (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block font-semibold mb-1">Gallery Title</label>
+                    <input
+                      type="text"
+                      value={formData.title || ''}
+                      onChange={(e) => updateField('title', e.target.value)}
+                      placeholder="e.g. Atelier Lookbook"
+                      className="w-full bg-card border border-border rounded-lg px-3 py-2 font-serif font-bold text-sm text-foreground"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-semibold mb-1">Gallery Columns</label>
+                    <select
+                      value={formData.columns || 3}
+                      onChange={(e) => updateField('columns', parseInt(e.target.value))}
+                      className="w-full bg-card border border-border rounded-lg px-3 py-2 text-foreground cursor-pointer"
+                    >
+                      <option value={2}>2 Columns</option>
+                      <option value={3}>3 Columns</option>
+                      <option value={4}>4 Columns</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block font-semibold mb-1">Subtitle</label>
+                  <textarea
+                    rows={2}
+                    value={formData.subtitle || ''}
+                    onChange={(e) => updateField('subtitle', e.target.value)}
+                    placeholder="e.g. A visual tour of our bespoke craftsmanship"
+                    className="w-full bg-card border border-border rounded-lg px-3 py-2 text-foreground"
+                  />
+                </div>
+
+                <div className="space-y-3 pt-2">
+                  <div className="flex items-center justify-between">
+                    <label className="font-bold text-xs uppercase tracking-wider text-primary">
+                      Gallery Images ({(formData.images || []).length})
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        updateField('images', [
+                          ...(formData.images || []),
+                          {
+                            url: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=800&q=80',
+                            caption: 'Craftsmanship Detail',
+                            link: '/catalog',
+                          },
+                        ])
+                      }
+                      className="text-primary text-xs font-bold inline-flex items-center gap-1 cursor-pointer hover:underline"
+                    >
+                      <Plus size={13} /> Add Image
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {(formData.images || []).map((img: any, idx: number) => (
+                      <div key={idx} className="p-3 border border-border rounded-xl bg-card/60 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-xs text-foreground">Photo #{idx + 1}</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const next = formData.images.filter((_: any, i: number) => i !== idx);
+                              updateField('images', next);
+                            }}
+                            className="p-1 text-muted-foreground hover:text-destructive cursor-pointer"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                        <input
+                          type="text"
+                          placeholder="Image URL"
+                          value={img.url || ''}
+                          onChange={(e) => {
+                            const next = [...formData.images];
+                            next[idx].url = e.target.value;
+                            updateField('images', next);
+                          }}
+                          className="w-full bg-background border border-border rounded px-2.5 py-1 text-xs font-mono text-foreground"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Caption / Description"
+                          value={img.caption || ''}
+                          onChange={(e) => {
+                            const next = [...formData.images];
+                            next[idx].caption = e.target.value;
+                            updateField('images', next);
+                          }}
+                          className="w-full bg-background border border-border rounded px-2.5 py-1 text-xs text-foreground"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Link URL (optional)"
+                          value={img.link || ''}
+                          onChange={(e) => {
+                            const next = [...formData.images];
+                            next[idx].link = e.target.value;
+                            updateField('images', next);
+                          }}
+                          className="w-full bg-background border border-border rounded px-2.5 py-1 text-xs text-foreground"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         )}
 

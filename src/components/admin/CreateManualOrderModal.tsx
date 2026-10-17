@@ -12,10 +12,13 @@ import {
   User,
   ShoppingBag,
   CreditCard,
-  Truck,
   AlertCircle,
   CheckCircle,
+  ChevronDown,
+  MapPin,
+  Truck,
 } from 'lucide-react';
+import { COUNTRIES_LIST } from '@/constants/countries';
 
 interface ProductVariant {
   id: string;
@@ -33,12 +36,24 @@ interface Product {
   images?: { image_url: string }[];
 }
 
+interface CustomerAddress {
+  id: string;
+  country: string;
+  city: string;
+  area?: string | null;
+  street: string;
+  building?: string | null;
+  postal_code?: string | null;
+  is_default?: boolean;
+}
+
 interface Customer {
   id: string;
   first_name: string;
   last_name: string;
   email: string;
   phone?: string;
+  addresses?: CustomerAddress[];
 }
 
 interface DeliveryPartnerOption {
@@ -81,8 +96,18 @@ export default function CreateManualOrderModal({ isOpen, onClose, onOrderCreated
   const [street, setStreet] = useState('');
   const [city, setCity] = useState('Dubai');
   const [state, setState] = useState('Dubai');
-  const [country, setCountry] = useState('UAE');
+  const [country, setCountry] = useState('United Arab Emirates');
   const [postalCode, setPostalCode] = useState('00000');
+
+  // Address selection for existing customer: 'saved' | 'new'
+  const [addressSelectMode, setAddressSelectMode] = useState<'saved' | 'new'>('saved');
+  const [selectedAddressId, setSelectedAddressId] = useState<string>('');
+  const [customerAddresses, setCustomerAddresses] = useState<CustomerAddress[]>([]);
+  const [loadingAddresses, setLoadingAddresses] = useState(false);
+
+  // Searchable Country Dropdown state
+  const [countrySearch, setCountrySearch] = useState('');
+  const [isCountryOpen, setIsCountryOpen] = useState(false);
 
   // Products & Variants catalog
   const [products, setProducts] = useState<Product[]>([]);
@@ -140,7 +165,8 @@ export default function CreateManualOrderModal({ isOpen, onClose, onOrderCreated
         });
         if (res.ok) {
           const data = await res.json();
-          setCustomers(Array.isArray(data) ? data : data.customers || []);
+          const list = Array.isArray(data) ? data : (data.items || data.customers || []);
+          setCustomers(list);
         }
       } catch (err) {
         console.error('Failed to load customers:', err);
@@ -153,7 +179,8 @@ export default function CreateManualOrderModal({ isOpen, onClose, onOrderCreated
         const res = await fetch(`${API_BASE_URL}/ecommerce/delivery-partners`);
         if (res.ok) {
           const data = await res.json();
-          setDeliveryPartners(data);
+          const list = Array.isArray(data) ? data : (Array.isArray(data?.items) ? data.items : []);
+          setDeliveryPartners(list);
         }
       } catch (err) {
         console.error('Failed to load delivery partners:', err);
@@ -165,9 +192,60 @@ export default function CreateManualOrderModal({ isOpen, onClose, onOrderCreated
     fetchPartners();
   }, [isOpen, token]);
 
+  // Load and apply customer addresses when existing customer is selected
+  const applySavedAddress = (addr: CustomerAddress) => {
+    setStreet([addr.building, addr.street].filter(Boolean).join(', ') || addr.street || '');
+    setCity(addr.city || 'Dubai');
+    setState(addr.area || 'Dubai');
+    setCountry(addr.country || 'United Arab Emirates');
+    setPostalCode(addr.postal_code || '00000');
+  };
+
+  useEffect(() => {
+    if (!selectedCustomerId) {
+      setCustomerAddresses([]);
+      setSelectedAddressId('');
+      return;
+    }
+
+    const currentCustomer = customers.find((c) => c.id === selectedCustomerId);
+    if (currentCustomer?.addresses && currentCustomer.addresses.length > 0) {
+      setCustomerAddresses(currentCustomer.addresses);
+      const def = currentCustomer.addresses.find((a) => a.is_default) || currentCustomer.addresses[0];
+      setSelectedAddressId(def.id);
+      applySavedAddress(def);
+      setAddressSelectMode('saved');
+    } else {
+      setLoadingAddresses(true);
+      fetch(`${API_BASE_URL}/admin/customers/${selectedCustomerId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          const addrs = data.addresses || [];
+          setCustomerAddresses(addrs);
+          if (addrs.length > 0) {
+            const def = addrs.find((a: CustomerAddress) => a.is_default) || addrs[0];
+            setSelectedAddressId(def.id);
+            applySavedAddress(def);
+            setAddressSelectMode('saved');
+          } else {
+            setSelectedAddressId('');
+            setAddressSelectMode('new');
+          }
+        })
+        .catch(() => {
+          setAddressSelectMode('new');
+        })
+        .finally(() => {
+          setLoadingAddresses(false);
+        });
+    }
+  }, [selectedCustomerId, customers, token]);
+
   const handlePartnerChange = (partnerName: string) => {
     setDeliveryPartner(partnerName);
-    const partner = deliveryPartners.find((p) => p.name === partnerName);
+    const partner = (deliveryPartners || []).find((p) => p.name === partnerName);
     if (partner?.tracking_url_template && trackingNumber.trim()) {
       setTrackingUrl(partner.tracking_url_template.replace('{tracking_number}', encodeURIComponent(trackingNumber.trim())));
     }
@@ -175,7 +253,7 @@ export default function CreateManualOrderModal({ isOpen, onClose, onOrderCreated
 
   const handleTrackingNumberChange = (num: string) => {
     setTrackingNumber(num);
-    const partner = deliveryPartners.find((p) => p.name === deliveryPartner);
+    const partner = (deliveryPartners || []).find((p) => p.name === deliveryPartner);
     if (partner?.tracking_url_template && num.trim()) {
       setTrackingUrl(partner.tracking_url_template.replace('{tracking_number}', encodeURIComponent(num.trim())));
     }
@@ -321,14 +399,16 @@ export default function CreateManualOrderModal({ isOpen, onClose, onOrderCreated
         payload.customer_last_name = lastName.trim() || 'Customer';
         payload.customer_email = email.trim();
         payload.customer_phone = phone.trim() || undefined;
-        payload.address = {
-          street: street.trim() || 'Manual Storefront Order',
-          city: city.trim() || 'Dubai',
-          state: state.trim() || 'Dubai',
-          country: country.trim() || 'UAE',
-          postal_code: postalCode.trim() || '00000',
-        };
       }
+
+      // Always pass the resolved shipping address
+      payload.address = {
+        street: street.trim() || 'Manual Storefront Order',
+        city: city.trim() || 'Dubai',
+        state: state.trim() || 'Dubai',
+        country: country.trim() || 'United Arab Emirates',
+        postal_code: postalCode.trim() || '00000',
+      };
 
       const res = await fetch(`${API_BASE_URL}/admin/orders/manual`, {
         method: 'POST',
@@ -422,29 +502,226 @@ export default function CreateManualOrderModal({ isOpen, onClose, onOrderCreated
             </div>
 
             {customerMode === 'existing' ? (
-              <div className="space-y-2">
-                <div className="relative">
-                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                  <input
-                    type="text"
-                    placeholder="Search customer by name, email or phone..."
-                    value={customerSearch}
-                    onChange={(e) => setCustomerSearch(e.target.value)}
-                    className="w-full bg-background border border-border rounded-lg pl-9 pr-3 py-2 text-xs focus:outline-hidden focus:border-primary"
-                  />
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <div className="relative">
+                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                    <input
+                      type="text"
+                      placeholder="Search customer by name, email or phone..."
+                      value={customerSearch}
+                      onChange={(e) => setCustomerSearch(e.target.value)}
+                      className="w-full bg-background border border-border rounded-lg pl-9 pr-3 py-2 text-xs focus:outline-hidden focus:border-primary"
+                    />
+                  </div>
+                  <select
+                    value={selectedCustomerId}
+                    onChange={(e) => setSelectedCustomerId(e.target.value)}
+                    className="w-full bg-background border border-border rounded-lg px-3 py-2.5 text-xs focus:outline-hidden focus:border-primary"
+                  >
+                    <option value="">-- Choose Customer --</option>
+                    {filteredCustomers.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.first_name} {c.last_name} ({c.email}) {c.phone ? `• ${c.phone}` : ''}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-                <select
-                  value={selectedCustomerId}
-                  onChange={(e) => setSelectedCustomerId(e.target.value)}
-                  className="w-full bg-background border border-border rounded-lg px-3 py-2.5 text-xs focus:outline-hidden focus:border-primary"
-                >
-                  <option value="">-- Choose Customer --</option>
-                  {filteredCustomers.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.first_name} {c.last_name} ({c.email}) {c.phone ? `• ${c.phone}` : ''}
-                    </option>
-                  ))}
-                </select>
+
+                {/* Existing Customer Address Selection Options */}
+                {selectedCustomerId && (
+                  <div className="p-3.5 bg-muted/20 border border-border rounded-xl space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/60 pb-2">
+                      <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+                        <MapPin size={14} className="text-primary" />
+                        <span>Delivery Address for Order</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 bg-background p-1 rounded-lg border border-border">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAddressSelectMode('saved');
+                            if (customerAddresses.length > 0) {
+                              const def = customerAddresses.find((a) => a.id === selectedAddressId) || customerAddresses[0];
+                              applySavedAddress(def);
+                            }
+                          }}
+                          disabled={customerAddresses.length === 0}
+                          className={`px-2.5 py-1 text-xs rounded-md font-medium transition cursor-pointer ${
+                            addressSelectMode === 'saved'
+                              ? 'bg-primary text-primary-foreground shadow-2xs'
+                              : 'text-muted-foreground hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed'
+                          }`}
+                        >
+                          Select from Existing Address ({customerAddresses.length})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAddressSelectMode('new');
+                            setStreet('');
+                            setCity('Dubai');
+                            setState('Dubai');
+                            setCountry('United Arab Emirates');
+                            setPostalCode('00000');
+                          }}
+                          className={`px-2.5 py-1 text-xs rounded-md font-medium transition cursor-pointer ${
+                            addressSelectMode === 'new'
+                              ? 'bg-primary text-primary-foreground shadow-2xs'
+                              : 'text-muted-foreground hover:text-foreground'
+                          }`}
+                        >
+                          + New Address
+                        </button>
+                      </div>
+                    </div>
+
+                    {loadingAddresses ? (
+                      <p className="text-xs text-muted-foreground py-2">Loading customer addresses...</p>
+                    ) : addressSelectMode === 'saved' && customerAddresses.length > 0 ? (
+                      <div className="space-y-2">
+                        <label className="text-xs font-semibold text-muted-foreground">Select Saved Address</label>
+                        <select
+                          value={selectedAddressId}
+                          onChange={(e) => {
+                            setSelectedAddressId(e.target.value);
+                            const found = customerAddresses.find((a) => a.id === e.target.value);
+                            if (found) applySavedAddress(found);
+                          }}
+                          className="w-full bg-background border border-border rounded-lg px-3 py-2 text-xs focus:outline-hidden focus:border-primary cursor-pointer"
+                        >
+                          {customerAddresses.map((addr) => (
+                            <option key={addr.id} value={addr.id}>
+                              {[addr.building, addr.street, addr.city, addr.country].filter(Boolean).join(', ')}
+                              {addr.is_default ? ' (Default)' : ''}
+                            </option>
+                          ))}
+                        </select>
+                        <div className="p-2.5 rounded-lg bg-background border border-border text-xs text-foreground/80 space-y-1">
+                          <p className="font-semibold text-foreground">
+                            {[street, city, state, country].filter(Boolean).join(', ')}
+                          </p>
+                          {postalCode && <p className="text-muted-foreground font-mono">Postal Code: {postalCode}</p>}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-3 pt-1">
+                        {customerAddresses.length === 0 && (
+                          <p className="text-xs text-amber-500 font-medium">
+                            No saved addresses on file for this customer. Enter a new delivery address below:
+                          </p>
+                        )}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                          <div className="sm:col-span-2">
+                            <label className="text-xs font-semibold text-muted-foreground">Street / Building Address *</label>
+                            <input
+                              type="text"
+                              value={street}
+                              onChange={(e) => setStreet(e.target.value)}
+                              placeholder="Villa 24, Jumeirah 1"
+                              className="w-full mt-1 bg-background border border-border rounded-lg px-3 py-2 text-xs focus:outline-hidden focus:border-primary"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs font-semibold text-muted-foreground">City *</label>
+                            <input
+                              type="text"
+                              value={city}
+                              onChange={(e) => setCity(e.target.value)}
+                              placeholder="Dubai"
+                              className="w-full mt-1 bg-background border border-border rounded-lg px-3 py-2 text-xs focus:outline-hidden focus:border-primary"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs font-semibold text-muted-foreground">Area / State</label>
+                            <input
+                              type="text"
+                              value={state}
+                              onChange={(e) => setState(e.target.value)}
+                              placeholder="Dubai"
+                              className="w-full mt-1 bg-background border border-border rounded-lg px-3 py-2 text-xs focus:outline-hidden focus:border-primary"
+                            />
+                          </div>
+                          
+                          {/* Searchable Country Dropdown */}
+                          <div className="relative">
+                            <label className="text-xs font-semibold text-muted-foreground">Country * (Search &amp; Select)</label>
+                            <button
+                              type="button"
+                              onClick={() => setIsCountryOpen(!isCountryOpen)}
+                              className="w-full mt-1 text-xs bg-background border border-border rounded-lg px-3 py-2 flex items-center justify-between text-left focus:outline-hidden focus:border-primary cursor-pointer hover:border-primary/50 transition"
+                            >
+                              <span className="flex items-center gap-1.5 truncate">
+                                <span>{COUNTRIES_LIST.find((c) => c.name.toLowerCase() === country.toLowerCase())?.flag || '🌐'}</span>
+                                <span className="font-medium text-foreground truncate">{country || 'Select Country'}</span>
+                              </span>
+                              <ChevronDown size={14} className={`text-muted-foreground transition-transform ${isCountryOpen ? 'rotate-180 text-primary' : ''}`} />
+                            </button>
+
+                            {isCountryOpen && (
+                              <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-card border border-border rounded-lg shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-1">
+                                <div className="p-2 border-b border-border bg-muted/40">
+                                  <div className="relative">
+                                    <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                                    <input
+                                      type="text"
+                                      placeholder="Search country name or code..."
+                                      value={countrySearch}
+                                      onChange={(e) => setCountrySearch(e.target.value)}
+                                      className="w-full bg-background border border-border rounded pl-8 pr-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                                      autoFocus
+                                    />
+                                  </div>
+                                </div>
+                                <div className="max-h-52 overflow-y-auto divide-y divide-border/30">
+                                  {COUNTRIES_LIST.filter(
+                                    (c) =>
+                                      c.name.toLowerCase().includes(countrySearch.toLowerCase()) ||
+                                      c.code.toLowerCase().includes(countrySearch.toLowerCase()) ||
+                                      c.dial_code.includes(countrySearch),
+                                  ).map((c) => {
+                                    const isSelected = country.toLowerCase() === c.name.toLowerCase();
+                                    return (
+                                      <button
+                                        key={c.code}
+                                        type="button"
+                                        onClick={() => {
+                                          setCountry(c.name);
+                                          setIsCountryOpen(false);
+                                          setCountrySearch('');
+                                        }}
+                                        className={`w-full px-3 py-2 text-left text-xs flex items-center justify-between transition cursor-pointer ${
+                                          isSelected ? 'bg-primary/10 text-primary font-semibold' : 'hover:bg-muted/60 text-foreground'
+                                        }`}
+                                      >
+                                        <span className="flex items-center gap-2 truncate">
+                                          <span>{c.flag}</span>
+                                          <span className="truncate">{c.name}</span>
+                                        </span>
+                                        <span className="text-[11px] font-mono text-muted-foreground shrink-0">{c.code}</span>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          <div>
+                            <label className="text-xs font-semibold text-muted-foreground">Postal Code</label>
+                            <input
+                              type="text"
+                              value={postalCode}
+                              onChange={(e) => setPostalCode(e.target.value)}
+                              placeholder="00000"
+                              className="w-full mt-1 bg-background border border-border rounded-lg px-3 py-2 text-xs focus:outline-hidden focus:border-primary"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
@@ -510,15 +787,69 @@ export default function CreateManualOrderModal({ isOpen, onClose, onOrderCreated
                     className="w-full mt-1 bg-background border border-border rounded-lg px-3 py-2 text-xs focus:outline-hidden focus:border-primary"
                   />
                 </div>
-                <div>
-                  <label className="text-xs font-semibold text-muted-foreground">Country</label>
-                  <input
-                    type="text"
-                    value={country}
-                    onChange={(e) => setCountry(e.target.value)}
-                    placeholder="UAE"
-                    className="w-full mt-1 bg-background border border-border rounded-lg px-3 py-2 text-xs focus:outline-hidden focus:border-primary"
-                  />
+                
+                {/* Searchable Country Dropdown for New Customer */}
+                <div className="relative">
+                  <label className="text-xs font-semibold text-muted-foreground">Country (Search &amp; Select)</label>
+                  <button
+                    type="button"
+                    onClick={() => setIsCountryOpen(!isCountryOpen)}
+                    className="w-full mt-1 text-xs bg-background border border-border rounded-lg px-3 py-2 flex items-center justify-between text-left focus:outline-hidden focus:border-primary cursor-pointer hover:border-primary/50 transition"
+                  >
+                    <span className="flex items-center gap-1.5 truncate">
+                      <span>{COUNTRIES_LIST.find((c) => c.name.toLowerCase() === country.toLowerCase())?.flag || '🌐'}</span>
+                      <span className="font-medium text-foreground truncate">{country || 'Select Country'}</span>
+                    </span>
+                    <ChevronDown size={14} className={`text-muted-foreground transition-transform ${isCountryOpen ? 'rotate-180 text-primary' : ''}`} />
+                  </button>
+
+                  {isCountryOpen && (
+                    <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-card border border-border rounded-lg shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-1">
+                      <div className="p-2 border-b border-border bg-muted/40">
+                        <div className="relative">
+                          <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                          <input
+                            type="text"
+                            placeholder="Search country name or code..."
+                            value={countrySearch}
+                            onChange={(e) => setCountrySearch(e.target.value)}
+                            className="w-full bg-background border border-border rounded pl-8 pr-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                            autoFocus
+                          />
+                        </div>
+                      </div>
+                      <div className="max-h-52 overflow-y-auto divide-y divide-border/30">
+                        {COUNTRIES_LIST.filter(
+                          (c) =>
+                            c.name.toLowerCase().includes(countrySearch.toLowerCase()) ||
+                            c.code.toLowerCase().includes(countrySearch.toLowerCase()) ||
+                            c.dial_code.includes(countrySearch),
+                        ).map((c) => {
+                          const isSelected = country.toLowerCase() === c.name.toLowerCase();
+                          return (
+                            <button
+                              key={c.code}
+                              type="button"
+                              onClick={() => {
+                                setCountry(c.name);
+                                setIsCountryOpen(false);
+                                setCountrySearch('');
+                              }}
+                              className={`w-full px-3 py-2 text-left text-xs flex items-center justify-between transition cursor-pointer ${
+                                isSelected ? 'bg-primary/10 text-primary font-semibold' : 'hover:bg-muted/60 text-foreground'
+                              }`}
+                            >
+                              <span className="flex items-center gap-2 truncate">
+                                <span>{c.flag}</span>
+                                <span className="truncate">{c.name}</span>
+                              </span>
+                              <span className="text-[11px] font-mono text-muted-foreground shrink-0">{c.code}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -724,10 +1055,10 @@ export default function CreateManualOrderModal({ isOpen, onClose, onOrderCreated
                       className="w-full mt-1 bg-background border border-border rounded-lg px-2 py-1.5 text-xs focus:outline-hidden"
                     >
                       <option value="">None / Self Fulfillment</option>
-                      {deliveryPartners.map((dp) => (
+                      {(deliveryPartners || []).map((dp) => (
                         <option key={dp.id} value={dp.name}>{dp.name}</option>
                       ))}
-                      {!deliveryPartners.some((p) => p.name === deliveryPartner) && deliveryPartner && (
+                      {!(deliveryPartners || []).some((p) => p.name === deliveryPartner) && deliveryPartner && (
                         <option value={deliveryPartner}>{deliveryPartner}</option>
                       )}
                     </select>

@@ -21,6 +21,7 @@ import {
   AlertCircle,
   Printer,
   ChevronRight,
+  ChevronDown,
   ShieldCheck,
   Download,
   Pencil,
@@ -35,6 +36,7 @@ import {
   ExternalLink,
   Factory,
 } from 'lucide-react';
+import { COUNTRIES_LIST } from '@/constants/countries';
 
 interface OrderItem {
   id: string;
@@ -148,11 +150,14 @@ const STATUS_COLORS: Record<string, string> = {
   REFUNDED: 'bg-zinc-500/10 text-zinc-600 border-zinc-500/20',
 };
 
+import { useModal } from '@/components/common/LuxuryModal';
+
 export default function AdminOrderDetailPage() {
   const params = useParams();
   const router = useRouter();
   const orderId = params?.id as string;
   const token = useSelector((state: RootState) => state.auth.token);
+  const { showAlert } = useModal();
 
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -211,6 +216,8 @@ export default function AdminOrderDetailPage() {
   });
   const [savingAddress, setSavingAddress] = useState(false);
   const [addressError, setAddressError] = useState<string | null>(null);
+  const [countrySearch, setCountrySearch] = useState('');
+  const [isCountryOpen, setIsCountryOpen] = useState(false);
 
   // Load delivery partners list
   useEffect(() => {
@@ -278,30 +285,6 @@ export default function AdminOrderDetailPage() {
 
     fetchOrder();
   }, [orderId, token, router]);
-
-  const COUNTRIES_LIST = [
-    'United Arab Emirates',
-    'Saudi Arabia',
-    'Qatar',
-    'Kuwait',
-    'Bahrain',
-    'Oman',
-    'United Kingdom',
-    'United States',
-    'Canada',
-    'Australia',
-    'Germany',
-    'France',
-    'Malaysia',
-    'Singapore',
-    'Bangladesh',
-    'India',
-    'Pakistan',
-    'Egypt',
-    'Jordan',
-    'Lebanon',
-    'Turkey',
-  ];
 
   const [generatingProdNo, setGeneratingProdNo] = useState(false);
   const handleGenerateProductionNo = async () => {
@@ -514,7 +497,7 @@ export default function AdminOrderDetailPage() {
       );
       setTimeout(() => setSuccessMsg(null), 4000);
     } catch (err: any) {
-      alert(err.message);
+      showAlert(err.message || 'Failed to update order status', 'Status Update Failed', 'error');
     } finally {
       setUpdating(false);
       setPendingStatus(null);
@@ -658,106 +641,398 @@ export default function AdminOrderDetailPage() {
     }
   };
 
+  const buildPrintableInvoiceHtml = (ord: OrderDetail) => {
+    const d = new Date(ord.created_at);
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    const formattedDate = `${day}-${month}-${year}`;
+
+    const customerName = `${ord.customer?.first_name || ''} ${ord.customer?.last_name || ''}`.trim() || 'Valued Customer';
+    const customerPhone = ord.customer?.phone || ord.shipping_area || '+971 50 000 0000';
+    const customerEmail = ord.customer?.email || 'customer@example.com';
+    const addressLine1 = [ord.shipping_building, ord.shipping_street, ord.address?.street].filter(Boolean).join(', ') || 'Tempore blanditiis, Maiores ut labore ve';
+    const addressLine2 = [ord.shipping_area, ord.shipping_city || ord.address?.city, ord.shipping_country || ord.address?.country || 'United Arab Emirates'].filter(Boolean).join(', ');
+
+    const rowsHtml = (ord.items || []).map((it) => {
+      // Determine Code (SKU or slug)
+      const code = it.sku || (it.product_name ? it.product_name.toLowerCase().replace(/[^a-z0-9]+/g, '-') : 'prod-code');
+
+      // Determine Size & measurement breakdown
+      let sizeText = 'XS';
+      let fabricText = 'Bridel (بريدل)';
+      let colorText = 'Black (اسود)';
+      const rawVariant = (it.variant_name || '').trim();
+
+      if (rawVariant) {
+        const parts = rawVariant.split(/[\/,•|]/).map((s) => s.trim());
+        for (const p of parts) {
+          const lower = p.toLowerCase();
+          if (lower.includes('size') || /^(xs|s|m|l|xl|xxl|\d{2})/i.test(p)) {
+            sizeText = p.replace(/^size\s*[:=]\s*/i, '');
+          } else if (lower.includes('color') || lower.includes('black') || lower.includes('white') || lower.includes('green') || lower.includes('blue')) {
+            colorText = p.replace(/^color\s*[:=]\s*/i, '');
+          } else if (lower.includes('fabric') || lower.includes('bridel') || lower.includes('nada') || lower.includes('crepe') || lower.includes('silk')) {
+            fabricText = p.replace(/^fabric\s*[:=]\s*/i, '');
+          }
+        }
+      }
+
+      return `
+        <tr>
+          <td style="padding: 10px; border: 1px solid #d1d5db; font-size: 11px; font-family: monospace; vertical-align: top; color: #111827;">
+            ${code}
+          </td>
+          <td style="padding: 10px; border: 1px solid #d1d5db; font-size: 12px; vertical-align: top; color: #111827;">
+            <div style="font-weight: 600;">${it.product_name}</div>
+            <div style="font-size: 11px; color: #4b5563; margin-top: 3px;">Fabric: ${fabricText.split(' ')[0]}</div>
+          </td>
+          <td style="padding: 10px; border: 1px solid #d1d5db; font-size: 12px; vertical-align: top; color: #111827;">
+            <div style="font-weight: bold; font-size: 13px;">${sizeText}</div>
+          </td>
+          <td style="padding: 10px; border: 1px solid #d1d5db; font-size: 12px; vertical-align: top; text-align: center; color: #111827;">
+            ${fabricText}
+          </td>
+          <td style="padding: 10px; border: 1px solid #d1d5db; font-size: 12px; vertical-align: top; text-align: center; color: #111827;">
+            ${colorText}
+          </td>
+          <td style="padding: 10px; border: 1px solid #d1d5db; font-size: 12px; vertical-align: top; text-align: center; font-weight: 600; color: #111827;">
+            ${it.quantity}
+          </td>
+          <td style="padding: 10px; border: 1px solid #d1d5db; font-size: 12px; vertical-align: top; text-align: right; font-weight: 600; color: #111827; white-space: nowrap;">
+            ${Number(it.price).toFixed(2)}<br/><span style="font-size: 11px; font-weight: normal;">(AED)</span>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    const netTotal = Number(ord.subtotal || 0).toFixed(2);
+    const discount = Number(ord.discount || 0).toFixed(2);
+    const delivery = Number(ord.shipping || 0).toFixed(2);
+    const grandTotal = Number(ord.total || 0).toFixed(2);
+
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Invoice_${ord.order_number}</title>
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 12mm 15mm;
+    }
+    * {
+      box-sizing: border-box;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      margin: 0;
+      padding: 24px;
+      color: #111827;
+      background: #ffffff;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+    .invoice-wrapper {
+      max-width: 820px;
+      margin: 0 auto;
+    }
+    .header-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 12px;
+    }
+    .navy-banner {
+      background-color: #30206b !important;
+      color: #ffffff !important;
+      padding: 12px 20px;
+      text-align: center;
+      border-radius: 2px;
+    }
+    .navy-banner h1 {
+      margin: 0 0 4px 0;
+      font-size: 21px;
+      font-weight: 700;
+      font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+      letter-spacing: 0.5px;
+    }
+    .navy-banner h2 {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+    .sub-address {
+      text-align: right;
+      font-size: 11px;
+      color: #1f2937;
+      margin-top: 6px;
+      line-height: 1.4;
+    }
+    .meta-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 18px 0 20px 0;
+      gap: 16px;
+    }
+    .contact-col {
+      font-size: 12px;
+      line-height: 1.5;
+      color: #1e3a8a;
+      font-weight: 500;
+    }
+    .badge-cash {
+      border: 2px solid #30206b;
+      border-radius: 12px;
+      padding: 7px 22px;
+      text-align: center;
+      color: #30206b;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    .badge-specialist {
+      background-color: #30206b !important;
+      color: #ffffff !important;
+      padding: 8px 18px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      text-align: center;
+      white-space: nowrap;
+    }
+    .bill-meta-table {
+      width: 100%;
+      margin: 16px 0 20px 0;
+      border-collapse: collapse;
+    }
+    .order-details-title {
+      font-size: 14px;
+      font-weight: bold;
+      color: #111827;
+      margin: 20px 0 8px 0;
+    }
+    .items-table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid #d1d5db;
+    }
+    .items-table th {
+      background-color: #f9fafb !important;
+      border: 1px solid #d1d5db;
+      padding: 8px 10px;
+      font-size: 12px;
+      font-weight: bold;
+      color: #111827;
+      text-align: left;
+    }
+    .totals-box {
+      width: 320px;
+      margin-left: auto;
+      margin-top: 14px;
+      border: 1px solid #9ca3af;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    .totals-box td {
+      padding: 6px 12px;
+    }
+    .signature-row {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 85px;
+      padding: 0 10px;
+    }
+    .signature-box {
+      width: 220px;
+    }
+    .signature-line {
+      border-bottom: 2px solid #111827;
+      margin-bottom: 6px;
+    }
+    .footer-bar {
+      margin-top: 60px;
+      font-size: 10px;
+      color: #6b7280;
+      display: flex;
+      justify-content: space-between;
+      border-top: 1px solid #f3f4f6;
+      padding-top: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="invoice-wrapper">
+    <!-- TOP HEADER -->
+    <table class="header-table">
+      <tr>
+        <td style="width: 120px; vertical-align: top; padding-right: 16px;">
+          <!-- Circular SW Monogram Logo -->
+          <svg width="105" height="105" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="60" cy="60" r="56" stroke="#30206b" stroke-width="3" fill="#ffffff" />
+            <circle cx="60" cy="60" r="50" stroke="#c99736" stroke-width="1.5" stroke-dasharray="2 2" fill="none" />
+            <path id="curve" d="M 28 60 A 32 32 0 0 1 92 60" fill="none" />
+            <text font-size="7" font-weight="bold" fill="#c99736" letter-spacing="2">
+              <textPath href="#curve" startOffset="50%" text-anchor="middle">SABA AL WADI</textPath>
+            </text>
+            <text x="44" y="74" font-family="'Times New Roman', Georgia, serif" font-size="44" font-weight="bold" fill="#c99736" font-style="italic">S</text>
+            <text x="64" y="78" font-family="'Times New Roman', Georgia, serif" font-size="40" font-weight="bold" fill="#30206b" font-style="italic">W</text>
+          </svg>
+        </td>
+        <td style="vertical-align: top;">
+          <div class="navy-banner">
+            <h1>صبا الوادي للعبايات والشيلة ذ.م.م (فرع)</h1>
+            <h2>SABA AL WADI ABAYA &amp; SHAILA L.L.C (BR)</h2>
+          </div>
+          <div class="sub-address">
+            Suit No: M-49, M-104, 2nd Floor, Al Habtoor Building, Abu Hail Street, Deira-Dubai. P.O Box: 67242<br/>
+            E-mail: contact@sabaalwadi.com
+          </div>
+        </td>
+      </tr>
+    </table>
+
+    <!-- CONTACT DETAILS & BADGES -->
+    <div class="meta-bar">
+      <div class="contact-col">
+        <div>+971 55 79 17 409 &#128222;</div>
+        <div>+971 50 93 75 919 &#128222;</div>
+        <div>Tel: +971 55 642 4758</div>
+        <div>&#128247; @saba_al_wadi</div>
+      </div>
+
+      <div class="badge-cash">
+        <div style="font-size: 13px; font-weight: bold;">فاتورة النقد / الخصم</div>
+        <div style="font-size: 11px; font-weight: bold; margin-top: 2px;">CASH / DEBIT INVOICE</div>
+      </div>
+
+      <div class="badge-specialist">
+        Specialist Designer in Abaya &amp; Sheila
+      </div>
+    </div>
+
+    <!-- BILLING INFO & ORDER META -->
+    <table class="bill-meta-table">
+      <tr>
+        <td style="vertical-align: top; width: 60%; font-size: 12px; line-height: 1.5; color: #111827;">
+          <div style="font-weight: 700; margin-bottom: 2px;">INVOICE TO</div>
+          <div style="font-weight: 600;">${customerName}</div>
+          <div>${customerPhone}</div>
+          <div>${customerEmail}</div>
+          <div>${addressLine1}</div>
+          <div>${addressLine2}</div>
+        </td>
+        <td style="vertical-align: top; text-align: right; font-size: 12px; line-height: 1.5; color: #111827;">
+          <div style="font-weight: 700;">ORDER NO.</div>
+          <div style="margin-bottom: 6px; font-size: 13px;">${ord.order_number}</div>
+          ${ord.production_no ? `<div style="font-weight: 700;">PRODUCT NO.</div><div style="margin-bottom: 6px; font-size: 13px; font-family: monospace; font-weight: bold; color: #30206b;">${ord.production_no}</div>` : ''}
+          <div style="font-weight: 700;">DATE</div>
+          <div style="font-size: 13px;">${formattedDate}</div>
+        </td>
+      </tr>
+    </table>
+
+    <!-- ORDER DETAILS TABLE -->
+    <div class="order-details-title">Order Details</div>
+    <table class="items-table">
+      <thead>
+        <tr>
+          <th style="width: 15%;">Code</th>
+          <th style="width: 20%;">Product</th>
+          <th style="width: 32%;">Size</th>
+          <th style="width: 11%; text-align: center;">Fabric</th>
+          <th style="width: 10%; text-align: center;">Color</th>
+          <th style="width: 5%; text-align: center;">Qty</th>
+          <th style="width: 7%; text-align: right;">Price</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rowsHtml}
+      </tbody>
+    </table>
+
+    <!-- TOTALS BOX -->
+    <table class="totals-box">
+      <tr>
+        <td style="border-bottom: 1px solid #e5e7eb; font-weight: 500;">Net Total:</td>
+        <td style="border-bottom: 1px solid #e5e7eb; text-align: right; font-weight: 600;">${netTotal} (AED)</td>
+      </tr>
+      <tr>
+        <td style="border-bottom: 1px solid #e5e7eb; font-weight: 500;">Discount:</td>
+        <td style="border-bottom: 1px solid #e5e7eb; text-align: right; font-weight: 600;">${discount} (AED)</td>
+      </tr>
+      <tr>
+        <td style="border-bottom: 2px solid #111827; font-weight: 500;">Delivery Charge:</td>
+        <td style="border-bottom: 2px solid #111827; text-align: right; font-weight: 600;">${delivery} (AED)</td>
+      </tr>
+      <tr style="font-weight: bold; font-size: 13px;">
+        <td style="padding: 8px 12px;">Total:</td>
+        <td style="padding: 8px 12px; text-align: right;">${grandTotal} (AED)</td>
+      </tr>
+    </table>
+
+    <!-- SIGNATURES -->
+    <div class="signature-row">
+      <div class="signature-box">
+        <div class="signature-line"></div>
+        <div style="font-weight: 600; font-size: 13px; color: #111827;">Sales by</div>
+      </div>
+      <div class="signature-box">
+        <div class="signature-line"></div>
+        <div style="font-weight: 600; font-size: 13px; color: #111827;">Customer</div>
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="footer-bar">
+      <span>Thank you for shopping with Saba Al Wadi Abaya &amp; Shaila</span>
+      <span>1/1</span>
+    </div>
+  </div>
+</body>
+</html>`;
+  };
+
   const handlePrint = () => {
-    window.print();
+    if (!order) return;
+    const invoiceHtml = buildPrintableInvoiceHtml(order);
+
+    // Print seamlessly using a hidden iframe without opening a new window/tab
+    let printIframe = document.getElementById('invoice-print-frame') as HTMLIFrameElement | null;
+    if (!printIframe) {
+      printIframe = document.createElement('iframe');
+      printIframe.id = 'invoice-print-frame';
+      printIframe.style.position = 'fixed';
+      printIframe.style.right = '0';
+      printIframe.style.bottom = '0';
+      printIframe.style.width = '0';
+      printIframe.style.height = '0';
+      printIframe.style.border = '0';
+      printIframe.style.visibility = 'hidden';
+      document.body.appendChild(printIframe);
+    }
+
+    const doc = printIframe.contentDocument || printIframe.contentWindow?.document;
+    if (doc && printIframe.contentWindow) {
+      doc.open();
+      doc.write(invoiceHtml);
+      doc.close();
+      printIframe.contentWindow.focus();
+      setTimeout(() => {
+        printIframe?.contentWindow?.print();
+      }, 300);
+    }
   };
 
   const handleDownloadInvoice = () => {
     if (!order) return;
-    const itemsRows = order.items
-      .map(
-        (it) => `
-      <tr>
-        <td style="padding: 10px; border-bottom: 1px solid #e5e7eb;">${it.product_name} (${it.variant_name || 'Standard'})</td>
-        <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: center;">${it.quantity}</td>
-        <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: right;">${Number(it.price).toFixed(2)} ${order.currency}</td>
-        <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: right; font-weight: bold;">${Number(it.subtotal).toFixed(2)} ${order.currency}</td>
-      </tr>
-    `,
-      )
-      .join('');
-
-    const invoiceHtml = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8" />
-        <title>Invoice #${order.order_number} - Saba Al Wadi</title>
-        <style>
-          body { font-family: 'Georgia', serif; padding: 40px; color: #1c1917; max-width: 800px; margin: 0 auto; background: #fff; }
-          .header { display: flex; justify-content: space-between; border-bottom: 2px solid #d4af37; padding-bottom: 20px; margin-bottom: 30px; }
-          .gold { color: #b45309; }
-          table { width: 100%; border-collapse: collapse; margin: 30px 0; }
-          th { background: #f5f5f4; text-align: left; padding: 10px; border-bottom: 2px solid #e7e5e4; font-size: 12px; text-transform: uppercase; }
-          .total-box { margin-left: auto; width: 300px; }
-          .total-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 14px; }
-          .grand-total { font-size: 18px; font-weight: bold; border-top: 2px solid #1c1917; padding-top: 10px; margin-top: 10px; }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          <div>
-            <h1 class="gold" style="margin:0; letter-spacing: 2px;">SABA AL WADI</h1>
-            <p style="margin: 5px 0; font-size: 12px; text-transform: uppercase; color: #78716c;">Luxury Emirati Abayas</p>
-            <p style="margin: 0; font-size: 12px; color: #78716c;">Dubai, United Arab Emirates</p>
-          </div>
-          <div style="text-align: right;">
-            <h2 style="margin:0; font-size: 20px;">TAX INVOICE</h2>
-            <p style="margin: 4px 0; font-size: 13px;"><strong>Invoice #:</strong> ${order.order_number}</p>
-            ${order.production_no ? `<p style="margin: 4px 0; font-size: 13px;"><strong>Production #:</strong> <span style="font-family: monospace; font-weight: bold; color: #b45309;">${order.production_no}</span></p>` : ''}
-            <p style="margin: 4px 0; font-size: 13px;"><strong>Date:</strong> ${new Date(order.created_at).toLocaleDateString('en-AE')}</p>
-            <p style="margin: 4px 0; font-size: 13px;"><strong>Status:</strong> ${order.status}</p>
-          </div>
-        </div>
-
-        <div style="display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 13px;">
-          <div>
-            <h4 style="margin: 0 0 5px 0; text-transform: uppercase; color: #78716c; font-size: 11px;">Billed To:</h4>
-            <strong>${order.customer.first_name} ${order.customer.last_name}</strong><br/>
-            ${order.customer.email}<br/>
-            ${order.customer.phone || ''}
-          </div>
-          <div style="text-align: right;">
-            <h4 style="margin: 0 0 5px 0; text-transform: uppercase; color: #78716c; font-size: 11px;">Delivery Address:</h4>
-            ${order.address?.street || 'N/A'}<br/>
-            ${order.address?.city || ''}, ${order.address?.country || 'UAE'}
-          </div>
-        </div>
-
-        <table>
-          <thead>
-            <tr>
-              <th>Item & Variant</th>
-              <th style="text-align: center;">Qty</th>
-              <th style="text-align: right;">Price</th>
-              <th style="text-align: right;">Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${itemsRows}
-          </tbody>
-        </table>
-
-        <div class="total-box">
-          <div class="total-row"><span>Subtotal:</span><span>${Number(order.subtotal).toFixed(2)} ${order.currency}</span></div>
-          <div class="total-row"><span>Discount:</span><span>-${Number(order.discount).toFixed(2)} ${order.currency}</span></div>
-          <div class="total-row"><span>Express Shipping:</span><span>${Number(order.shipping).toFixed(2)} ${order.currency}</span></div>
-          <div class="total-row"><span>Tax / VAT (5%):</span><span>${Number(order.tax).toFixed(2)} ${order.currency}</span></div>
-          <div class="total-row grand-total"><span>Total Paid:</span><span class="gold">${Number(order.total).toFixed(2)} ${order.currency}</span></div>
-        </div>
-
-        <div style="margin-top: 50px; text-align: center; border-top: 1px solid #e5e7eb; padding-top: 20px; font-size: 11px; color: #78716c;">
-          Thank you for choosing Saba Al Wadi Haute Couture. For inquiries: concierge@sabaalwadi.ae
-        </div>
-      </body>
-      </html>
-    `;
-
+    const invoiceHtml = buildPrintableInvoiceHtml(order);
     const blob = new Blob([invoiceHtml], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `Invoice-${order.order_number}.html`;
+    a.download = `Invoice_SABA_AL_WADI_${order.order_number}.html`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -816,10 +1091,10 @@ export default function AdminOrderDetailPage() {
               {order.production_no ? (
                 <span
                   className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-mono font-bold bg-amber-500/10 text-amber-500 border border-amber-500/30 shadow-2xs"
-                  title="Workshop & Tailoring Production Number"
+                  title="Product Number"
                 >
                   <Factory size={13} className="text-amber-500" />
-                  <span>Production #{order.production_no}</span>
+                  <span>Product #{order.production_no}</span>
                 </span>
               ) : (
                 <button
@@ -827,10 +1102,10 @@ export default function AdminOrderDetailPage() {
                   onClick={handleGenerateProductionNo}
                   disabled={generatingProdNo}
                   className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold bg-primary/10 text-primary border border-primary/30 hover:bg-primary/20 transition cursor-pointer"
-                  title="Generate factory production ID"
+                  title="Generate Product Number"
                 >
                   <Factory size={13} />
-                  <span>{generatingProdNo ? 'Generating…' : '+ Generate Production #'}</span>
+                  <span>{generatingProdNo ? 'Generating…' : '+ Generate Product #'}</span>
                 </button>
               )}
               <span className={`px-2.5 py-1 rounded text-xs font-bold border ${STATUS_COLORS[order.status] || ''}`}>
@@ -1151,10 +1426,6 @@ export default function AdminOrderDetailPage() {
                   <span>Shipping ({shipping === 0 ? 'Free Express' : 'Standard'})</span>
                   <span>AED {shipping.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-muted-foreground">
-                  <span>Estimated Tax (5% VAT)</span>
-                  <span>AED {tax.toFixed(2)}</span>
-                </div>
                 <div className="flex justify-between text-sm font-bold text-foreground border-t border-border pt-3">
                   <span>Total Amount</span>
                   <span className="text-primary font-serif text-base">AED {total.toFixed(2)}</span>
@@ -1194,8 +1465,7 @@ export default function AdminOrderDetailPage() {
                 {/* Live financial recalculation */}
                 {(() => {
                   const liveSub = editableItems.reduce((acc, it) => acc + it.price * it.quantity, 0);
-                  const liveTax = Math.max(0, liveSub - editDiscount) * 0.05;
-                  const liveTot = Math.max(0, liveSub - editDiscount + editShipping + liveTax);
+                  const liveTot = Math.max(0, liveSub - editDiscount + editShipping);
                   return (
                     <div className="space-y-1.5 pt-1">
                       <div className="flex justify-between text-muted-foreground">
@@ -1211,10 +1481,6 @@ export default function AdminOrderDetailPage() {
                       <div className="flex justify-between text-muted-foreground">
                         <span>Shipping Charge</span>
                         <span>AED {editShipping.toFixed(2)}</span>
-                      </div>
-                      <div className="flex justify-between text-muted-foreground">
-                        <span>Estimated Tax (5% VAT)</span>
-                        <span>AED {liveTax.toFixed(2)}</span>
                       </div>
                       <div className="flex justify-between text-sm font-bold text-foreground border-t border-border pt-2">
                         <span>New Total Amount</span>
@@ -1600,22 +1866,93 @@ export default function AdminOrderDetailPage() {
                     </div>
                   )}
 
-                  {/* Country Dropdown */}
-                  <div>
+                  {/* Searchable Country Dropdown */}
+                  <div className="relative">
                     <label className="text-xs font-semibold text-muted-foreground uppercase block mb-1">
-                      Country * (Select Dropdown)
+                      Country * (Search &amp; Select)
                     </label>
-                    <select
-                      value={addressForm.country}
-                      onChange={(e) => setAddressForm({ ...addressForm, country: e.target.value })}
-                      className="w-full text-xs bg-background border border-border rounded px-2.5 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
+                    <button
+                      type="button"
+                      onClick={() => setIsCountryOpen(!isCountryOpen)}
+                      className="w-full text-xs bg-background border border-border rounded px-3 py-2 flex items-center justify-between text-left focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer hover:border-primary/50 transition"
                     >
-                      {COUNTRIES_LIST.map((c) => (
-                        <option key={c} value={c}>
-                          {c}
-                        </option>
-                      ))}
-                    </select>
+                      <span className="flex items-center gap-2 truncate">
+                        <span>
+                          {COUNTRIES_LIST.find((c) => c.name.toLowerCase() === addressForm.country?.toLowerCase())?.flag || '🌐'}
+                        </span>
+                        <span className="font-medium text-foreground">
+                          {addressForm.country || 'Select Country'}
+                        </span>
+                      </span>
+                      <ChevronDown size={14} className={`text-muted-foreground transition-transform ${isCountryOpen ? 'rotate-180 text-primary' : ''}`} />
+                    </button>
+
+                    {isCountryOpen && (
+                      <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-card border border-border rounded-lg shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-1">
+                        <div className="p-2 border-b border-border bg-muted/40">
+                          <div className="relative">
+                            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                            <input
+                              type="text"
+                              placeholder="Search country name or code..."
+                              value={countrySearch}
+                              onChange={(e) => setCountrySearch(e.target.value)}
+                              className="w-full bg-background border border-border rounded pl-8 pr-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                              autoFocus
+                            />
+                          </div>
+                        </div>
+
+                        <div className="max-h-56 overflow-y-auto divide-y divide-border/30">
+                          {COUNTRIES_LIST.filter(
+                            (c) =>
+                              c.name.toLowerCase().includes(countrySearch.toLowerCase()) ||
+                              c.code.toLowerCase().includes(countrySearch.toLowerCase()) ||
+                              c.dial_code.includes(countrySearch),
+                          ).length === 0 ? (
+                            <div className="p-3 text-center text-xs text-muted-foreground">
+                              No countries matching "{countrySearch}"
+                            </div>
+                          ) : (
+                            COUNTRIES_LIST.filter(
+                              (c) =>
+                                c.name.toLowerCase().includes(countrySearch.toLowerCase()) ||
+                                c.code.toLowerCase().includes(countrySearch.toLowerCase()) ||
+                                c.dial_code.includes(countrySearch),
+                            ).map((c) => {
+                              const isSelected = addressForm.country?.toLowerCase() === c.name.toLowerCase();
+                              return (
+                                <button
+                                  key={c.code}
+                                  type="button"
+                                  onClick={() => {
+                                    setAddressForm((prev) => ({
+                                      ...prev,
+                                      country: c.name,
+                                    }));
+                                    setIsCountryOpen(false);
+                                    setCountrySearch('');
+                                  }}
+                                  className={`w-full px-3 py-2 text-left text-xs flex items-center justify-between transition cursor-pointer ${
+                                    isSelected
+                                      ? 'bg-primary/10 text-primary font-semibold'
+                                      : 'hover:bg-muted/60 text-foreground'
+                                  }`}
+                                >
+                                  <span className="flex items-center gap-2 truncate">
+                                    <span>{c.flag}</span>
+                                    <span className="truncate">{c.name}</span>
+                                  </span>
+                                  <span className="text-[11px] font-mono text-muted-foreground shrink-0">
+                                    {c.code}
+                                  </span>
+                                </button>
+                              );
+                            })
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-2 gap-2">

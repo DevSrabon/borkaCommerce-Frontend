@@ -94,14 +94,33 @@ export default function CatalogClient({
   // Mobile sidebar drawer state
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
-  // Active filter states
-  const [catalogSearch, setCatalogSearch] = useState(currentSearch);
-  const [debouncedCatalogSearch, setDebouncedCatalogSearch] = useState(currentSearch.trim().toLowerCase());
-  const [selectedCategory, setSelectedCategory] = useState<string>(currentCategory);
-  const [saleOnly, setSaleOnly] = useState<boolean>(initialOnSale);
-  const [selectedColors, setSelectedColors] = useState<string[]>([]);
-  const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
-  const [selectedFabrics, setSelectedFabrics] = useState<string[]>([]);
+  // Compute overall min & max price from products
+  const { globalMinPrice, globalMaxPrice } = useMemo(() => {
+    if (initialProducts.length === 0) return { globalMinPrice: 0, globalMaxPrice: 1000 };
+    const prices = initialProducts.map((p) => p.min_price);
+    const min = Math.floor(Math.min(...prices));
+    const max = Math.ceil(Math.max(...prices));
+    return { globalMinPrice: min, globalMaxPrice: Math.max(max, min + 50) };
+  }, [initialProducts]);
+
+  // Read initial states from URL query parameters (preserves on reload / link sharing)
+  const [catalogSearch, setCatalogSearch] = useState(() => searchParams.get('search') ?? currentSearch ?? '');
+  const [debouncedCatalogSearch, setDebouncedCatalogSearch] = useState(() => (searchParams.get('search') ?? currentSearch ?? '').trim().toLowerCase());
+  const [selectedCategory, setSelectedCategory] = useState<string>(() => searchParams.get('category') ?? currentCategory ?? '');
+  const [saleOnly, setSaleOnly] = useState<boolean>(() => (searchParams.get('on_sale') ? searchParams.get('on_sale') === 'true' : initialOnSale));
+  const [selectedColors, setSelectedColors] = useState<string[]>(() => searchParams.get('colors') ? searchParams.get('colors')!.split(',').filter(Boolean) : []);
+  const [selectedSizes, setSelectedSizes] = useState<string[]>(() => searchParams.get('sizes') ? searchParams.get('sizes')!.split(',').filter(Boolean) : []);
+  const [selectedFabrics, setSelectedFabrics] = useState<string[]>(() => searchParams.get('fabrics') ? searchParams.get('fabrics')!.split(',').filter(Boolean) : []);
+  const [sortBy, setSortBy] = useState<'featured' | 'price-asc' | 'price-desc' | 'discount'>(() => (searchParams.get('sort') as any) || 'featured');
+  const [minPrice, setMinPrice] = useState<number>(() => {
+    const p = searchParams.get('min_price');
+    return p ? Number(p) : globalMinPrice;
+  });
+  const [maxPrice, setMaxPrice] = useState<number>(() => {
+    const p = searchParams.get('max_price');
+    return p ? Number(p) : globalMaxPrice;
+  });
+
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     categories: false,
     colors: false,
@@ -113,11 +132,9 @@ export default function CatalogClient({
     setExpandedSections((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const [sortBy, setSortBy] = useState<'featured' | 'price-asc' | 'price-desc' | 'discount'>('featured');
-
   // Dropdown filter popover states (Horizontal Dropdown Filters)
   const [openDropdown, setOpenDropdown] = useState<'category' | 'price' | 'color' | 'size' | null>(null);
-  const [showSidebar, setShowSidebar] = useState<boolean>(false);
+  const [showSidebar, setShowSidebar] = useState<boolean>(true);
   const dropdownBarRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -130,25 +147,13 @@ export default function CatalogClient({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Debounce catalog search by 300ms
+  // Debounce catalog search by 300ms on change
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedCatalogSearch(catalogSearch.trim().toLowerCase());
     }, 300);
     return () => clearTimeout(timer);
   }, [catalogSearch]);
-
-  // Compute overall min & max price from products
-  const { globalMinPrice, globalMaxPrice } = useMemo(() => {
-    if (initialProducts.length === 0) return { globalMinPrice: 0, globalMaxPrice: 1000 };
-    const prices = initialProducts.map((p) => p.min_price);
-    const min = Math.floor(Math.min(...prices));
-    const max = Math.ceil(Math.max(...prices));
-    return { globalMinPrice: min, globalMaxPrice: Math.max(max, min + 50) };
-  }, [initialProducts]);
-
-  const [minPrice, setMinPrice] = useState<number>(globalMinPrice);
-  const [maxPrice, setMaxPrice] = useState<number>(globalMaxPrice);
 
   // Extract all unique available colors, sizes & fabrics across all variants
   const { availableColors, availableSizes, availableFabrics } = useMemo(() => {
@@ -216,13 +221,82 @@ export default function CatalogClient({
     return { availableColors: colors, availableSizes: sizes, availableFabrics: fabrics };
   }, [initialProducts]);
 
-  // Sync category & sale from URL params when navigation occurs
+  // Centralized URL query sync: keep query params updated so reload (F5) keeps all filters
+  const isInitialMount = useRef(true);
+
   useEffect(() => {
-    const cat = searchParams.get('category') || '';
-    const sale = searchParams.get('on_sale') === 'true';
-    setSelectedCategory(cat);
-    setSaleOnly(sale);
-  }, [searchParams]);
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+
+    const params = new URLSearchParams();
+
+    if (debouncedCatalogSearch) {
+      params.set('search', debouncedCatalogSearch);
+    }
+    if (selectedCategory) {
+      params.set('category', selectedCategory);
+    }
+    if (saleOnly) {
+      params.set('on_sale', 'true');
+    }
+    if (minPrice > globalMinPrice) {
+      params.set('min_price', String(minPrice));
+    }
+    if (maxPrice < globalMaxPrice) {
+      params.set('max_price', String(maxPrice));
+    }
+    if (selectedColors.length > 0) {
+      params.set('colors', selectedColors.join(','));
+    }
+    if (selectedSizes.length > 0) {
+      params.set('sizes', selectedSizes.join(','));
+    }
+    if (selectedFabrics.length > 0) {
+      params.set('fabrics', selectedFabrics.join(','));
+    }
+    if (sortBy && sortBy !== 'featured') {
+      params.set('sort', sortBy);
+    }
+
+    const queryString = params.toString();
+    const newUrl = queryString ? `/catalog?${queryString}` : '/catalog';
+    window.history.replaceState(null, '', newUrl);
+  }, [
+    debouncedCatalogSearch,
+    selectedCategory,
+    saleOnly,
+    minPrice,
+    maxPrice,
+    selectedColors,
+    selectedSizes,
+    selectedFabrics,
+    sortBy,
+    globalMinPrice,
+    globalMaxPrice,
+  ]);
+
+  // Listen for browser navigation (Back/Forward) to keep states in sync
+  useEffect(() => {
+    const handlePopState = () => {
+      const sp = new URLSearchParams(window.location.search);
+      const s = sp.get('search') || '';
+      setCatalogSearch(s);
+      setDebouncedCatalogSearch(s.trim().toLowerCase());
+      setSelectedCategory(sp.get('category') || '');
+      setSaleOnly(sp.get('on_sale') === 'true');
+      setMinPrice(sp.get('min_price') ? Number(sp.get('min_price')) : globalMinPrice);
+      setMaxPrice(sp.get('max_price') ? Number(sp.get('max_price')) : globalMaxPrice);
+      setSelectedColors(sp.get('colors') ? sp.get('colors')!.split(',').filter(Boolean) : []);
+      setSelectedSizes(sp.get('sizes') ? sp.get('sizes')!.split(',').filter(Boolean) : []);
+      setSelectedFabrics(sp.get('fabrics') ? sp.get('fabrics')!.split(',').filter(Boolean) : []);
+      setSortBy((sp.get('sort') as any) || 'featured');
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [globalMinPrice, globalMaxPrice]);
 
   // Color selection toggler
   const toggleColor = (color: string) => {
@@ -245,9 +319,10 @@ export default function CatalogClient({
     );
   };
 
-  // Reset all filters
+  // Reset all filters and clean URL query
   const resetFilters = () => {
     setCatalogSearch('');
+    setDebouncedCatalogSearch('');
     setSelectedCategory('');
     setSaleOnly(false);
     setSelectedColors([]);
@@ -256,10 +331,11 @@ export default function CatalogClient({
     setMinPrice(globalMinPrice);
     setMaxPrice(globalMaxPrice);
     setSortBy('featured');
-    router.push('/catalog');
+    window.history.replaceState(null, '', '/catalog');
   };
 
   const hasActiveFilters =
+    Boolean(debouncedCatalogSearch) ||
     Boolean(catalogSearch) ||
     Boolean(selectedCategory) ||
     saleOnly ||
@@ -416,11 +492,11 @@ export default function CatalogClient({
 
   // Render Sidebar content (reused in desktop sidebar & mobile drawer)
   const renderSidebarContent = () => (
-    <div className="space-y-6">
+    <div className="space-y-3.5">
       {/* Header with Clear button */}
-      <div className="flex items-center justify-between border-b border-border pb-3">
-        <h2 className="font-serif text-lg font-bold text-foreground flex items-center gap-2">
-          <Filter size={16} className="text-primary" />
+      <div className="flex items-center justify-between border-b border-border pb-2">
+        <h2 className="font-serif text-sm sm:text-base font-bold text-foreground flex items-center gap-1.5">
+          <Filter size={15} className="text-primary" />
           Filter Collection
         </h2>
         {hasActiveFilters && (
@@ -428,26 +504,26 @@ export default function CatalogClient({
             onClick={resetFilters}
             className="text-xs text-primary hover:underline font-semibold flex items-center gap-1 cursor-pointer"
           >
-            <RotateCcw size={12} />
+            <RotateCcw size={11} />
             Reset All
           </button>
         )}
       </div>
 
       {/* Special Deals Filter */}
-      <div className="space-y-2 bg-accent/30 p-3.5 rounded-xl border border-border">
+      <div className="space-y-1.5 bg-accent/30 p-2.5 rounded-lg border border-border">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-bold tracking-wider text-primary uppercase flex items-center gap-1.5">
-            <Tag size={13} /> Exclusive Deals
+          <span className="text-[11px] font-bold tracking-wider text-primary uppercase flex items-center gap-1.5">
+            <Tag size={12} /> Exclusive Deals
           </span>
-          <span className="text-xs bg-red-600 text-white font-bold px-1.5 py-0.5 rounded">
+          <span className="text-[10px] bg-red-600 text-white font-bold px-1.5 py-0.5 rounded">
             HOT
           </span>
         </div>
         <button
           type="button"
           onClick={() => setSaleOnly((prev) => !prev)}
-          className={`w-full flex items-center justify-between text-xs font-semibold px-3 py-2 rounded-lg border transition cursor-pointer ${
+          className={`w-full flex items-center justify-between text-xs font-semibold px-2.5 py-1.5 rounded-md border transition cursor-pointer ${
             saleOnly
               ? 'bg-red-500/15 border-red-500/40 text-red-500 ring-1 ring-red-500/30'
               : 'bg-card border-border hover:border-primary/40 text-foreground'
@@ -465,7 +541,7 @@ export default function CatalogClient({
       </div>
 
       {/* Price Range Filter */}
-      <div className="space-y-3 pt-2 border-t border-border">
+      <div className="space-y-2 pt-1.5 border-t border-border">
         <div className="flex items-center justify-between">
           <h3 className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
             Price Range (AED)
@@ -476,7 +552,7 @@ export default function CatalogClient({
         </div>
 
         {/* Slider */}
-        <div className="space-y-2 px-1">
+        <div className="space-y-1 px-0.5">
           <input
             type="range"
             min={globalMinPrice}
@@ -488,27 +564,27 @@ export default function CatalogClient({
         </div>
 
         {/* Inputs min & max */}
-        <div className="grid grid-cols-2 gap-2 text-xs">
-          <div className="space-y-1">
-            <span className="text-xs text-muted-foreground uppercase">Min AED</span>
+        <div className="grid grid-cols-2 gap-1.5 text-xs">
+          <div className="space-y-0.5">
+            <span className="text-[10px] text-muted-foreground uppercase">Min AED</span>
             <input
               type="number"
               min={globalMinPrice}
               max={maxPrice}
               value={minPrice}
               onChange={(e) => setMinPrice(Math.max(globalMinPrice, Number(e.target.value)))}
-              className="w-full px-2.5 py-1.5 bg-background border border-border rounded-lg text-foreground font-mono text-xs focus:ring-1 focus:ring-primary"
+              className="w-full px-2 py-1 bg-background border border-border rounded-md text-foreground font-mono text-xs focus:ring-1 focus:ring-primary"
             />
           </div>
-          <div className="space-y-1">
-            <span className="text-xs text-muted-foreground uppercase">Max AED</span>
+          <div className="space-y-0.5">
+            <span className="text-[10px] text-muted-foreground uppercase">Max AED</span>
             <input
               type="number"
               min={minPrice}
               max={globalMaxPrice}
               value={maxPrice}
               onChange={(e) => setMaxPrice(Math.min(globalMaxPrice, Number(e.target.value)))}
-              className="w-full px-2.5 py-1.5 bg-background border border-border rounded-lg text-foreground font-mono text-xs focus:ring-1 focus:ring-primary"
+              className="w-full px-2 py-1 bg-background border border-border rounded-md text-foreground font-mono text-xs focus:ring-1 focus:ring-primary"
             />
           </div>
         </div>
@@ -516,7 +592,7 @@ export default function CatalogClient({
 
       {/* Color Filter */}
       {availableColors.length > 0 && (
-        <div className="space-y-3 pt-2 border-t border-border">
+        <div className="space-y-2 pt-1.5 border-t border-border">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-semibold tracking-wider text-muted-foreground uppercase flex items-center gap-1.5">
               <span>Colors</span>
@@ -533,7 +609,7 @@ export default function CatalogClient({
             )}
           </div>
 
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1.5">
             {(expandedSections.colors ? availableColors : availableColors.slice(0, 6)).map((color) => {
               const isSelected = selectedColors.includes(color.name);
               const hex = COLOR_MAP[color.name.toLowerCase()] || '#475569';
@@ -544,7 +620,7 @@ export default function CatalogClient({
                   key={color.name}
                   type="button"
                   onClick={() => toggleColor(color.name)}
-                  className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs transition cursor-pointer border ${
+                  className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs transition cursor-pointer border ${
                     isSelected
                       ? 'border-primary bg-primary/10 text-primary font-semibold ring-1 ring-primary/40 shadow-xs'
                       : 'border-border bg-card hover:bg-accent text-foreground/80'
@@ -552,13 +628,13 @@ export default function CatalogClient({
                   title={`${color.name} (${color.count})`}
                 >
                   <span
-                    className={`w-3.5 h-3.5 rounded-full shrink-0 border ${
+                    className={`w-3 h-3 rounded-full shrink-0 border ${
                       isLight ? 'border-zinc-400' : 'border-black/30'
                     }`}
                     style={{ backgroundColor: hex }}
                   />
                   <span>{color.name}</span>
-                  <span className="text-xs text-muted-foreground">({color.count})</span>
+                  <span className="text-[10px] text-muted-foreground">({color.count})</span>
                 </button>
               );
             })}
@@ -568,10 +644,10 @@ export default function CatalogClient({
             <button
               type="button"
               onClick={() => toggleSection('colors')}
-              className="inline-flex items-center gap-1 text-xs text-primary font-semibold hover:underline cursor-pointer pt-0.5"
+              className="inline-flex items-center gap-1 text-[11px] text-primary font-semibold hover:underline cursor-pointer pt-0.5"
             >
               <ChevronDown
-                size={13}
+                size={12}
                 className={`transition-transform duration-200 ${expandedSections.colors ? 'rotate-180' : ''}`}
               />
               <span>
@@ -586,7 +662,7 @@ export default function CatalogClient({
 
       {/* Size Filter */}
       {availableSizes.length > 0 && (
-        <div className="space-y-3 pt-2 border-t border-border">
+        <div className="space-y-2 pt-1.5 border-t border-border">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-semibold tracking-wider text-muted-foreground uppercase flex items-center gap-1.5">
               <span>Sizes</span>
@@ -603,7 +679,7 @@ export default function CatalogClient({
             )}
           </div>
 
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-3 gap-1.5">
             {(expandedSections.sizes ? availableSizes : availableSizes.slice(0, 6)).map((size) => {
               const isSelected = selectedSizes.includes(size.name);
 
@@ -612,14 +688,14 @@ export default function CatalogClient({
                   key={size.name}
                   type="button"
                   onClick={() => toggleSize(size.name)}
-                  className={`py-2 px-1 text-center rounded-lg border text-xs font-medium transition cursor-pointer flex flex-col items-center justify-center ${
+                  className={`py-1 px-1 text-center rounded-md border text-xs font-medium transition cursor-pointer flex flex-col items-center justify-center ${
                     isSelected
                       ? 'border-primary bg-primary/15 text-primary font-bold ring-1 ring-primary/40 shadow-xs'
                       : 'border-border bg-card hover:bg-accent text-foreground/80'
                   }`}
                 >
                   <span>{size.name}</span>
-                  <span className="text-xs text-muted-foreground font-normal">
+                  <span className="text-[10px] text-muted-foreground font-normal">
                     {size.count} pcs
                   </span>
                 </button>
@@ -631,10 +707,10 @@ export default function CatalogClient({
             <button
               type="button"
               onClick={() => toggleSection('sizes')}
-              className="inline-flex items-center gap-1 text-xs text-primary font-semibold hover:underline cursor-pointer pt-0.5"
+              className="inline-flex items-center gap-1 text-[11px] text-primary font-semibold hover:underline cursor-pointer pt-0.5"
             >
               <ChevronDown
-                size={13}
+                size={12}
                 className={`transition-transform duration-200 ${expandedSections.sizes ? 'rotate-180' : ''}`}
               />
               <span>
@@ -649,7 +725,7 @@ export default function CatalogClient({
 
       {/* Fabric Filter */}
       {availableFabrics.length > 0 && (
-        <div className="space-y-3 pt-2 border-t border-border">
+        <div className="space-y-2 pt-1.5 border-t border-border">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-semibold tracking-wider text-muted-foreground uppercase flex items-center gap-1.5">
               <span>Fabric</span>
@@ -666,7 +742,7 @@ export default function CatalogClient({
             )}
           </div>
 
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-1">
             {(expandedSections.fabrics ? availableFabrics : availableFabrics.slice(0, 5)).map((fabric) => {
               const isSelected = selectedFabrics.includes(fabric.name);
 
@@ -675,14 +751,14 @@ export default function CatalogClient({
                   key={fabric.name}
                   type="button"
                   onClick={() => toggleFabric(fabric.name)}
-                  className={`px-2.5 py-1.5 rounded-lg border text-xs transition cursor-pointer flex items-center gap-1.5 ${
+                  className={`px-2 py-1 rounded-md border text-xs transition cursor-pointer flex items-center gap-1.5 ${
                     isSelected
                       ? 'border-primary bg-primary/10 text-primary font-semibold ring-1 ring-primary/40 shadow-xs'
                       : 'border-border bg-card hover:bg-accent text-foreground/80'
                   }`}
                 >
                   <span>{fabric.name}</span>
-                  <span className="text-xs text-muted-foreground font-mono">({fabric.count})</span>
+                  <span className="text-[10px] text-muted-foreground font-mono">({fabric.count})</span>
                 </button>
               );
             })}
@@ -692,10 +768,10 @@ export default function CatalogClient({
             <button
               type="button"
               onClick={() => toggleSection('fabrics')}
-              className="inline-flex items-center gap-1 text-xs text-primary font-semibold hover:underline cursor-pointer pt-0.5"
+              className="inline-flex items-center gap-1 text-[11px] text-primary font-semibold hover:underline cursor-pointer pt-0.5"
             >
               <ChevronDown
-                size={13}
+                size={12}
                 className={`transition-transform duration-200 ${expandedSections.fabrics ? 'rotate-180' : ''}`}
               />
               <span>
@@ -709,7 +785,7 @@ export default function CatalogClient({
       )}
 
       {/* Category Filter */}
-      <div className="space-y-3 pt-2 border-t border-border">
+      <div className="space-y-2 pt-1.5 border-t border-border">
         <div className="flex items-center justify-between">
           <h3 className="text-xs font-semibold tracking-wider text-muted-foreground uppercase flex items-center gap-1.5">
             <span>Categories</span>
@@ -718,24 +794,18 @@ export default function CatalogClient({
           {selectedCategory && (
             <button
               type="button"
-              onClick={() => {
-                setSelectedCategory('');
-                router.push(saleOnly ? '/catalog?on_sale=true' : '/catalog');
-              }}
+              onClick={() => setSelectedCategory('')}
               className="text-xs text-primary hover:underline font-medium cursor-pointer"
             >
               Reset
             </button>
           )}
         </div>
-        <div className="flex flex-col gap-1.5 text-xs">
+        <div className="flex flex-col gap-1 text-xs">
           <button
             type="button"
-            onClick={() => {
-              setSelectedCategory('');
-              router.push(saleOnly ? '/catalog?on_sale=true' : '/catalog');
-            }}
-            className={`text-left px-2.5 py-1.5 rounded-lg transition font-medium cursor-pointer ${
+            onClick={() => setSelectedCategory('')}
+            className={`text-left px-2 py-1 rounded-md transition font-medium cursor-pointer ${
               !selectedCategory
                 ? 'bg-primary/10 text-primary font-bold'
                 : 'text-foreground/80 hover:bg-muted/40 hover:text-foreground'
@@ -747,13 +817,8 @@ export default function CatalogClient({
             <button
               key={cat.id}
               type="button"
-              onClick={() => {
-                setSelectedCategory(cat.slug);
-                router.push(
-                  `/catalog?category=${cat.slug}${saleOnly ? '&on_sale=true' : ''}`
-                );
-              }}
-              className={`text-left px-2.5 py-1.5 rounded-lg transition font-medium cursor-pointer ${
+              onClick={() => setSelectedCategory(cat.slug)}
+              className={`text-left px-2 py-1 rounded-md transition font-medium cursor-pointer ${
                 selectedCategory === cat.slug
                   ? 'bg-primary/10 text-primary font-bold'
                   : 'text-foreground/80 hover:bg-muted/40 hover:text-foreground'
@@ -768,10 +833,10 @@ export default function CatalogClient({
           <button
             type="button"
             onClick={() => toggleSection('categories')}
-            className="inline-flex items-center gap-1 text-xs text-primary font-semibold hover:underline cursor-pointer pt-0.5"
+            className="inline-flex items-center gap-1 text-[11px] text-primary font-semibold hover:underline cursor-pointer pt-0.5"
           >
             <ChevronDown
-              size={13}
+              size={12}
               className={`transition-transform duration-200 ${expandedSections.categories ? 'rotate-180' : ''}`}
             />
             <span>
@@ -786,21 +851,21 @@ export default function CatalogClient({
   );
 
   return (
-    <div className="flex flex-col md:flex-row gap-8 w-full">
+    <div className="flex flex-col md:flex-row gap-3 sm:gap-4 md:gap-5 w-full">
       {/* Optional Desktop Sidebar */}
       {showSidebar && (
-        <aside className="hidden md:block w-72 shrink-0 sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto overscroll-contain bg-card/60 backdrop-blur-md p-5 rounded-2xl border border-border shadow-xs scrollbar-thin scrollbar-thumb-border hover:scrollbar-thumb-muted-foreground pr-2.5 animate-in fade-in slide-in-from-left duration-200">
+        <aside className="hidden md:block w-64 shrink-0 sticky top-20 max-h-[calc(100vh-5.5rem)] overflow-y-auto overscroll-contain bg-card/70 backdrop-blur-md p-3.5 rounded-xl border border-border shadow-xs scrollbar-thin scrollbar-thumb-border hover:scrollbar-thumb-muted-foreground pr-2 animate-in fade-in slide-in-from-left duration-200">
           {renderSidebarContent()}
         </aside>
       )}
 
       {/* Main Content Area */}
-      <div className="flex-1 space-y-6 min-w-0">
+      <div className="flex-1 space-y-1.5 sm:space-y-2.5 md:space-y-3 min-w-0">
         {/* Page Title & Desktop Toolbar */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/60 pb-3 md:pb-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-1 sm:gap-3 border-b border-border/60 pb-1.5 sm:pb-2">
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="font-serif text-xl sm:text-2xl font-bold text-foreground">
+              <h1 className="font-serif text-lg sm:text-xl font-bold text-foreground">
                 {saleOnly
                   ? '🔥 Flash Sale & Offers'
                   : selectedCategory
@@ -808,31 +873,31 @@ export default function CatalogClient({
                       categories.find((c) => c.slug === selectedCategory)?.name ||
                       selectedCategory
                     } Collection`
-                  : 'Shop Catalog'}
+                  : 'Shop Products'}
               </h1>
               {saleOnly && (
-                <span className="text-xs bg-red-500/10 text-red-500 border border-red-500/30 font-bold px-2 py-0.5 rounded">
+                <span className="text-[11px] bg-red-500/10 text-red-500 border border-red-500/30 font-bold px-1.5 py-0.5 rounded">
                   Active Sale
                 </span>
               )}
             </div>
-            <p className="text-xs text-muted-foreground mt-0.5">
+            <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5">
               Showing {Math.min(visibleCount, filteredProducts.length)} of {filteredProducts.length}{' '}
               {filteredProducts.length === 1 ? 'product' : 'products'}
             </p>
           </div>
 
           {/* Desktop Search & Sort */}
-          <div className="hidden md:flex items-center gap-3">
-            {/* Catalog Live Search Bar */}
-            <div className="relative w-64">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <div className="hidden md:flex items-center gap-2.5">
+            {/* Catalog Live Search Bar (Debounced On-Change) */}
+            <div className="relative w-56 sm:w-64">
+              <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <input
                 type="text"
-                placeholder="Search catalog..."
+                placeholder="Search products..."
                 value={catalogSearch}
                 onChange={(e) => setCatalogSearch(e.target.value)}
-                className="w-full text-xs bg-card border border-border rounded-lg pl-8 pr-7 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-primary shadow-xs"
+                className="w-full text-xs bg-card border border-border rounded-lg pl-7 pr-6 py-1.5 text-foreground focus:outline-none focus:ring-1 focus:ring-primary shadow-xs"
               />
               {catalogSearch && (
                 <button
@@ -840,19 +905,19 @@ export default function CatalogClient({
                   onClick={() => setCatalogSearch('')}
                   className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5 rounded cursor-pointer"
                 >
-                  <X size={12} />
+                  <X size={11} />
                 </button>
               )}
             </div>
 
             {/* Sort Dropdown */}
-            <div className="flex items-center gap-2 text-xs">
-              <span className="text-muted-foreground">Sort:</span>
+            <div className="flex items-center gap-1.5 text-xs">
+              <span className="text-muted-foreground text-xs">Sort:</span>
               <div className="relative">
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as any)}
-                  className="appearance-none bg-card border border-border rounded-lg px-3 py-2 pr-8 text-xs font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer shadow-xs"
+                  className="appearance-none bg-card border border-border rounded-lg px-2.5 py-1.5 pr-7 text-xs font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer shadow-xs"
                 >
                   <option value="featured">Featured / Newest</option>
                   <option value="price-asc">Price: Low to High</option>
@@ -860,37 +925,39 @@ export default function CatalogClient({
                   <option value="discount">Biggest Discount</option>
                 </select>
                 <ChevronDown
-                  size={14}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground"
+                  size={12}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground"
                 />
               </div>
             </div>
           </div>
         </div>
 
-        {/* Horizontal Dropdown Filter Bar (No forced vertical sidebar required!) */}
+        {/* Horizontal Dropdown Filter Bar */}
         <div
           ref={dropdownBarRef}
-          className="bg-card/90 backdrop-blur-md border border-border rounded-xl p-2.5 sm:p-3 shadow-xs flex flex-wrap items-center justify-between gap-2.5 relative"
+          className={`bg-card/95 backdrop-blur-md border border-border rounded-xl p-1.5 sm:p-2 shadow-xs flex flex-wrap items-center justify-between gap-1 sm:gap-1.5 relative transition-all ${
+            openDropdown ? 'z-50' : 'z-20'
+          }`}
         >
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-1 sm:gap-1.5">
             {/* 1. Category Dropdown */}
-            <div className="relative">
+            <div className={`relative ${openDropdown === 'category' ? 'z-50' : 'z-10'}`}>
               <button
                 type="button"
                 onClick={() => setOpenDropdown(openDropdown === 'category' ? null : 'category')}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition cursor-pointer ${
+                className={`inline-flex items-center gap-1 sm:gap-1.5 px-2 py-0.5 sm:px-3 sm:py-1.5 rounded-lg text-xs font-semibold border transition cursor-pointer ${
                   selectedCategory
                     ? 'bg-primary/10 border-primary text-primary font-bold shadow-xs'
                     : 'bg-background hover:bg-accent border-border text-foreground'
                 }`}
               >
                 <span>Category: {selectedCategory ? categories.find((c) => c.slug === selectedCategory)?.name || selectedCategory : 'All'}</span>
-                <ChevronDown size={13} className={`transition-transform duration-200 ${openDropdown === 'category' ? 'rotate-180' : ''}`} />
+                <ChevronDown size={12} className={`transition-transform duration-200 ${openDropdown === 'category' ? 'rotate-180' : ''}`} />
               </button>
 
               {openDropdown === 'category' && (
-                <div className="absolute left-0 top-full mt-1.5 z-40 w-64 bg-card border border-border rounded-xl shadow-xl p-2.5 space-y-1 animate-in fade-in duration-150">
+                <div className="absolute left-0 top-full mt-1.5 z-50 w-64 bg-card dark:bg-zinc-950 border border-border rounded-xl shadow-2xl p-2.5 space-y-1 animate-in fade-in duration-150">
                   <div className="text-[11px] font-bold text-muted-foreground uppercase px-2 py-1 border-b border-border mb-1">
                     Select Collection
                   </div>
@@ -900,7 +967,6 @@ export default function CatalogClient({
                       onClick={() => {
                         setSelectedCategory('');
                         setOpenDropdown(null);
-                        router.push(saleOnly ? '/catalog?on_sale=true' : '/catalog');
                       }}
                       className={`w-full text-left px-2.5 py-1.5 rounded-md text-xs font-medium flex items-center justify-between transition cursor-pointer ${
                         !selectedCategory ? 'bg-primary/10 text-primary font-bold' : 'hover:bg-accent text-foreground'
@@ -916,7 +982,6 @@ export default function CatalogClient({
                         onClick={() => {
                           setSelectedCategory(cat.slug);
                           setOpenDropdown(null);
-                          router.push(`/catalog?category=${cat.slug}${saleOnly ? '&on_sale=true' : ''}`);
                         }}
                         className={`w-full text-left px-2.5 py-1.5 rounded-md text-xs font-medium flex items-center justify-between transition cursor-pointer ${
                           selectedCategory === cat.slug ? 'bg-primary/10 text-primary font-bold' : 'hover:bg-accent text-foreground'
@@ -932,22 +997,22 @@ export default function CatalogClient({
             </div>
 
             {/* 2. Price Range Dropdown */}
-            <div className="relative">
+            <div className={`relative ${openDropdown === 'price' ? 'z-50' : 'z-10'}`}>
               <button
                 type="button"
                 onClick={() => setOpenDropdown(openDropdown === 'price' ? null : 'price')}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition cursor-pointer ${
+                className={`inline-flex items-center gap-1 sm:gap-1.5 px-2 py-0.5 sm:px-3 sm:py-1.5 rounded-lg text-xs font-semibold border transition cursor-pointer ${
                   minPrice > globalMinPrice || maxPrice < globalMaxPrice
                     ? 'bg-primary/10 border-primary text-primary font-bold shadow-xs'
                     : 'bg-background hover:bg-accent border-border text-foreground'
                 }`}
               >
                 <span>Price: {minPrice} - {maxPrice} AED</span>
-                <ChevronDown size={13} className={`transition-transform duration-200 ${openDropdown === 'price' ? 'rotate-180' : ''}`} />
+                <ChevronDown size={12} className={`transition-transform duration-200 ${openDropdown === 'price' ? 'rotate-180' : ''}`} />
               </button>
 
               {openDropdown === 'price' && (
-                <div className="absolute left-0 top-full mt-1.5 z-40 w-72 bg-card border border-border rounded-xl shadow-xl p-4 space-y-3.5 animate-in fade-in duration-150">
+                <div className="absolute left-0 top-full mt-1.5 z-50 w-72 bg-card dark:bg-zinc-950 border border-border rounded-xl shadow-2xl p-4 space-y-3.5 animate-in fade-in duration-150">
                   <div className="flex items-center justify-between border-b border-border pb-2">
                     <span className="text-[11px] font-bold text-muted-foreground uppercase">Price Range</span>
                     <button
@@ -1008,22 +1073,22 @@ export default function CatalogClient({
 
             {/* 3. Color Dropdown */}
             {availableColors.length > 0 && (
-              <div className="relative">
+              <div className={`relative ${openDropdown === 'color' ? 'z-50' : 'z-10'}`}>
                 <button
                   type="button"
                   onClick={() => setOpenDropdown(openDropdown === 'color' ? null : 'color')}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition cursor-pointer ${
+                  className={`inline-flex items-center gap-1 sm:gap-1.5 px-2 py-0.5 sm:px-3 sm:py-1.5 rounded-lg text-xs font-semibold border transition cursor-pointer ${
                     selectedColors.length > 0
                       ? 'bg-primary/10 border-primary text-primary font-bold shadow-xs'
                       : 'bg-background hover:bg-accent border-border text-foreground'
                   }`}
                 >
                   <span>Color {selectedColors.length > 0 ? `(${selectedColors.length})` : ''}</span>
-                  <ChevronDown size={13} className={`transition-transform duration-200 ${openDropdown === 'color' ? 'rotate-180' : ''}`} />
+                  <ChevronDown size={12} className={`transition-transform duration-200 ${openDropdown === 'color' ? 'rotate-180' : ''}`} />
                 </button>
 
                 {openDropdown === 'color' && (
-                  <div className="absolute left-0 top-full mt-1.5 z-40 w-72 bg-card border border-border rounded-xl shadow-xl p-3.5 space-y-2.5 animate-in fade-in duration-150">
+                  <div className="absolute left-0 top-full mt-1.5 z-50 w-72 bg-card dark:bg-zinc-950 border border-border rounded-xl shadow-2xl p-3.5 space-y-2.5 animate-in fade-in duration-150">
                     <div className="flex items-center justify-between border-b border-border pb-2">
                       <span className="text-[11px] font-bold text-muted-foreground uppercase">Filter by Color</span>
                       {selectedColors.length > 0 && (
@@ -1065,22 +1130,22 @@ export default function CatalogClient({
 
             {/* 4. Size Dropdown */}
             {availableSizes.length > 0 && (
-              <div className="relative">
+              <div className={`relative ${openDropdown === 'size' ? 'z-50' : 'z-10'}`}>
                 <button
                   type="button"
                   onClick={() => setOpenDropdown(openDropdown === 'size' ? null : 'size')}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition cursor-pointer ${
+                  className={`inline-flex items-center gap-1 sm:gap-1.5 px-2 py-0.5 sm:px-3 sm:py-1.5 rounded-lg text-xs font-semibold border transition cursor-pointer ${
                     selectedSizes.length > 0
                       ? 'bg-primary/10 border-primary text-primary font-bold shadow-xs'
                       : 'bg-background hover:bg-accent border-border text-foreground'
                   }`}
                 >
                   <span>Size {selectedSizes.length > 0 ? `(${selectedSizes.length})` : ''}</span>
-                  <ChevronDown size={13} className={`transition-transform duration-200 ${openDropdown === 'size' ? 'rotate-180' : ''}`} />
+                  <ChevronDown size={12} className={`transition-transform duration-200 ${openDropdown === 'size' ? 'rotate-180' : ''}`} />
                 </button>
 
                 {openDropdown === 'size' && (
-                  <div className="absolute left-0 top-full mt-1.5 z-40 w-64 bg-card border border-border rounded-xl shadow-xl p-3.5 space-y-2.5 animate-in fade-in duration-150">
+                  <div className="absolute left-0 top-full mt-1.5 z-50 w-64 bg-card dark:bg-zinc-950 border border-border rounded-xl shadow-2xl p-3.5 space-y-2.5 animate-in fade-in duration-150">
                     <div className="flex items-center justify-between border-b border-border pb-2">
                       <span className="text-[11px] font-bold text-muted-foreground uppercase">Filter by Size</span>
                       {selectedSizes.length > 0 && (
@@ -1121,7 +1186,7 @@ export default function CatalogClient({
             <button
               type="button"
               onClick={() => setSaleOnly(!saleOnly)}
-              className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold border transition cursor-pointer ${
+              className={`inline-flex items-center gap-1 sm:gap-1.5 px-2 py-0.5 sm:px-3 sm:py-1.5 rounded-lg text-xs font-semibold border transition cursor-pointer ${
                 saleOnly
                   ? 'bg-rose-500/15 border-rose-500 text-rose-600 dark:text-rose-400 font-bold shadow-xs'
                   : 'bg-background hover:bg-accent border-border text-foreground'
@@ -1134,7 +1199,7 @@ export default function CatalogClient({
               <button
                 type="button"
                 onClick={resetFilters}
-                className="text-xs text-muted-foreground hover:text-foreground underline flex items-center gap-1 px-2 py-1 cursor-pointer font-medium"
+                className="text-xs text-muted-foreground hover:text-foreground underline flex items-center gap-1 px-1.5 py-0.5 cursor-pointer font-medium"
               >
                 <RotateCcw size={11} />
                 <span>Reset</span>
@@ -1159,17 +1224,17 @@ export default function CatalogClient({
         </div>
 
         {/* Mobile Screen: Always Sticky Search & Filter Toolbar */}
-        <div className="md:hidden sticky top-20 z-30 bg-background/95 backdrop-blur-md -mx-4 px-4 py-2.5 border-y border-border shadow-sm space-y-2">
+        <div className="md:hidden sticky top-20 z-20 bg-background/95 backdrop-blur-md -mx-3 sm:-mx-4 px-3 sm:px-4 py-1.5 border-y border-border shadow-xs space-y-1">
           {/* Row 1: Search Input (flex-1) + Filters Button (shrink-0) */}
-          <div className="flex items-center gap-2 w-full">
+          <div className="flex items-center gap-1.5 w-full">
             <div className="relative flex-1 min-w-0">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <input
                 type="text"
-                placeholder="Search catalog..."
+                placeholder="Search products..."
                 value={catalogSearch}
                 onChange={(e) => setCatalogSearch(e.target.value)}
-                className="w-full text-xs bg-card border border-border rounded-lg pl-8 pr-7 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-primary shadow-xs"
+                className="w-full text-xs bg-card border border-border rounded-lg pl-7 pr-6 py-1 sm:py-1.5 text-foreground focus:outline-none focus:ring-1 focus:ring-primary shadow-xs"
               />
               {catalogSearch && (
                 <button
@@ -1177,7 +1242,7 @@ export default function CatalogClient({
                   onClick={() => setCatalogSearch('')}
                   className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5 rounded cursor-pointer"
                 >
-                  <X size={12} />
+                  <X size={11} />
                 </button>
               )}
             </div>
@@ -1186,19 +1251,19 @@ export default function CatalogClient({
             <button
               type="button"
               onClick={() => setMobileDrawerOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-2 bg-card border border-border rounded-lg text-xs font-semibold text-foreground hover:bg-accent transition shadow-xs cursor-pointer shrink-0"
+              className="flex items-center gap-1 px-2.5 py-1 sm:py-1.5 bg-card border border-border rounded-lg text-xs font-semibold text-foreground hover:bg-accent transition shadow-xs cursor-pointer shrink-0"
             >
-              <SlidersHorizontal size={14} className="text-primary" />
+              <SlidersHorizontal size={13} className="text-primary" />
               <span>Filters</span>
               {hasActiveFilters && (
-                <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
               )}
             </button>
           </div>
 
           {/* Row 2: Items Count + Compact Sort Dropdown */}
           <div className="flex items-center justify-between gap-2 text-xs">
-            <span className="text-xs text-muted-foreground font-medium">
+            <span className="text-[11px] sm:text-xs text-muted-foreground font-medium">
               Showing {Math.min(visibleCount, filteredProducts.length)} of {filteredProducts.length} items
             </span>
 
@@ -1206,7 +1271,7 @@ export default function CatalogClient({
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as any)}
-                className="appearance-none bg-card border border-border rounded-lg px-2.5 py-1.5 pr-7 text-xs font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer shadow-xs"
+                className="appearance-none bg-card border border-border rounded-md px-2 py-0.5 sm:py-1 pr-6 text-[11px] sm:text-xs font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer shadow-xs"
               >
                 <option value="featured">Featured / Newest</option>
                 <option value="price-asc">Price: Low to High</option>
@@ -1214,8 +1279,8 @@ export default function CatalogClient({
                 <option value="discount">Biggest Discount</option>
               </select>
               <ChevronDown
-                size={13}
-                className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground"
+                size={12}
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground"
               />
             </div>
           </div>
@@ -1223,43 +1288,65 @@ export default function CatalogClient({
 
         {/* Active Filter Chips */}
         {hasActiveFilters && (
-          <div className="flex flex-wrap items-center gap-2 p-3 bg-muted/20 border border-border rounded-xl text-xs">
-            <span className="font-semibold text-muted-foreground text-xs uppercase tracking-wider">
+          <div className="flex flex-wrap items-center gap-1 sm:gap-1.5 p-1.5 px-2 sm:px-2.5 bg-muted/20 border border-border rounded-lg text-xs">
+            <span className="font-semibold text-muted-foreground text-[11px] uppercase tracking-wider">
               Active:
             </span>
 
+            {debouncedCatalogSearch && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-card border border-border rounded-md text-foreground font-medium text-[11px] sm:text-xs">
+                Search: &quot;{debouncedCatalogSearch}&quot;
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCatalogSearch('');
+                    setDebouncedCatalogSearch('');
+                  }}
+                  className="text-muted-foreground hover:text-foreground cursor-pointer"
+                >
+                  <X size={11} />
+                </button>
+              </span>
+            )}
+
             {selectedCategory && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-card border border-border rounded-lg text-foreground font-medium">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-card border border-border rounded-md text-foreground font-medium text-[11px] sm:text-xs">
                 Category: {categories.find((c) => c.slug === selectedCategory)?.name || selectedCategory}
                 <button
+                  type="button"
                   onClick={() => setSelectedCategory('')}
-                  className="text-muted-foreground hover:text-foreground"
+                  className="text-muted-foreground hover:text-foreground cursor-pointer"
                 >
-                  <X size={12} />
+                  <X size={11} />
                 </button>
               </span>
             )}
 
             {saleOnly && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-red-500/10 border border-red-500/30 text-red-500 rounded-lg font-medium">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-500/10 border border-red-500/30 text-red-500 rounded-md font-medium text-[11px] sm:text-xs">
                 Flash Sale Only
-                <button onClick={() => setSaleOnly(false)} className="hover:text-red-700">
-                  <X size={12} />
+                <button
+                  type="button"
+                  onClick={() => setSaleOnly(false)}
+                  className="hover:text-red-700 cursor-pointer"
+                >
+                  <X size={11} />
                 </button>
               </span>
             )}
 
             {(minPrice > globalMinPrice || maxPrice < globalMaxPrice) && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-card border border-border rounded-lg text-foreground font-medium">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-card border border-border rounded-md text-foreground font-medium text-[11px] sm:text-xs">
                 Price: {minPrice} - {maxPrice} AED
                 <button
+                  type="button"
                   onClick={() => {
                     setMinPrice(globalMinPrice);
                     setMaxPrice(globalMaxPrice);
                   }}
-                  className="text-muted-foreground hover:text-foreground"
+                  className="text-muted-foreground hover:text-foreground cursor-pointer"
                 >
-                  <X size={12} />
+                  <X size={11} />
                 </button>
               </span>
             )}
@@ -1267,11 +1354,15 @@ export default function CatalogClient({
             {selectedColors.map((color) => (
               <span
                 key={color}
-                className="inline-flex items-center gap-1 px-2.5 py-1 bg-card border border-border rounded-lg text-foreground font-medium"
+                className="inline-flex items-center gap-1 px-2 py-0.5 bg-card border border-border rounded-md text-foreground font-medium text-[11px] sm:text-xs"
               >
                 Color: {color}
-                <button onClick={() => toggleColor(color)} className="text-muted-foreground hover:text-foreground">
-                  <X size={12} />
+                <button
+                  type="button"
+                  onClick={() => toggleColor(color)}
+                  className="text-muted-foreground hover:text-foreground cursor-pointer"
+                >
+                  <X size={11} />
                 </button>
               </span>
             ))}
@@ -1279,18 +1370,39 @@ export default function CatalogClient({
             {selectedSizes.map((size) => (
               <span
                 key={size}
-                className="inline-flex items-center gap-1 px-2.5 py-1 bg-card border border-border rounded-lg text-foreground font-medium"
+                className="inline-flex items-center gap-1 px-2 py-0.5 bg-card border border-border rounded-md text-foreground font-medium text-[11px] sm:text-xs"
               >
                 Size: {size}
-                <button onClick={() => toggleSize(size)} className="text-muted-foreground hover:text-foreground">
-                  <X size={12} />
+                <button
+                  type="button"
+                  onClick={() => toggleSize(size)}
+                  className="text-muted-foreground hover:text-foreground cursor-pointer"
+                >
+                  <X size={11} />
+                </button>
+              </span>
+            ))}
+
+            {selectedFabrics.map((fabric) => (
+              <span
+                key={fabric}
+                className="inline-flex items-center gap-1 px-2 py-0.5 bg-card border border-border rounded-md text-foreground font-medium text-[11px] sm:text-xs"
+              >
+                Fabric: {fabric}
+                <button
+                  type="button"
+                  onClick={() => toggleFabric(fabric)}
+                  className="text-muted-foreground hover:text-foreground cursor-pointer"
+                >
+                  <X size={11} />
                 </button>
               </span>
             ))}
 
             <button
+              type="button"
               onClick={resetFilters}
-              className="text-xs text-red-500 hover:underline font-semibold ml-auto cursor-pointer"
+              className="text-[11px] sm:text-xs text-red-500 hover:underline font-semibold ml-auto cursor-pointer"
             >
               Clear All
             </button>
@@ -1299,19 +1411,20 @@ export default function CatalogClient({
 
         {/* Product Grid Area */}
         {filteredProducts.length === 0 ? (
-          <div className="text-center py-20 border border-dashed border-border rounded-2xl space-y-3 bg-card/20">
+          <div className="text-center py-16 border border-dashed border-border rounded-xl space-y-2.5 bg-card/20">
             <p className="text-muted-foreground text-sm font-light">
               No abayas match your selected filter criteria.
             </p>
             <button
+              type="button"
               onClick={resetFilters}
-              className="px-4 py-2 bg-primary text-primary-foreground text-xs font-semibold rounded-lg hover:bg-primary/90 transition cursor-pointer shadow-sm"
+              className="px-3.5 py-1.5 bg-primary text-primary-foreground text-xs font-semibold rounded-lg hover:bg-primary/90 transition cursor-pointer shadow-xs"
             >
               Reset Filters
             </button>
           </div>
         ) : (
-          <div className={`grid grid-cols-1 sm:grid-cols-2 ${showSidebar ? 'lg:grid-cols-3' : 'md:grid-cols-3 lg:grid-cols-4'} gap-6 sm:gap-8`}>
+          <div className={`grid grid-cols-1 sm:grid-cols-2 ${showSidebar ? 'lg:grid-cols-3' : 'md:grid-cols-3 lg:grid-cols-4'} gap-3.5 sm:gap-4 md:gap-5`}>
             {visibleProducts.map((prod) => {
               const discountPct =
                 prod.discount_percentage ||

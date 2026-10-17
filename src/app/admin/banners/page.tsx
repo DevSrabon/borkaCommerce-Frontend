@@ -3,6 +3,7 @@
 import { API_BASE_URL } from '@/config/api';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../../store';
 import { Plus, Pencil, Trash2, Eye, EyeOff, GripVertical, ExternalLink, X, Save, Image, Upload, Layers } from 'lucide-react';
@@ -60,7 +61,28 @@ export default function BannersAdminPage() {
   const [uploading, setUploading] = useState(false);
   const [uploadingMobile, setUploadingMobile] = useState(false);
   const [error, setError] = useState('');
-  const [activeTab, setActiveTab] = useState<'ALL' | 'HERO' | 'SMALL'>('ALL');
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+
+  const tabParam = searchParams?.get('tab') as 'ALL' | 'HERO' | 'SMALL' | null;
+  const [activeTab, setActiveTabState] = useState<'ALL' | 'HERO' | 'SMALL'>(
+    tabParam && ['ALL', 'HERO', 'SMALL'].includes(tabParam) ? tabParam : 'ALL'
+  );
+
+  const setActiveTab = (tab: 'ALL' | 'HERO' | 'SMALL') => {
+    setActiveTabState(tab);
+    const params = new URLSearchParams(searchParams?.toString() || '');
+    params.set('tab', tab);
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  };
+
+  useEffect(() => {
+    const cur = searchParams?.get('tab') as 'ALL' | 'HERO' | 'SMALL' | null;
+    if (cur && ['ALL', 'HERO', 'SMALL'].includes(cur) && cur !== activeTab) {
+      setActiveTabState(cur);
+    }
+  }, [searchParams]);
 
   const fetchBanners = async () => {
     setLoading(true);

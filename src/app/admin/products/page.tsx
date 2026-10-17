@@ -3,7 +3,7 @@
 import { API_BASE_URL } from '@/config/api';
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../../store';
@@ -86,6 +86,9 @@ interface DbAttribute {
 
 export default function AdminProductsPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const editParamId = searchParams?.get('edit');
   const token = useSelector((state: RootState) => state.auth.token);
   const user = useSelector((state: RootState) => state.auth.user);
 
@@ -151,13 +154,13 @@ export default function AdminProductsPage() {
   const [editingCategory, setEditingCategory] = useState<{ id: string; name: string; slug: string; parent_id: string } | null>(null);
 
   // Search and filter states with debounce
-  const [productSearch, setProductSearch] = useState('');
-  const [debouncedProductSearch, setDebouncedProductSearch] = useState('');
-  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('ALL');
-  const [selectedStatusFilter, setSelectedStatusFilter] = useState('ALL');
+  const [productSearch, setProductSearch] = useState(searchParams?.get('search') || '');
+  const [debouncedProductSearch, setDebouncedProductSearch] = useState(searchParams?.get('search') || '');
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState(searchParams?.get('category') || 'ALL');
+  const [selectedStatusFilter, setSelectedStatusFilter] = useState(searchParams?.get('status') || 'ALL');
 
   // Pagination states (default limit: 50, skip: 0)
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(parseInt(searchParams?.get('page') || '1', 10) || 1);
   const [limit, setLimit] = useState(50);
   const [totalProducts, setTotalProducts] = useState(0);
 
@@ -173,6 +176,17 @@ export default function AdminProductsPage() {
     }, 300);
     return () => clearTimeout(timer);
   }, [productSearch]);
+
+  // Sync filters and page with URL query params
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (debouncedProductSearch) params.set('search', debouncedProductSearch);
+    if (selectedCategoryFilter && selectedCategoryFilter !== 'ALL') params.set('category', selectedCategoryFilter);
+    if (selectedStatusFilter && selectedStatusFilter !== 'ALL') params.set('status', selectedStatusFilter);
+    if (page > 1) params.set('page', page.toString());
+    const query = params.toString();
+    router.replace(`${pathname}${query ? `?${query}` : ''}`, { scroll: false });
+  }, [debouncedProductSearch, selectedCategoryFilter, selectedStatusFilter, page]);
 
   const filteredProducts = useMemo(() => {
     return products.filter((p) => {
@@ -669,6 +683,12 @@ export default function AdminProductsPage() {
       setError('Could not load product details');
     }
   };
+  
+  useEffect(() => {
+    if (editParamId && token) {
+      handleEditClick({ id: editParamId });
+    }
+  }, [editParamId, token]);
 
   const handleEditProductSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1767,7 +1787,11 @@ export default function AdminProductsPage() {
                         <tr key={p.id} className="hover:bg-accent/40 text-foreground">
                           <td className="p-4 font-medium">
                             <div className="flex items-center gap-3">
-                              <div className="w-11 h-11 rounded-lg overflow-hidden bg-muted border border-border shrink-0 shadow-xs relative flex items-center justify-center">
+                              <Link
+                                href={`/admin/products/${p.id}`}
+                                className="w-11 h-11 rounded-lg overflow-hidden bg-muted border border-border shrink-0 shadow-xs relative flex items-center justify-center hover:opacity-85 transition cursor-pointer"
+                                title="Open Product in Admin Single View"
+                              >
                                 {resolvedImgUrl ? (
                                   <img
                                     src={resolvedImgUrl}
@@ -1779,7 +1803,7 @@ export default function AdminProductsPage() {
                                     No Img
                                   </div>
                                 )}
-                              </div>
+                              </Link>
                               <div className="min-w-0">
                                 <Link
                                   href={`/admin/products/${p.id}`}
@@ -1794,9 +1818,13 @@ export default function AdminProductsPage() {
                           </td>
                           <td className="p-4 font-mono font-bold text-primary">
                             {(p as any).product_number ? (
-                              <span className="px-2 py-0.5 rounded bg-primary/10 border border-primary/20 text-primary">
+                              <Link
+                                href={`/admin/products/${p.id}`}
+                                className="px-2 py-0.5 rounded bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20 transition cursor-pointer inline-block"
+                                title="View product in admin"
+                              >
                                 {(p as any).product_number}
-                              </span>
+                              </Link>
                             ) : (
                               <span className="text-muted-foreground italic">None</span>
                             )}
@@ -1849,23 +1877,26 @@ export default function AdminProductsPage() {
                             </span>
                           </td>
                           <td className="p-4 text-right flex items-center justify-end gap-1.5 flex-wrap">
+                            {/* Prominent Admin Single Product View Button */}
+                            <Link
+                              href={`/admin/products/${p.id}`}
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-bold bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 rounded-md transition shadow-2xs cursor-pointer"
+                              title="Open Single Product View in Admin Route"
+                            >
+                              <Eye size={12} />
+                              <span>Admin View</span>
+                            </Link>
+
+                            {/* Live Storefront View */}
                             <Link
                               href={`/product/${p.slug}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 rounded-md transition shadow-2xs cursor-pointer"
-                              title="Open Live Product View on Storefront"
+                              className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold bg-background hover:bg-accent text-muted-foreground hover:text-foreground border border-border rounded-md transition shadow-2xs cursor-pointer"
+                              title="Open Live Product on Customer Storefront"
                             >
-                              <Eye size={12} />
-                              <span>Live View</span>
+                              <span>Live</span>
                               <ExternalLink size={10} className="opacity-70" />
-                            </Link>
-                            <Link
-                              href={`/admin/products/${p.id}`}
-                              className="p-1.5 border border-border rounded text-foreground hover:bg-accent hover:text-primary transition cursor-pointer flex items-center justify-center"
-                              title="View Product in Admin Single Route"
-                            >
-                              <Layers size={14} />
                             </Link>
                             <button
                               type="button"

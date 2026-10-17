@@ -3,11 +3,49 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { addToCart } from '../../../store/cartSlice';
-import { Check, Info, ShoppingBag, Truck, ShieldCheck, Clock, Star, Share2, Ruler, X, Play, ChevronDown, ChevronUp, FileText, Maximize2 } from 'lucide-react';
+import { Check, Info, ShoppingBag, Truck, ShieldCheck, Clock, Star, Share2, Ruler, X, Play, ChevronDown, ChevronUp, FileText, Maximize2, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
 import { DiscountedPrice } from '../../../components/PriceDisplay';
 import { useCurrency } from '../../../context/CurrencyContext';
 import { API_BASE_URL } from '@/config/api';
 import ProductVideoPlayer, { getCleanYoutubeEmbedUrl } from '../../../components/ProductVideoPlayer';
+
+function formatDimension(val: string | number | undefined, targetUnit: 'in' | 'cm'): string {
+  if (val === undefined || val === null) return '';
+  const str = String(val).trim();
+  if (!str) return '';
+
+  if (targetUnit === 'in') {
+    if (/^\d+(\.\d+)?$/.test(str)) {
+      return `${str}"`;
+    }
+    return str;
+  }
+
+  // Convert to cm
+  if (str.includes("'")) {
+    const parts = str.split('-').map((s) => s.trim());
+    const converted = parts.map((part) => {
+      const match = part.match(/(\d+)'\s*(\d+)?/);
+      if (match) {
+        const feet = parseInt(match[1], 10);
+        const inches = parseInt(match[2] || '0', 10);
+        const cm = Math.round(((feet * 12) + inches) * 2.54);
+        return `${cm} cm`;
+      }
+      return part;
+    });
+    return converted.join(' - ');
+  }
+
+  const numMatch = str.match(/^([\d.]+)/);
+  if (numMatch) {
+    const inches = parseFloat(numMatch[1]);
+    const cm = Math.round(inches * 2.54);
+    return `${cm} cm`;
+  }
+
+  return str;
+}
 
 function getYoutubeEmbedUrl(url?: string): string {
   return getCleanYoutubeEmbedUrl(url).embedUrl;
@@ -132,6 +170,27 @@ export default function ProductClient({ product }: { product: ProductDetails }) 
   const [siteSettings, setSiteSettings] = useState<Record<string, string> | null>(null);
   const [shareSuccess, setShareSuccess] = useState(false);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+  const [zoomScale, setZoomScale] = useState(1);
+  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+
+  const resetZoom = () => {
+    setZoomScale(1);
+    setPanOffset({ x: 0, y: 0 });
+  };
+
+  const handleZoomIn = () => {
+    setZoomScale((prev) => Math.min(Number((prev + 0.5).toFixed(2)), 3.5));
+  };
+
+  const handleZoomOut = () => {
+    setZoomScale((prev) => {
+      const next = Math.max(Number((prev - 0.5).toFixed(2)), 1);
+      if (next === 1) setPanOffset({ x: 0, y: 0 });
+      return next;
+    });
+  };
 
   useEffect(() => {
     fetch(`${API_BASE_URL}/ecommerce/site-settings`)
@@ -318,17 +377,18 @@ export default function ProductClient({ product }: { product: ProductDetails }) 
             if (galleryImages.length <= 1 && !embedUrl) return null;
 
             return (
-              <div className="flex gap-2 sm:gap-2.5 overflow-x-auto py-1">
+              <div className="flex gap-2 sm:gap-2.5 overflow-x-auto py-1.5 pl-[2px] pr-1.5 scrollbar-thin">
                 {galleryImages.map((img, idx) => (
                   <button
                     key={idx}
                     onClick={() => {
                       setActiveImage(img);
                       setActiveMediaMode('image');
+                      resetZoom();
                     }}
-                    className={`relative h-14 w-14 sm:h-16 sm:w-16 shrink-0 border rounded-lg overflow-hidden transition cursor-pointer ${
+                    className={`relative h-14 w-14 sm:h-16 sm:w-16 shrink-0 border rounded-lg overflow-hidden transition cursor-pointer first:ml-[2px] ${
                       activeMediaMode === 'image' && activeImage === img
-                        ? 'border-primary ring-2 ring-primary'
+                        ? 'border-primary ring-2 ring-primary ring-offset-1'
                         : 'border-border opacity-75 hover:opacity-100'
                     }`}
                   >
@@ -664,18 +724,55 @@ export default function ProductClient({ product }: { product: ProductDetails }) 
       </div>
     )}
 
-      {/* Sizing Guide & Chart Modal - Restored Full Interactive Size Chart */}
+      {/* Sizing Guide & Chart Modal - Dynamic Size Chart */}
       {showSizeModal && (() => {
         const chartFile = siteSettings?.size_chart_file || siteSettings?.size_chart_image;
 
-        const ABAYA_SIZES = [
-          { size: '50', height_in: "5'0\" - 5'1\"", height_cm: '152 - 155 cm', bust_in: '40"', bust_cm: '102 cm', sleeve_in: '26"', sleeve_cm: '66 cm', length_in: '50"', length_cm: '127 cm' },
-          { size: '52', height_in: "5'2\" - 5'3\"", height_cm: '157 - 160 cm', bust_in: '42"', bust_cm: '107 cm', sleeve_in: '27"', sleeve_cm: '68 cm', length_in: '52"', length_cm: '132 cm' },
-          { size: '54', height_in: "5'4\" - 5'5\"", height_cm: '162 - 165 cm', bust_in: '44"', bust_cm: '112 cm', sleeve_in: '28"', sleeve_cm: '71 cm', length_in: '54"', length_cm: '137 cm' },
-          { size: '56', height_in: "5'6\" - 5'7\"", height_cm: '167 - 170 cm', bust_in: '46"', bust_cm: '117 cm', sleeve_in: '28"', sleeve_cm: '71 cm', length_in: '56"', length_cm: '142 cm' },
-          { size: '58', height_in: "5'8\" - 5'9\"", height_cm: '172 - 175 cm', bust_in: '48"', bust_cm: '122 cm', sleeve_in: '29"', sleeve_cm: '74 cm', length_in: '58"', length_cm: '147 cm' },
-          { size: '60', height_in: "5'10\" - 6'0\"", height_cm: '177 - 183 cm', bust_in: '50"', bust_cm: '127 cm', sleeve_in: '30"', sleeve_cm: '76 cm', length_in: '60"', length_cm: '152 cm' },
+        // Parse dynamic size chart table from settings, fallback to standard Abaya sizes
+        const DEFAULT_ABAYA_SIZES = [
+          { size: '50', height: "5'0\" - 5'1\"", length: '50"', bust: '40"', sleeve: '26"' },
+          { size: '52', height: "5'2\" - 5'3\"", length: '52"', bust: '42"', sleeve: '27"' },
+          { size: '54', height: "5'4\" - 5'5\"", length: '54"', bust: '44"', sleeve: '28"' },
+          { size: '56', height: "5'6\" - 5'7\"", length: '56"', bust: '46"', sleeve: '28"' },
+          { size: '58', height: "5'8\" - 5'9\"", length: '58"', bust: '48"', sleeve: '29"' },
+          { size: '60', height: "5'10\" - 6'0\"", length: '60"', bust: '50"', sleeve: '30"' },
         ];
+
+        let dynamicSizeChart = DEFAULT_ABAYA_SIZES;
+        if (siteSettings?.size_chart_table) {
+          try {
+            const raw = typeof siteSettings.size_chart_table === 'string'
+              ? JSON.parse(siteSettings.size_chart_table)
+              : siteSettings.size_chart_table;
+            if (Array.isArray(raw) && raw.length > 0) {
+              dynamicSizeChart = raw.map((row: any) => ({
+                size: row.size || '',
+                height: row.height || row.height_in || '',
+                length: row.length || row.length_in || '',
+                bust: row.bust || row.bust_in || '',
+                sleeve: row.sleeve || row.sleeve_in || '',
+              }));
+            }
+          } catch (_) {}
+        }
+
+        let dynamicCols = {
+          size: 'Size',
+          height: 'Your Height',
+          length: 'Abaya Length',
+          bust: 'Bust Width',
+          sleeve: 'Sleeve',
+        };
+        if (siteSettings?.size_chart_columns) {
+          try {
+            const rawCols = typeof siteSettings.size_chart_columns === 'string'
+              ? JSON.parse(siteSettings.size_chart_columns)
+              : siteSettings.size_chart_columns;
+            if (rawCols && typeof rawCols === 'object') {
+              dynamicCols = { ...dynamicCols, ...rawCols };
+            }
+          } catch (_) {}
+        }
 
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 animate-in fade-in">
@@ -743,28 +840,28 @@ export default function ProductClient({ product }: { product: ProductDetails }) 
                   <table className="w-full text-xs text-left">
                     <thead className="bg-muted/60 text-foreground font-semibold uppercase text-xs tracking-wider border-b border-border">
                       <tr>
-                        <th className="py-3 px-3 sm:px-4">Size</th>
-                        <th className="py-3 px-3 sm:px-4">Your Height</th>
-                        <th className="py-3 px-3 sm:px-4">Abaya Length</th>
-                        <th className="py-3 px-3 sm:px-4">Bust Width</th>
-                        <th className="py-3 px-3 sm:px-4">Sleeve</th>
+                        <th className="py-3 px-3 sm:px-4">{dynamicCols.size || 'Size'}</th>
+                        <th className="py-3 px-3 sm:px-4">{dynamicCols.height || 'Your Height'}</th>
+                        <th className="py-3 px-3 sm:px-4">{dynamicCols.length || 'Abaya Length'}</th>
+                        <th className="py-3 px-3 sm:px-4">{dynamicCols.bust || 'Bust Width'}</th>
+                        <th className="py-3 px-3 sm:px-4">{dynamicCols.sleeve || 'Sleeve'}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border/40">
-                      {ABAYA_SIZES.map((row) => (
-                        <tr key={row.size} className="hover:bg-muted/30 transition-colors">
+                      {dynamicSizeChart.map((row, idx) => (
+                        <tr key={idx} className="hover:bg-muted/30 transition-colors">
                           <td className="py-2.5 px-3 sm:px-4 font-bold text-primary font-mono">{row.size}</td>
                           <td className="py-2.5 px-3 sm:px-4 text-foreground/90 font-medium">
-                            {sizeUnit === 'in' ? row.height_in : row.height_cm}
+                            {formatDimension(row.height, sizeUnit)}
                           </td>
                           <td className="py-2.5 px-3 sm:px-4 text-foreground/80">
-                            {sizeUnit === 'in' ? row.length_in : row.length_cm}
+                            {formatDimension(row.length, sizeUnit)}
                           </td>
                           <td className="py-2.5 px-3 sm:px-4 text-foreground/80">
-                            {sizeUnit === 'in' ? row.bust_in : row.bust_cm}
+                            {formatDimension(row.bust, sizeUnit)}
                           </td>
                           <td className="py-2.5 px-3 sm:px-4 text-foreground/80">
-                            {sizeUnit === 'in' ? row.sleeve_in : row.sleeve_cm}
+                            {formatDimension(row.sleeve, sizeUnit)}
                           </td>
                         </tr>
                       ))}
@@ -831,32 +928,140 @@ export default function ProductClient({ product }: { product: ProductDetails }) 
         );
       })()}
 
-      {/* Fullscreen High-Resolution Image Lightbox Modal */}
+      {/* Fullscreen High-Resolution Image Lightbox Modal with Zoom In / Zoom Out */}
       {isImageModalOpen && (
         <div
           role="dialog"
           aria-modal="true"
-          onClick={() => setIsImageModalOpen(false)}
-          className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in cursor-zoom-out"
+          onClick={() => {
+            setIsImageModalOpen(false);
+            resetZoom();
+          }}
+          className="fixed inset-0 z-50 bg-black/92 backdrop-blur-md flex flex-col items-center justify-between p-4 animate-fade-in select-none"
         >
-          <button
-            type="button"
-            onClick={() => setIsImageModalOpen(false)}
-            className="absolute top-4 right-4 z-10 p-2.5 rounded-full bg-white/10 hover:bg-white/25 text-white transition backdrop-blur-md cursor-pointer border border-white/20"
-            title="Close preview"
-          >
-            <X size={22} />
-          </button>
-
+          {/* Top Bar with Title & Close */}
           <div
             onClick={(e) => e.stopPropagation()}
-            className="relative max-w-5xl max-h-[92vh] flex items-center justify-center cursor-default"
+            className="w-full max-w-5xl flex items-center justify-between z-20 pt-2 px-2 text-white"
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-xs uppercase tracking-wider font-semibold text-primary">
+                High-Resolution Preview
+              </span>
+              <span className="text-xs text-white/60 font-light truncate max-w-xs sm:max-w-md">
+                — {product.name}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setIsImageModalOpen(false);
+                resetZoom();
+              }}
+              className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition backdrop-blur-md cursor-pointer border border-white/20"
+              title="Close preview (Esc)"
+            >
+              <X size={20} />
+            </button>
+          </div>
+
+          {/* Center Image Container with Pan and Zoom */}
+          <div
+            onClick={(e) => e.stopPropagation()}
+            onWheel={(e) => {
+              if (e.deltaY < 0) {
+                handleZoomIn();
+              } else {
+                handleZoomOut();
+              }
+            }}
+            onMouseDown={(e) => {
+              if (zoomScale > 1) {
+                setIsDragging(true);
+                setDragStart({ x: e.clientX - panOffset.x, y: e.clientY - panOffset.y });
+              }
+            }}
+            onMouseMove={(e) => {
+              if (isDragging && zoomScale > 1) {
+                setPanOffset({
+                  x: e.clientX - dragStart.x,
+                  y: e.clientY - dragStart.y,
+                });
+              }
+            }}
+            onMouseUp={() => setIsDragging(false)}
+            onMouseLeave={() => setIsDragging(false)}
+            onDoubleClick={() => {
+              if (zoomScale > 1) {
+                resetZoom();
+              } else {
+                setZoomScale(2);
+              }
+            }}
+            className={`relative flex-1 w-full max-w-5xl flex items-center justify-center overflow-hidden my-auto ${
+              zoomScale > 1
+                ? isDragging
+                  ? 'cursor-grabbing'
+                  : 'cursor-grab'
+                : 'cursor-zoom-in'
+            }`}
           >
             <img
               src={activeImage}
               alt={product.name}
-              className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
+              draggable={false}
+              style={{
+                transform: `scale(${zoomScale}) translate(${panOffset.x / zoomScale}px, ${panOffset.y / zoomScale}px)`,
+                transition: isDragging ? 'none' : 'transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1)',
+              }}
+              className="max-w-full max-h-[78vh] object-contain rounded-lg shadow-2xl pointer-events-auto"
             />
+          </div>
+
+          {/* Bottom Floating Zoom Controls Bar */}
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="z-20 pb-2 flex items-center gap-2 bg-neutral-900/90 border border-white/20 backdrop-blur-xl px-4 py-2 rounded-full text-white shadow-2xl"
+          >
+            <button
+              type="button"
+              onClick={handleZoomOut}
+              disabled={zoomScale <= 1}
+              className="p-1.5 rounded-full hover:bg-white/15 disabled:opacity-30 disabled:hover:bg-transparent transition cursor-pointer"
+              title="Zoom Out (-)"
+            >
+              <ZoomOut size={16} />
+            </button>
+
+            <button
+              type="button"
+              onClick={resetZoom}
+              className="px-2.5 py-0.5 rounded text-xs font-mono font-bold hover:bg-white/15 transition cursor-pointer min-w-[54px] text-center"
+              title="Reset Zoom (100%)"
+            >
+              {Math.round(zoomScale * 100)}%
+            </button>
+
+            <button
+              type="button"
+              onClick={handleZoomIn}
+              disabled={zoomScale >= 3.5}
+              className="p-1.5 rounded-full hover:bg-white/15 disabled:opacity-30 disabled:hover:bg-transparent transition cursor-pointer"
+              title="Zoom In (+)"
+            >
+              <ZoomIn size={16} />
+            </button>
+
+            <div className="h-4 w-px bg-white/20 mx-1" />
+
+            <button
+              type="button"
+              onClick={resetZoom}
+              className="p-1.5 rounded-full hover:bg-white/15 transition cursor-pointer text-white/80 hover:text-white"
+              title="Reset to 1x"
+            >
+              <RotateCcw size={14} />
+            </button>
           </div>
         </div>
       )}

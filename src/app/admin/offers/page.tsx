@@ -2,7 +2,7 @@
 
 import { API_BASE_URL } from '@/config/api';
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../../store';
 import {
@@ -51,10 +51,30 @@ interface Coupon {
 
 export default function AdminOffersPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+
   const token = useSelector((state: RootState) => state.auth.token);
   const user = useSelector((state: RootState) => state.auth.user);
 
-  const [activeTab, setActiveTab] = useState<'offers' | 'coupons'>('offers');
+  const tabParam = searchParams?.get('tab') as 'offers' | 'coupons' | null;
+  const [activeTab, setActiveTabState] = useState<'offers' | 'coupons'>(
+    tabParam === 'coupons' ? 'coupons' : 'offers'
+  );
+
+  const setActiveTab = (tab: 'offers' | 'coupons') => {
+    setActiveTabState(tab);
+    const params = new URLSearchParams(searchParams?.toString() || '');
+    params.set('tab', tab);
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  };
+
+  useEffect(() => {
+    const cur = searchParams?.get('tab') as 'offers' | 'coupons' | null;
+    if (cur && (cur === 'offers' || cur === 'coupons') && cur !== activeTab) {
+      setActiveTabState(cur);
+    }
+  }, [searchParams]);
   const [offers, setOffers] = useState<Offer[]>([]);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [loading, setLoading] = useState(true);

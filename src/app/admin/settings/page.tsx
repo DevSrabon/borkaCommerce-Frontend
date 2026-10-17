@@ -2,6 +2,7 @@
 
 import { API_BASE_URL } from '@/config/api';
 import React, { useState, useEffect } from 'react';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useSelector } from 'react-redux';
 import {
   Save,
@@ -46,6 +47,10 @@ interface BranchItem {
 }
 
 export default function SiteSettingsPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+
   const token = useSelector((state: any) => state.auth.token);
   const [settings, setSettings] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
@@ -53,8 +58,25 @@ export default function SiteSettingsPage() {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
 
-  // Active top-level tab: 'store' | 'media' | 'system'
-  const [activeTab, setActiveTab] = useState<'store' | 'media' | 'system'>('store');
+  // Active top-level tab: 'store' | 'media' | 'system' (synced with ?tab= query)
+  const tabParam = searchParams?.get('tab') as 'store' | 'media' | 'system' | null;
+  const [activeTab, setActiveTabState] = useState<'store' | 'media' | 'system'>(
+    tabParam && ['store', 'media', 'system'].includes(tabParam) ? tabParam : 'store'
+  );
+
+  const setActiveTab = (tab: 'store' | 'media' | 'system') => {
+    setActiveTabState(tab);
+    const params = new URLSearchParams(searchParams?.toString() || '');
+    params.set('tab', tab);
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  };
+
+  useEffect(() => {
+    const cur = searchParams?.get('tab') as 'store' | 'media' | 'system' | null;
+    if (cur && ['store', 'media', 'system'].includes(cur) && cur !== activeTab) {
+      setActiveTabState(cur);
+    }
+  }, [searchParams]);
 
   // Cache clearing state
   const [clearingCache, setClearingCache] = useState(false);
@@ -94,12 +116,102 @@ export default function SiteSettingsPage() {
     hours: '',
   });
 
+  // Dynamic Currency Sync State
+  const [syncingRates, setSyncingRates] = useState(false);
+  const [rateSyncMessage, setRateSyncMessage] = useState('');
+
+  const [testingSmtp, setTestingSmtp] = useState(false);
+  const [smtpTestResult, setSmtpTestResult] = useState<{ success: boolean; message: string } | null>(null);
+
+  const handleTestSmtp = async () => {
+    setTestingSmtp(true);
+    setSmtpTestResult(null);
+    try {
+      const res = await fetch(`${API_BASE_URL}/admin/settings/test-smtp`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          host: settings.SMTP_HOST,
+          port: settings.SMTP_PORT,
+          user: settings.SMTP_USER,
+          pass: settings.SMTP_PASS,
+          secure: settings.SMTP_SECURE,
+        }),
+      });
+      const data = await res.json();
+      setSmtpTestResult(data);
+    } catch (err: any) {
+      setSmtpTestResult({ success: false, message: err.message || 'Network error occurred while testing SMTP.' });
+    } finally {
+      setTestingSmtp(false);
+    }
+  };
+
+  const handleSyncRates = async () => {
+    setSyncingRates(true);
+    setRateSyncMessage('');
+    try {
+      const res = await fetch(`${API_BASE_URL}/admin/currency/sync-rates`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setRateSyncMessage('Exchange rates updated successfully from live provider!');
+        setSettings((prev) => ({ ...prev, ...data.rates }));
+      } else {
+        setRateSyncMessage(data.message || 'Failed to sync exchange rates.');
+      }
+    } catch (err: any) {
+      setRateSyncMessage(err.message || 'Failed to sync exchange rates.');
+    } finally {
+      setSyncingRates(false);
+    }
+  };
+
   const fetchSettings = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/ecommerce/site-settings`);
-      if (res.ok) {
-        const data = await res.json();
+      const activeToken = token || (typeof window !== 'undefined' ? localStorage.getItem('token') : null);
+      let data: Record<string, string> | null = null;
+
+      // 1. Try to fetch full admin settings
+      try {
+        const res = await fetch(`${API_BASE_URL}/admin/site-settings`, {
+          headers: activeToken ? { Authorization: `Bearer ${activeToken}` } : {},
+        });
+        if (res.ok) {
+          data = await res.json();
+        }
+      } catch (e) {
+        console.warn('Admin site-settings fetch failed, trying public:', e);
+      }
+
+      // 2. If admin fetch returned empty/failed, fallback to public storefront settings
+      if (!data) {
+        try {
+          const publicRes = await fetch(`${API_BASE_URL}/ecommerce/site-settings`);
+          if (publicRes.ok) {
+            data = await publicRes.json();
+          }
+        } catch (_) {}
+      }
+
+      // 3. Fallback / merge with localStorage cached settings to never lose unsaved drafts
+      if (typeof window !== 'undefined') {
+        try {
+          const cached = localStorage.getItem('admin_cached_settings');
+          if (cached) {
+            const parsed = JSON.parse(cached);
+            data = { ...(parsed || {}), ...(data || {}) };
+          }
+        } catch {}
+      }
+
+      if (data) {
         setSettings(data);
         if (data.footer_branches_json) {
           try {
@@ -252,21 +364,40 @@ export default function SiteSettingsPage() {
     setSaving(true);
     setError('');
     try {
+      const activeToken = token || (typeof window !== 'undefined' ? localStorage.getItem('token') : null);
+
+      // Save a local cache immediately so changes are never lost
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('admin_cached_settings', JSON.stringify(settings));
+      }
+
       const res = await fetch(`${API_BASE_URL}/admin/site-settings`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(activeToken ? { Authorization: `Bearer ${activeToken}` } : {}),
+        },
         body: JSON.stringify(settings),
       });
+
       if (res.ok) {
+        const updated = await res.json();
+        if (updated && typeof updated === 'object') {
+          setSettings(updated);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('admin_cached_settings', JSON.stringify(updated));
+          }
+        }
         setSaved(true);
         setTimeout(() => setSaved(false), 3000);
         fetchStorageStatus();
         fetchRedisStatus();
       } else {
-        setError('Failed to save settings.');
+        const errJson = await res.json().catch(() => null);
+        setError(errJson?.message || 'Failed to save settings.');
       }
-    } catch (_) {
-      setError('Network error saving settings.');
+    } catch (err: any) {
+      setError(err?.message || 'Network error saving settings.');
     } finally {
       setSaving(false);
     }
@@ -1011,6 +1142,228 @@ export default function SiteSettingsPage() {
                       </div>
                     )}
                   </div>
+
+                  {/* Dynamic Size Chart Table Editor */}
+                  <div className="pt-4 border-t border-border space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block">
+                          Dynamic Size Chart Measurements Table
+                        </label>
+                        <p className="text-[11px] text-muted-foreground">
+                          Custom size matrix shown to customers in the product details Sizing Guide modal.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const DEFAULT_SIZES = [
+                            { size: '50', height: "5'0\" - 5'1\"", length: '50"', bust: '40"', sleeve: '26"' },
+                            { size: '52', height: "5'2\" - 5'3\"", length: '52"', bust: '42"', sleeve: '27"' },
+                            { size: '54', height: "5'4\" - 5'5\"", length: '54"', bust: '44"', sleeve: '28"' },
+                            { size: '56', height: "5'6\" - 5'7\"", length: '56"', bust: '46"', sleeve: '28"' },
+                            { size: '58', height: "5'8\" - 5'9\"", length: '58"', bust: '48"', sleeve: '29"' },
+                            { size: '60', height: "5'10\" - 6'0\"", length: '60"', bust: '50"', sleeve: '30"' },
+                          ];
+                          handleChange('size_chart_table', JSON.stringify(DEFAULT_SIZES));
+                        }}
+                        className="text-xs text-primary hover:underline cursor-pointer"
+                      >
+                        Reset Defaults
+                      </button>
+                    </div>
+
+                    {(() => {
+                      let rows: any[] = [];
+                      try {
+                        rows = settings.size_chart_table ? JSON.parse(settings.size_chart_table) : [];
+                      } catch (_) {
+                        rows = [];
+                      }
+                      if (!Array.isArray(rows) || rows.length === 0) {
+                        rows = [
+                          { size: '50', height: "5'0\" - 5'1\"", length: '50"', bust: '40"', sleeve: '26"' },
+                          { size: '52', height: "5'2\" - 5'3\"", length: '52"', bust: '42"', sleeve: '27"' },
+                          { size: '54', height: "5'4\" - 5'5\"", length: '54"', bust: '44"', sleeve: '28"' },
+                          { size: '56', height: "5'6\" - 5'7\"", length: '56"', bust: '46"', sleeve: '28"' },
+                          { size: '58', height: "5'8\" - 5'9\"", length: '58"', bust: '48"', sleeve: '29"' },
+                          { size: '60', height: "5'10\" - 6'0\"", length: '60"', bust: '50"', sleeve: '30"' },
+                        ];
+                      }
+
+                      const updateRow = (index: number, field: string, val: string) => {
+                        const next = [...rows];
+                        next[index] = { ...next[index], [field]: val };
+                        handleChange('size_chart_table', JSON.stringify(next));
+                      };
+
+                      const addRow = () => {
+                        const lastSize = rows.length > 0 ? parseInt(rows[rows.length - 1].size, 10) || 60 : 48;
+                        const newSize = String(lastSize + 2);
+                        const next = [
+                          ...rows,
+                          { size: newSize, height: '5\'10"+', length: `${newSize}"`, bust: '52"', sleeve: '31"' },
+                        ];
+                        handleChange('size_chart_table', JSON.stringify(next));
+                      };
+
+                      const deleteRow = (index: number) => {
+                        const next = rows.filter((_, i) => i !== index);
+                        handleChange('size_chart_table', JSON.stringify(next));
+                      };
+
+                      let cols = {
+                        size: 'Size',
+                        height: 'Height',
+                        length: 'Abaya Length',
+                        bust: 'Bust Width',
+                        sleeve: 'Sleeve',
+                      };
+                      try {
+                        if (settings.size_chart_columns) {
+                          cols = { ...cols, ...JSON.parse(settings.size_chart_columns) };
+                        }
+                      } catch (_) {}
+
+                      const updateColumn = (key: string, val: string) => {
+                        const next = { ...cols, [key]: val };
+                        handleChange('size_chart_columns', JSON.stringify(next));
+                      };
+
+                      return (
+                        <div className="space-y-3">
+                          <div className="overflow-x-auto border border-border rounded-lg bg-background">
+                            <table className="w-full text-xs text-left">
+                              <thead className="bg-muted/60 border-b border-border text-foreground uppercase text-[10px] font-bold">
+                                <tr>
+                                  <th className="py-2 px-2.5 min-w-[70px]">
+                                    <input
+                                      type="text"
+                                      value={cols.size}
+                                      onChange={(e) => updateColumn('size', e.target.value)}
+                                      className="w-full bg-transparent border-b border-dashed border-border/80 focus:border-primary px-1 py-0.5 text-[10px] font-bold uppercase text-foreground focus:outline-none"
+                                      title="Click to edit column title"
+                                      placeholder="SIZE"
+                                    />
+                                  </th>
+                                  <th className="py-2 px-2.5 min-w-[100px]">
+                                    <input
+                                      type="text"
+                                      value={cols.height}
+                                      onChange={(e) => updateColumn('height', e.target.value)}
+                                      className="w-full bg-transparent border-b border-dashed border-border/80 focus:border-primary px-1 py-0.5 text-[10px] font-bold uppercase text-foreground focus:outline-none"
+                                      title="Click to edit column title"
+                                      placeholder="HEIGHT"
+                                    />
+                                  </th>
+                                  <th className="py-2 px-2.5 min-w-[100px]">
+                                    <input
+                                      type="text"
+                                      value={cols.length}
+                                      onChange={(e) => updateColumn('length', e.target.value)}
+                                      className="w-full bg-transparent border-b border-dashed border-border/80 focus:border-primary px-1 py-0.5 text-[10px] font-bold uppercase text-foreground focus:outline-none"
+                                      title="Click to edit column title"
+                                      placeholder="ABAYA LENGTH"
+                                    />
+                                  </th>
+                                  <th className="py-2 px-2.5 min-w-[100px]">
+                                    <input
+                                      type="text"
+                                      value={cols.bust}
+                                      onChange={(e) => updateColumn('bust', e.target.value)}
+                                      className="w-full bg-transparent border-b border-dashed border-border/80 focus:border-primary px-1 py-0.5 text-[10px] font-bold uppercase text-foreground focus:outline-none"
+                                      title="Click to edit column title"
+                                      placeholder="BUST WIDTH"
+                                    />
+                                  </th>
+                                  <th className="py-2 px-2.5 min-w-[90px]">
+                                    <input
+                                      type="text"
+                                      value={cols.sleeve}
+                                      onChange={(e) => updateColumn('sleeve', e.target.value)}
+                                      className="w-full bg-transparent border-b border-dashed border-border/80 focus:border-primary px-1 py-0.5 text-[10px] font-bold uppercase text-foreground focus:outline-none"
+                                      title="Click to edit column title"
+                                      placeholder="SLEEVE"
+                                    />
+                                  </th>
+                                  <th className="py-2 px-2 text-center w-10 text-muted-foreground">Del</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-border/40">
+                                {rows.map((row, idx) => (
+                                  <tr key={idx} className="hover:bg-muted/20">
+                                    <td className="p-2">
+                                      <input
+                                        type="text"
+                                        value={row.size || ''}
+                                        onChange={(e) => updateRow(idx, 'size', e.target.value)}
+                                        placeholder="54"
+                                        className="w-16 bg-card border border-border rounded px-2 py-1 text-xs font-mono font-bold text-primary"
+                                      />
+                                    </td>
+                                    <td className="p-2">
+                                      <input
+                                        type="text"
+                                        value={row.height || ''}
+                                        onChange={(e) => updateRow(idx, 'height', e.target.value)}
+                                        placeholder={'5\'4" - 5\'5"'}
+                                        className="w-full min-w-[100px] bg-card border border-border rounded px-2 py-1 text-xs"
+                                      />
+                                    </td>
+                                    <td className="p-2">
+                                      <input
+                                        type="text"
+                                        value={row.length || ''}
+                                        onChange={(e) => updateRow(idx, 'length', e.target.value)}
+                                        placeholder={'54"'}
+                                        className="w-full min-w-[70px] bg-card border border-border rounded px-2 py-1 text-xs"
+                                      />
+                                    </td>
+                                    <td className="p-2">
+                                      <input
+                                        type="text"
+                                        value={row.bust || ''}
+                                        onChange={(e) => updateRow(idx, 'bust', e.target.value)}
+                                        placeholder={'44"'}
+                                        className="w-full min-w-[70px] bg-card border border-border rounded px-2 py-1 text-xs"
+                                      />
+                                    </td>
+                                    <td className="p-2">
+                                      <input
+                                        type="text"
+                                        value={row.sleeve || ''}
+                                        onChange={(e) => updateRow(idx, 'sleeve', e.target.value)}
+                                        placeholder={'28"'}
+                                        className="w-full min-w-[70px] bg-card border border-border rounded px-2 py-1 text-xs"
+                                      />
+                                    </td>
+                                    <td className="p-2 text-center">
+                                      <button
+                                        type="button"
+                                        onClick={() => deleteRow(idx)}
+                                        className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-500/10 cursor-pointer"
+                                        title="Delete Row"
+                                      >
+                                        <Trash2 size={13} />
+                                      </button>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={addRow}
+                            className="px-3 py-1.5 border border-dashed border-border rounded-md text-xs font-semibold text-primary hover:bg-primary/10 transition inline-flex items-center gap-1.5 cursor-pointer"
+                          >
+                            <Plus size={13} /> + Add Size Row
+                          </button>
+                        </div>
+                      );
+                    })()}
+                  </div>
                 </div>
               </div>
 
@@ -1155,53 +1508,100 @@ export default function SiteSettingsPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Currency */}
                 <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
-                  <div className="flex items-center gap-3 px-5 py-4 border-b border-border bg-background/50">
-                    <div className="h-8 w-8 rounded-md flex items-center justify-center bg-green-500/10 text-green-500">
-                      <RefreshCw size={16} />
+                  <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-background/50">
+                    <div className="flex items-center gap-3">
+                      <div className="h-8 w-8 rounded-md flex items-center justify-center bg-green-500/10 text-green-500">
+                        <RefreshCw size={16} />
+                      </div>
+                      <div>
+                        <h2 className="text-sm font-semibold text-foreground">Currency &amp; Exchange Rates</h2>
+                        <p className="text-xs text-muted-foreground">Base AED and dynamic conversion ratios</p>
+                      </div>
                     </div>
-                    <div>
-                      <h2 className="text-sm font-semibold text-foreground">Currency &amp; Exchange Rates</h2>
-                      <p className="text-xs text-muted-foreground">Base AED and dynamic conversion ratios</p>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={handleSyncRates}
+                      disabled={syncingRates}
+                      title="Fetch latest exchange rates from Open Exchange API (Base AED)"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-primary/30 text-primary bg-primary/10 hover:bg-primary/20 transition cursor-pointer disabled:opacity-50 shadow-xs"
+                    >
+                      <RefreshCw size={12} className={syncingRates ? 'animate-spin' : ''} />
+                      <span>{syncingRates ? 'Updating...' : 'Sync Rates Now'}</span>
+                    </button>
                   </div>
-                  <div className="p-5 space-y-3">
+                  <div className="p-5 space-y-3.5">
+                    {rateSyncMessage && (
+                      <div className="text-xs px-3 py-2 rounded-lg bg-primary/10 text-primary border border-primary/20 flex items-center gap-2">
+                        <CheckCircle2 size={13} className="shrink-0" />
+                        <span>{rateSyncMessage}</span>
+                      </div>
+                    )}
+
                     <div className="space-y-1">
-                      <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                        Default Base Currency
-                      </label>
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                          Default Base Currency
+                        </label>
+                        <span className="text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded">
+                          Fixed Base (1.000)
+                        </span>
+                      </div>
                       <input
                         type="text"
-                        placeholder="AED"
-                        className="w-full text-xs bg-background border border-border rounded-md px-3 py-2 font-mono font-bold"
-                        value={settings.default_currency || 'AED'}
-                        onChange={(e) => handleChange('default_currency', e.target.value)}
+                        disabled
+                        value="AED"
+                        className="w-full text-xs bg-muted/50 border border-border rounded-md px-3 py-2 font-mono font-bold text-foreground cursor-not-allowed"
                       />
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
+
+                    <div className="grid grid-cols-3 gap-2.5">
                       <div className="space-y-1">
-                        <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                          USD Rate (AED Base)
+                        <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground truncate block">
+                          USD ($) Rate
                         </label>
                         <input
                           type="text"
                           placeholder="0.272"
-                          className="w-full text-xs bg-background border border-border rounded-md px-3 py-2 font-mono"
+                          className="w-full text-xs bg-background border border-border rounded-md px-2.5 py-2 font-mono"
                           value={settings.currency_rate_usd || '0.272'}
                           onChange={(e) => handleChange('currency_rate_usd', e.target.value)}
                         />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                          GBP Rate (AED Base)
+                        <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground truncate block">
+                          GBP (£) Rate
                         </label>
                         <input
                           type="text"
                           placeholder="0.213"
-                          className="w-full text-xs bg-background border border-border rounded-md px-3 py-2 font-mono"
+                          className="w-full text-xs bg-background border border-border rounded-md px-2.5 py-2 font-mono"
                           value={settings.currency_rate_gbp || '0.213'}
                           onChange={(e) => handleChange('currency_rate_gbp', e.target.value)}
                         />
                       </div>
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground truncate block">
+                          EUR (€) Rate
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="0.250"
+                          className="w-full text-xs bg-background border border-border rounded-md px-2.5 py-2 font-mono"
+                          value={settings.currency_rate_eur || '0.250'}
+                          onChange={(e) => handleChange('currency_rate_eur', e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="pt-2 border-t border-border flex items-center justify-between text-[11px] text-muted-foreground">
+                      <span className="flex items-center gap-1.5">
+                        <Clock size={12} className="text-primary" /> Auto-updates nightly at 00:00 (AED Base)
+                      </span>
+                      {settings.currency_last_updated && (
+                        <span className="font-mono text-[10px] text-muted-foreground/80">
+                          Last: {new Date(settings.currency_last_updated).toLocaleDateString('en-AE')}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1993,25 +2393,60 @@ export default function SiteSettingsPage() {
                   <div className="h-8 w-8 rounded-md flex items-center justify-center bg-purple-500/10 text-purple-500">
                     <CreditCard size={16} />
                   </div>
-                  <div>
-                    <h2 className="text-sm font-semibold text-foreground">Payment Gateways &amp; Stripe</h2>
-                    <p className="text-xs text-muted-foreground">Direct backend Stripe card verification (no webhook required)</p>
+                  <div className="flex-1 flex items-center justify-between">
+                    <div>
+                      <h2 className="text-sm font-semibold text-foreground">Payment Gateways &amp; Stripe</h2>
+                      <p className="text-xs text-muted-foreground">Direct backend Stripe card verification (no webhook required)</p>
+                    </div>
+                    <div>
+                      {settings.STRIPE_SECRET_KEY?.startsWith('sk_live_') ? (
+                        <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 inline-flex items-center gap-1.5 shadow-xs">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> Live Production Mode
+                        </span>
+                      ) : settings.STRIPE_SECRET_KEY?.startsWith('sk_test_') ? (
+                        <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 inline-flex items-center gap-1.5 shadow-xs">
+                          <span className="w-2 h-2 rounded-full bg-amber-500" /> Test Sandbox Mode
+                        </span>
+                      ) : (
+                        <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-muted text-muted-foreground border border-border">
+                          Not Configured
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
-                <div className="p-5 max-w-xl">
+                <div className="p-5 max-w-xl space-y-4">
                   <div className="space-y-1">
-                    <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      Stripe Secret Key
+                    <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center justify-between">
+                      <span>Stripe Secret Key (Required)</span>
+                      <span className="text-[11px] text-primary lowercase font-mono font-normal">sk_live_... or sk_test_...</span>
                     </label>
                     <input
                       type="password"
-                      placeholder="sk_test_••••••••••••••••••••••••"
+                      placeholder="sk_live_••••••••••••••••••••••••"
                       className="w-full text-xs bg-background border border-border rounded-md px-3 py-2 font-mono"
                       value={settings.STRIPE_SECRET_KEY || ''}
                       onChange={(e) => handleChange('STRIPE_SECRET_KEY', e.target.value)}
                     />
-                    <p className="text-[11px] text-muted-foreground mt-1">
-                      Payments are verified directly from backend using this secret key without requiring webhooks.
+                    <p className="text-[11px] text-muted-foreground">
+                      Live key starts with <code className="text-emerald-600 font-mono font-bold">sk_live_</code>. Test key starts with <code className="text-amber-500 font-mono font-bold">sk_test_</code>.
+                    </p>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center justify-between">
+                      <span>Stripe Publishable Key (Optional)</span>
+                      <span className="text-[11px] text-primary lowercase font-mono font-normal">pk_live_... or pk_test_...</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="pk_live_••••••••••••••••••••••••"
+                      className="w-full text-xs bg-background border border-border rounded-md px-3 py-2 font-mono"
+                      value={settings.STRIPE_PUBLISHABLE_KEY || ''}
+                      onChange={(e) => handleChange('STRIPE_PUBLISHABLE_KEY', e.target.value)}
+                    />
+                    <p className="text-[11px] text-muted-foreground">
+                      Client-side public key used for Stripe Elements card verification.
                     </p>
                   </div>
                 </div>
@@ -2110,6 +2545,45 @@ export default function SiteSettingsPage() {
                       </select>
                     </div>
                   </div>
+
+                  {/* Gmail & SMTP Setup Notice & Test Button */}
+                  <div className="pt-2 border-t border-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div className="space-y-1 text-xs">
+                      <p className="text-muted-foreground">
+                        <strong className="text-amber-500">Google / Gmail Requirement:</strong> If using <span className="font-mono text-foreground">smtp.gmail.com</span>, regular passwords will fail with <span className="font-mono text-red-400">535 BadCredentials</span>. You must generate a 16-character <strong className="text-foreground">App Password</strong> from your Google Account with 2-Step Verification turned ON.
+                      </p>
+                      <a
+                        href="https://myaccount.google.com/apppasswords"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-primary hover:underline font-semibold inline-flex items-center gap-1"
+                      >
+                        Generate Google App Password &rarr;
+                      </a>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleTestSmtp}
+                      disabled={testingSmtp}
+                      className="px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 rounded-lg text-xs font-semibold flex items-center gap-2 transition cursor-pointer shrink-0 disabled:opacity-50"
+                    >
+                      <Mail size={13} className={testingSmtp ? 'animate-spin' : ''} />
+                      <span>{testingSmtp ? 'Verifying...' : 'Test SMTP Connection'}</span>
+                    </button>
+                  </div>
+
+                  {smtpTestResult && (
+                    <div
+                      className={`p-3 rounded-lg text-xs border ${
+                        smtpTestResult.success
+                          ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500'
+                          : 'bg-red-500/10 border-red-500/30 text-red-500'
+                      }`}
+                    >
+                      <p className="font-semibold">{smtpTestResult.success ? '✓ Verification Succeeded' : '✗ Verification Failed'}</p>
+                      <p className="mt-0.5">{smtpTestResult.message}</p>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -2149,6 +2623,31 @@ export default function SiteSettingsPage() {
                         className="w-full text-xs bg-background border border-border rounded-md px-3 py-2 font-mono"
                         value={settings.GOOGLE_CLIENT_SECRET || ''}
                         onChange={(e) => handleChange('GOOGLE_CLIENT_SECRET', e.target.value)}
+                      />
+                    </div>
+                    <div className="pt-2 border-t border-border/60"></div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        Facebook App ID
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. 987654321098765"
+                        className="w-full text-xs bg-background border border-border rounded-md px-3 py-2 font-mono"
+                        value={settings.FACEBOOK_APP_ID || ''}
+                        onChange={(e) => handleChange('FACEBOOK_APP_ID', e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        Facebook App Secret
+                      </label>
+                      <input
+                        type="password"
+                        placeholder="••••••••••••••••••••••••••••••••"
+                        className="w-full text-xs bg-background border border-border rounded-md px-3 py-2 font-mono"
+                        value={settings.FACEBOOK_APP_SECRET || ''}
+                        onChange={(e) => handleChange('FACEBOOK_APP_SECRET', e.target.value)}
                       />
                     </div>
                   </div>

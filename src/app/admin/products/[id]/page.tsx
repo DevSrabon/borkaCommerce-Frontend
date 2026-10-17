@@ -27,8 +27,25 @@ import {
   Sparkles,
   AlertCircle,
   RefreshCw,
+  Globe,
+  Clock,
+  CheckCircle2,
+  ChevronRight,
+  Share2,
+  Info,
 } from 'lucide-react';
-import { getYoutubeEmbedUrl } from '../page';
+
+// Helper to convert any YouTube URL into an embed link
+export function getYoutubeEmbedUrl(url?: string): string {
+  if (!url) return '';
+  const trimmed = url.trim();
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=|shorts\/)([^#&?]*).*/;
+  const match = trimmed.match(regExp);
+  if (match && match[2] && match[2].length === 11) {
+    return `https://www.youtube-nocookie.com/embed/${match[2]}?rel=0&modestbranding=1&iv_load_policy=3&playsinline=1&color=white`;
+  }
+  return '';
+}
 
 interface ProductImage {
   id?: string;
@@ -98,13 +115,16 @@ interface SingleProduct {
   short_description?: string;
   status: string;
   is_cod_allowed: boolean;
+  is_featured?: boolean;
   video_url?: string | null;
   seo_title?: string;
   seo_description?: string;
   seo_keywords?: string;
   tags?: string;
+  sku_prefix?: string;
   created_at: string;
   updated_at: string;
+  published_at?: string;
   images: ProductImage[];
   variants: Variant[];
   product_categories: CategoryRef[];
@@ -115,29 +135,34 @@ interface SingleProduct {
 export default function AdminSingleProductPage() {
   const params = useParams();
   const router = useRouter();
-  const productId = params?.id as string;
+  const rawId = params?.id as string;
+  const productId = rawId ? decodeURIComponent(rawId) : '';
   const token = useSelector((state: RootState) => state.auth.token);
 
   const [product, setProduct] = useState<SingleProduct | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [copiedSlug, setCopiedSlug] = useState(false);
+  const [copiedId, setCopiedId] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [actionLoading, setActionLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<'details' | 'variants' | 'media' | 'seo' | 'reviews'>('details');
 
   const fetchProduct = useCallback(async () => {
     if (!productId) return;
     setLoading(true);
     setError('');
     try {
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
       const res = await fetch(`${API_BASE_URL}/admin/products/${productId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers,
       });
       if (!res.ok) {
-        if (res.status === 404) throw new Error('Product not found');
-        throw new Error(`Failed to load product (status ${res.status})`);
+        if (res.status === 404) throw new Error('Product not found in catalog');
+        throw new Error(`Failed to load product details (status ${res.status})`);
       }
       const data = await res.json();
       setProduct(data);
@@ -202,53 +227,82 @@ export default function AdminSingleProductPage() {
     setTimeout(() => setCopiedSlug(false), 2000);
   };
 
+  const copyProductId = () => {
+    if (!product) return;
+    navigator.clipboard.writeText(product.id);
+    setCopiedId(true);
+    setTimeout(() => setCopiedId(false), 2000);
+  };
+
   if (loading) {
     return (
-      <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 w-full flex flex-col items-center justify-center min-h-[400px] space-y-3">
-        <RefreshCw size={28} className="animate-spin text-primary" />
-        <p className="text-sm text-muted-foreground font-light">Loading product details...</p>
+      <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8 w-full flex flex-col items-center justify-center min-h-[450px] space-y-4">
+        <div className="relative">
+          <div className="w-12 h-12 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <Package size={18} className="text-primary" />
+          </div>
+        </div>
+        <div className="text-center space-y-1">
+          <p className="text-sm font-semibold text-foreground">Loading Product Details</p>
+          <p className="text-xs text-muted-foreground font-light">Retrieving single product data from admin API...</p>
+        </div>
       </div>
     );
   }
 
   if (error || !product) {
     return (
-      <div className="mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:px-8 w-full space-y-4">
+      <div className="mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:px-8 w-full space-y-6">
         <Link
           href="/admin/products"
-          className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition"
+          className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition font-medium"
         >
-          <ArrowLeft size={14} /> Back to Products
+          <ArrowLeft size={14} /> Back to Products Catalog
         </Link>
-        <div className="p-6 bg-red-500/10 border border-red-500/20 rounded-xl space-y-3 text-red-500">
-          <div className="flex items-center gap-2 font-semibold text-sm">
-            <AlertCircle size={18} />
-            <span>Product Not Found</span>
+        <div className="p-8 bg-card border border-red-500/30 rounded-2xl space-y-4 shadow-sm">
+          <div className="w-12 h-12 rounded-xl bg-red-500/10 text-red-500 flex items-center justify-center">
+            <AlertCircle size={24} />
           </div>
-          <p className="text-xs text-red-400">{error || 'The requested product could not be located.'}</p>
-          <button
-            onClick={fetchProduct}
-            className="px-3.5 py-1.5 bg-red-500 text-white rounded text-xs font-semibold hover:bg-red-600 transition"
-          >
-            Retry
-          </button>
+          <div className="space-y-1">
+            <h2 className="text-lg font-bold text-foreground">Product Not Found</h2>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              {error || `Unable to locate a product with identifier "${productId}". It may have been archived or deleted.`}
+            </p>
+          </div>
+          <div className="pt-2 flex items-center gap-3">
+            <button
+              onClick={fetchProduct}
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-xs font-semibold hover:bg-primary/90 transition shadow-sm cursor-pointer"
+            >
+              Retry Loading
+            </button>
+            <Link
+              href="/admin/products"
+              className="px-4 py-2 border border-border bg-card hover:bg-accent text-foreground rounded-lg text-xs font-semibold transition"
+            >
+              Return to Catalog
+            </Link>
+          </div>
         </div>
       </div>
     );
   }
 
   // Derived stats
-  const totalStock = product.variants.reduce((acc, v) => {
+  const totalStock = product.variants?.reduce((acc, v) => {
     const vStock = v.inventories?.reduce((sum, inv) => sum + (inv.quantity || 0), 0) || 0;
     return acc + vStock;
-  }, 0);
+  }, 0) || 0;
 
-  const minPrice = product.variants.length > 0
-    ? Math.min(...product.variants.map((v) => Number(v.price)))
-    : 0;
+  const prices = product.variants?.map((v) => Number(v.price)).filter((p) => !isNaN(p)) || [];
+  const minPrice = prices.length > 0 ? Math.min(...prices) : 0;
+  const maxPrice = prices.length > 0 ? Math.max(...prices) : 0;
 
-  const maxPrice = product.variants.length > 0
-    ? Math.max(...product.variants.map((v) => Number(v.price)))
+  const comparePrices = product.variants?.map((v) => Number(v.compare_price)).filter((p) => !isNaN(p) && p > 0) || [];
+  const maxComparePrice = comparePrices.length > 0 ? Math.max(...comparePrices) : null;
+  const discountPercent = maxComparePrice && maxComparePrice > minPrice
+    ? Math.round(((maxComparePrice - minPrice) / maxComparePrice) * 100)
     : 0;
 
   const videoEmbed = getYoutubeEmbedUrl(product.video_url || undefined);
@@ -259,18 +313,24 @@ export default function AdminSingleProductPage() {
       : `${API_BASE_URL}${activeImage.startsWith('/') ? '' : '/'}${activeImage}`
     : '';
 
+  const avgRating = product.reviews?.length > 0
+    ? (product.reviews.reduce((sum, r) => sum + r.rating, 0) / product.reviews.length).toFixed(1)
+    : null;
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 w-full space-y-6">
-      {/* Top Navigation & Breadcrumb */}
+      {/* ── Top Navigation & Breadcrumbs ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-4">
-        <div className="flex items-center gap-2 text-xs">
+        <div className="flex items-center gap-2 text-xs flex-wrap">
           <Link
             href="/admin/products"
             className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition font-medium"
           >
-            <ArrowLeft size={14} /> Products Catalog
+            <ArrowLeft size={14} /> Catalog
           </Link>
-          <span className="text-muted-foreground">/</span>
+          <ChevronRight size={12} className="text-muted-foreground" />
+          <span className="text-muted-foreground">Admin Single Product</span>
+          <ChevronRight size={12} className="text-muted-foreground" />
           <span className="font-mono text-primary font-bold">
             {product.product_number || product.slug}
           </span>
@@ -278,28 +338,38 @@ export default function AdminSingleProductPage() {
 
         {/* Action Header Buttons */}
         <div className="flex items-center gap-2 flex-wrap">
-          {/* LIVE VIEW BUTTON (PROMINENT) */}
+          {/* Edit Product Button */}
+          <Link
+            href={`/admin/products?edit=${product.id}`}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 text-xs font-semibold rounded-lg transition shadow-2xs cursor-pointer"
+            title="Edit this product in catalog manager"
+          >
+            <Edit2 size={13} />
+            <span>Edit Product</span>
+          </Link>
+
+          {/* Customer Live Storefront View */}
           <Link
             href={`/product/${product.slug}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs rounded-lg transition shadow-sm cursor-pointer"
-            title="Open Live Product Page on Customer Storefront"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs rounded-lg transition shadow-2xs cursor-pointer"
+            title="Open Live Product View on Storefront"
           >
-            <Eye size={15} />
+            <Eye size={14} />
             <span>Live View</span>
-            <ExternalLink size={13} className="opacity-80" />
+            <ExternalLink size={12} className="opacity-80" />
           </Link>
 
-          {/* Copy Link Button */}
+          {/* Copy URL */}
           <button
             type="button"
             onClick={copyStorefrontLink}
             className="inline-flex items-center gap-1.5 px-3 py-2 bg-card hover:bg-accent border border-border text-foreground text-xs font-semibold rounded-lg transition cursor-pointer"
-            title="Copy Public Storefront Link"
+            title="Copy Public Storefront URL"
           >
-            {copiedSlug ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
-            <span>{copiedSlug ? 'Copied' : 'Share URL'}</span>
+            {copiedSlug ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
+            <span>{copiedSlug ? 'Copied!' : 'Share URL'}</span>
           </button>
 
           {/* Toggle Publish / Draft */}
@@ -309,12 +379,12 @@ export default function AdminSingleProductPage() {
             onClick={handleTogglePublish}
             className={`inline-flex items-center gap-1.5 px-3 py-2 border rounded-lg text-xs font-semibold transition cursor-pointer ${
               product.status === 'PUBLISHED'
-                ? 'border-amber-300 bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 hover:bg-amber-100'
-                : 'border-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200 hover:bg-emerald-100'
+                ? 'border-amber-500/30 bg-amber-500/10 text-amber-500 hover:bg-amber-500/20'
+                : 'border-emerald-500/30 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20'
             }`}
           >
-            {product.status === 'PUBLISHED' ? <EyeOff size={14} /> : <Eye size={14} />}
-            <span>{product.status === 'PUBLISHED' ? 'Unpublish' : 'Publish Product'}</span>
+            {product.status === 'PUBLISHED' ? <EyeOff size={13} /> : <Eye size={13} />}
+            <span>{product.status === 'PUBLISHED' ? 'Unpublish' : 'Publish'}</span>
           </button>
 
           {/* Delete Button */}
@@ -323,391 +393,692 @@ export default function AdminSingleProductPage() {
             disabled={actionLoading}
             onClick={handleDeleteProduct}
             className="p-2 border border-red-500/30 text-red-500 hover:bg-red-500/10 rounded-lg transition cursor-pointer"
-            title="Delete this product"
+            title="Permanently Delete this Product"
           >
-            <Trash2 size={15} />
+            <Trash2 size={14} />
           </button>
         </div>
       </div>
 
-      {/* Product Title Bar */}
-      <div className="bg-card border border-border rounded-xl p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 flex-wrap">
+      {/* ── Product Header Banner ── */}
+      <div className="bg-card border border-border rounded-2xl p-6 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+        <div className="space-y-2 max-w-3xl">
+          <div className="flex items-center gap-2 flex-wrap text-xs">
             {product.product_number && (
-              <span className="px-2.5 py-0.5 rounded-md font-mono text-xs font-bold bg-primary/10 border border-primary/30 text-primary">
+              <span className="px-2.5 py-0.5 rounded-md font-mono font-bold bg-primary/10 border border-primary/20 text-primary">
                 {product.product_number}
               </span>
             )}
             <span
-              className={`px-2.5 py-0.5 rounded-md font-semibold text-xs border ${
+              className={`px-2.5 py-0.5 rounded-md font-semibold border ${
                 product.status === 'PUBLISHED'
-                  ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-200 border-emerald-300'
-                  : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border-zinc-300'
+                  ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+                  : 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20'
               }`}
             >
               {product.status}
             </span>
             {product.is_cod_allowed ? (
-              <span className="px-2.5 py-0.5 rounded-md font-semibold text-xs bg-emerald-100 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-200 border border-emerald-300 flex items-center gap-1">
-                <ShieldCheck size={12} /> Cash on Delivery Available
+              <span className="px-2.5 py-0.5 rounded-md font-semibold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 flex items-center gap-1">
+                <ShieldCheck size={12} /> COD Available
               </span>
             ) : (
-              <span className="px-2.5 py-0.5 rounded-md font-semibold text-xs bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-200 border border-amber-300">
+              <span className="px-2.5 py-0.5 rounded-md font-semibold bg-amber-500/10 text-amber-500 border border-amber-500/20">
                 Prepaid Only (No COD)
               </span>
             )}
+            {product.is_featured && (
+              <span className="px-2.5 py-0.5 rounded-md font-semibold bg-amber-500/10 text-amber-500 border border-amber-500/20 flex items-center gap-1">
+                <Sparkles size={12} /> Featured
+              </span>
+            )}
           </div>
+
           <h1 className="font-serif text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
             {product.name}
           </h1>
-          <p className="text-xs text-muted-foreground font-mono">
-            Slug: <span className="text-foreground">/product/{product.slug}</span>
-          </p>
+
+          <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
+            <span className="font-mono">
+              Slug: <strong className="text-foreground">{product.slug}</strong>
+            </span>
+            <span>•</span>
+            <button
+              type="button"
+              onClick={copyProductId}
+              className="inline-flex items-center gap-1 font-mono hover:text-primary transition cursor-pointer"
+              title="Click to copy internal UUID"
+            >
+              <span>ID: {product.id.slice(0, 8)}...</span>
+              {copiedId ? <Check size={11} className="text-emerald-500" /> : <Copy size={11} />}
+            </button>
+            {product.sku_prefix && (
+              <>
+                <span>•</span>
+                <span>Prefix: <strong className="font-mono text-foreground">{product.sku_prefix}</strong></span>
+              </>
+            )}
+          </div>
         </div>
 
-        {/* Top Summary Metrics */}
-        <div className="flex items-center gap-6 divide-x divide-border shrink-0">
-          <div className="space-y-0.5">
-            <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
-              Price Range
+        {/* Top 4 Quick Metric Cards */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 shrink-0 lg:w-auto w-full">
+          <div className="p-3.5 rounded-xl bg-background border border-border space-y-1">
+            <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold flex items-center gap-1">
+              <DollarSign size={12} className="text-primary" /> Price
             </span>
-            <p className="text-base font-bold text-foreground">
-              AED {minPrice} {maxPrice > minPrice ? `– AED ${maxPrice}` : ''}
+            <p className="text-sm font-bold text-foreground">
+              AED {minPrice}
+              {maxPrice > minPrice && <span className="text-xs text-muted-foreground font-normal"> - {maxPrice}</span>}
             </p>
+            {discountPercent > 0 && (
+              <span className="text-[10px] font-semibold text-emerald-500">
+                Save {discountPercent}%
+              </span>
+            )}
           </div>
-          <div className="pl-6 space-y-0.5">
-            <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
-              Total Stock
+
+          <div className="p-3.5 rounded-xl bg-background border border-border space-y-1">
+            <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold flex items-center gap-1">
+              <Package size={12} className="text-primary" /> Stock
             </span>
-            <p className="text-base font-bold text-foreground flex items-center gap-1.5">
-              <Package size={15} className="text-primary" />
-              <span>{totalStock} units</span>
+            <p className={`text-sm font-bold ${
+              totalStock <= 0 ? 'text-red-500' : totalStock <= 5 ? 'text-amber-500' : 'text-emerald-500'
+            }`}>
+              {totalStock} units
             </p>
+            <span className="text-[10px] text-muted-foreground">
+              {totalStock <= 0 ? 'Out of stock' : totalStock <= 5 ? 'Low stock alert' : 'In stock'}
+            </span>
           </div>
-          <div className="pl-6 space-y-0.5">
-            <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
-              Variants
+
+          <div className="p-3.5 rounded-xl bg-background border border-border space-y-1">
+            <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold flex items-center gap-1">
+              <Layers size={12} className="text-primary" /> Variants
             </span>
-            <p className="text-base font-bold text-foreground">
-              {product.variants.length} SKU{product.variants.length === 1 ? '' : 's'}
+            <p className="text-sm font-bold text-foreground">
+              {product.variants?.length || 0}
             </p>
+            <span className="text-[10px] text-muted-foreground">SKU options</span>
+          </div>
+
+          <div className="p-3.5 rounded-xl bg-background border border-border space-y-1">
+            <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold flex items-center gap-1">
+              <Star size={12} className="text-amber-500" /> Rating
+            </span>
+            <p className="text-sm font-bold text-foreground">
+              {avgRating ? `${avgRating} ★` : '—'}
+            </p>
+            <span className="text-[10px] text-muted-foreground">
+              {product.reviews?.length || 0} review{(product.reviews?.length || 0) === 1 ? '' : 's'}
+            </span>
           </div>
         </div>
       </div>
 
-      {/* Main Grid: Left Primary Content (8 Cols), Right Sidebar (4 Cols) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* LEFT COLUMN: 8 COLS */}
-        <div className="lg:col-span-8 space-y-6">
-          {/* Images Gallery Card */}
-          <div className="bg-card border border-border rounded-xl p-5 space-y-4 shadow-xs">
-            <div className="flex items-center justify-between border-b border-border pb-3">
-              <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
-                <Box size={16} className="text-primary" />
-                <span>Product Media &amp; Images ({product.images?.length || 0})</span>
-              </h2>
-              <span className="text-xs text-muted-foreground">Click thumbnail to preview</span>
+      {/* ── Navigation Tabs ── */}
+      <div className="flex items-center gap-1 border-b border-border text-xs overflow-x-auto pb-0.5">
+        <button
+          type="button"
+          onClick={() => setActiveTab('details')}
+          className={`px-4 py-2.5 font-semibold transition border-b-2 cursor-pointer flex items-center gap-2 shrink-0 ${
+            activeTab === 'details'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <Box size={14} /> Overview &amp; Content
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('variants')}
+          className={`px-4 py-2.5 font-semibold transition border-b-2 cursor-pointer flex items-center gap-2 shrink-0 ${
+            activeTab === 'variants'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <Layers size={14} /> Variants &amp; Inventory ({product.variants?.length || 0})
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('media')}
+          className={`px-4 py-2.5 font-semibold transition border-b-2 cursor-pointer flex items-center gap-2 shrink-0 ${
+            activeTab === 'media'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <Eye size={14} /> Media Gallery ({product.images?.length || 0})
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('seo')}
+          className={`px-4 py-2.5 font-semibold transition border-b-2 cursor-pointer flex items-center gap-2 shrink-0 ${
+            activeTab === 'seo'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <Globe size={14} /> SEO &amp; Meta
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('reviews')}
+          className={`px-4 py-2.5 font-semibold transition border-b-2 cursor-pointer flex items-center gap-2 shrink-0 ${
+            activeTab === 'reviews'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <Star size={14} /> Reviews ({product.reviews?.length || 0})
+        </button>
+      </div>
+
+      {/* ── TAB 1: DETAILS & OVERVIEW ── */}
+      {activeTab === 'details' && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Main Left: 8 Cols */}
+          <div className="lg:col-span-8 space-y-6">
+            {/* Media Highlight */}
+            <div className="bg-card border border-border rounded-xl p-5 space-y-4 shadow-2xs">
+              <div className="flex items-center justify-between border-b border-border pb-3">
+                <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
+                  <Box size={16} className="text-primary" />
+                  <span>Product Media Showcase</span>
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('media')}
+                  className="text-xs text-primary hover:underline font-medium"
+                >
+                  View All ({product.images?.length || 0})
+                </button>
+              </div>
+
+              {resolvedActiveImg ? (
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-4">
+                  <div className="sm:col-span-8 relative h-[360px] bg-background border border-border rounded-xl overflow-hidden flex items-center justify-center">
+                    <img
+                      src={resolvedActiveImg}
+                      alt={product.name}
+                      className="w-full h-full object-contain"
+                    />
+                    {product.images[activeImageIndex]?.is_thumbnail && (
+                      <span className="absolute top-3 left-3 bg-primary text-primary-foreground text-[10px] font-bold px-2.5 py-0.5 rounded shadow">
+                        Main Thumbnail
+                      </span>
+                    )}
+                  </div>
+                  <div className="sm:col-span-4 flex sm:flex-col gap-2 overflow-auto max-h-[360px] pr-1">
+                    {product.images?.map((img, idx) => {
+                      const resolvedThumb = img.image_url.startsWith('http')
+                        ? img.image_url
+                        : `${API_BASE_URL}${img.image_url.startsWith('/') ? '' : '/'}${img.image_url}`;
+                      return (
+                        <button
+                          key={img.id || idx}
+                          type="button"
+                          onClick={() => setActiveImageIndex(idx)}
+                          className={`relative w-20 h-20 sm:w-full sm:h-20 rounded-lg overflow-hidden border-2 shrink-0 transition cursor-pointer ${
+                            activeImageIndex === idx ? 'border-primary ring-2 ring-primary/20' : 'border-border opacity-70 hover:opacity-100'
+                          }`}
+                        >
+                          <img src={resolvedThumb} alt="" className="w-full h-full object-cover" />
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : (
+                <div className="p-8 text-center text-xs text-muted-foreground border border-dashed border-border rounded-xl">
+                  No images uploaded for this product.
+                </div>
+              )}
             </div>
 
-            {resolvedActiveImg ? (
-              <div className="space-y-3">
-                <div className="relative w-full h-[380px] sm:h-[480px] bg-muted/30 border border-border rounded-xl overflow-hidden flex items-center justify-center">
-                  <img
-                    src={resolvedActiveImg}
-                    alt={product.name}
-                    className="w-full h-full object-contain"
-                  />
-                  {product.images[activeImageIndex]?.is_thumbnail && (
-                    <span className="absolute top-3 left-3 bg-primary text-primary-foreground text-[11px] font-bold px-2 py-0.5 rounded shadow">
-                      Main Thumbnail
-                    </span>
-                  )}
-                </div>
+            {/* Description & Rich Content */}
+            <div className="bg-card border border-border rounded-xl p-5 space-y-4 shadow-2xs">
+              <h2 className="text-sm font-bold text-foreground border-b border-border pb-3 flex items-center justify-between">
+                <span>Product Description</span>
+                <span className="text-xs text-muted-foreground font-normal font-mono">
+                  {product.description?.replace(/<[^>]*>?/gm, '').length || 0} characters
+                </span>
+              </h2>
 
-                {/* Thumbnails row */}
-                <div className="flex items-center gap-2.5 overflow-x-auto pb-1 scrollbar-thin">
-                  {product.images.map((img, idx) => {
-                    const resolvedThumb = img.image_url.startsWith('http')
-                      ? img.image_url
-                      : `${API_BASE_URL}${img.image_url.startsWith('/') ? '' : '/'}${img.image_url}`;
-                    return (
-                      <button
-                        key={img.id || idx}
-                        type="button"
-                        onClick={() => setActiveImageIndex(idx)}
-                        className={`relative w-16 h-16 rounded-lg overflow-hidden border-2 shrink-0 transition cursor-pointer ${
-                          activeImageIndex === idx ? 'border-primary ring-2 ring-primary/20' : 'border-border opacity-70 hover:opacity-100'
-                        }`}
-                      >
-                        <img src={resolvedThumb} alt="" className="w-full h-full object-cover" />
-                        {img.is_thumbnail && (
-                          <span className="absolute bottom-0 inset-x-0 bg-primary/90 text-primary-foreground text-[9px] text-center font-bold">
-                            Thumb
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
+              {product.short_description && (
+                <div className="p-4 bg-primary/5 border border-primary/20 rounded-xl text-xs text-foreground leading-relaxed">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-primary block mb-1">
+                    Short Summary:
+                  </span>
+                  <p className="italic">{product.short_description}</p>
                 </div>
-              </div>
-            ) : (
-              <div className="p-8 text-center text-xs text-muted-foreground border border-dashed border-border rounded-lg">
-                No images uploaded for this product.
+              )}
+
+              <div
+                className="prose prose-sm dark:prose-invert max-w-none text-xs text-foreground leading-relaxed pt-1"
+                dangerouslySetInnerHTML={{
+                  __html: product.description || '<p className="text-muted-foreground italic">No detailed description provided.</p>',
+                }}
+              />
+            </div>
+
+            {/* Video Showcase */}
+            {videoEmbed && (
+              <div className="bg-card border border-border rounded-xl p-5 space-y-3 shadow-2xs">
+                <h2 className="text-sm font-bold text-foreground flex items-center gap-2 border-b border-border pb-3">
+                  <Video size={16} className="text-red-500" />
+                  <span>YouTube Video Showcase</span>
+                </h2>
+                <div className="w-full aspect-video rounded-xl overflow-hidden border border-border shadow-sm">
+                  <iframe
+                    src={videoEmbed}
+                    title="Product Video"
+                    className="w-full h-full border-0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                </div>
               </div>
             )}
           </div>
 
-          {/* Variants & Stock Inventory */}
-          <div className="bg-card border border-border rounded-xl p-5 space-y-4 shadow-xs">
-            <div className="flex items-center justify-between border-b border-border pb-3">
-              <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
-                <Layers size={16} className="text-primary" />
-                <span>SKU Variants &amp; Inventory ({product.variants.length})</span>
+          {/* Sidebar Right: 4 Cols */}
+          <div className="lg:col-span-4 space-y-6">
+            {/* Storefront Preview Card */}
+            <div className="bg-primary/5 border-2 border-primary/30 rounded-xl p-5 space-y-3.5 shadow-sm">
+              <div className="flex items-center gap-2 text-primary font-bold text-sm">
+                <Sparkles size={16} />
+                <span>Storefront Customer Experience</span>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Shoppers see this product directly at the public URL. Test live layout and purchase flow:
+              </p>
+              <div className="space-y-2">
+                <Link
+                  href={`/product/${product.slug}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs rounded-lg transition shadow-sm cursor-pointer"
+                >
+                  <Eye size={15} />
+                  <span>Open Storefront Live View</span>
+                  <ExternalLink size={13} />
+                </Link>
+
+                <button
+                  type="button"
+                  onClick={copyStorefrontLink}
+                  className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-card hover:bg-accent border border-border text-foreground text-xs font-semibold rounded-lg transition cursor-pointer"
+                >
+                  {copiedSlug ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
+                  <span>{copiedSlug ? 'Link Copied!' : 'Copy Direct Product URL'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Categories & Taxonomies Card */}
+            <div className="bg-card border border-border rounded-xl p-5 space-y-3.5 shadow-2xs">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground border-b border-border pb-2 flex items-center gap-1.5">
+                <Tag size={13} className="text-primary" /> Categories &amp; Placement
+              </h3>
+              <div className="space-y-3 text-xs">
+                <div>
+                  <span className="text-[11px] text-muted-foreground block mb-1 font-medium">Primary Categories:</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {product.product_categories?.length > 0 ? (
+                      product.product_categories.map((pc) => (
+                        <span
+                          key={pc.id}
+                          className="px-2.5 py-1 bg-primary/10 border border-primary/20 text-primary font-semibold rounded-md"
+                        >
+                          {pc.category?.name || 'Category'}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-muted-foreground italic">None assigned</span>
+                    )}
+                  </div>
+                </div>
+
+                {product.related_categories?.length > 0 && (
+                  <div>
+                    <span className="text-[11px] text-muted-foreground block mb-1 font-medium">Related Categories:</span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {product.related_categories.map((rc) => (
+                        <span
+                          key={rc.id}
+                          className="px-2 py-0.5 bg-muted border border-border text-foreground rounded-md text-[11px]"
+                        >
+                          {rc.category?.name}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Audit & Timestamps Card */}
+            <div className="bg-card border border-border rounded-xl p-5 space-y-3 shadow-2xs text-xs text-muted-foreground">
+              <h3 className="font-bold uppercase tracking-wider text-muted-foreground border-b border-border pb-2 flex items-center gap-1.5">
+                <Clock size={13} className="text-primary" /> Audit &amp; Metadata
+              </h3>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span>Created:</span>
+                  <span className="text-foreground font-mono">
+                    {new Date(product.created_at).toLocaleDateString()} {new Date(product.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>Last Updated:</span>
+                  <span className="text-foreground font-mono">
+                    {new Date(product.updated_at).toLocaleDateString()} {new Date(product.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </div>
+                {product.published_at && (
+                  <div className="flex items-center justify-between">
+                    <span>Published:</span>
+                    <span className="text-foreground font-mono">
+                      {new Date(product.published_at).toLocaleDateString()}
+                    </span>
+                  </div>
+                )}
+                <div className="flex items-center justify-between pt-1 border-t border-border">
+                  <span>Product UUID:</span>
+                  <button
+                    type="button"
+                    onClick={copyProductId}
+                    className="font-mono text-primary hover:underline flex items-center gap-1 cursor-pointer"
+                  >
+                    <span>{product.id.slice(0, 10)}...</span>
+                    <Copy size={11} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── TAB 2: VARIANTS & INVENTORY ── */}
+      {activeTab === 'variants' && (
+        <div className="bg-card border border-border rounded-2xl p-6 space-y-4 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border pb-4">
+            <div>
+              <h2 className="text-base font-bold text-foreground flex items-center gap-2">
+                <Layers size={18} className="text-primary" />
+                <span>SKU Variants &amp; Stock Inventory</span>
               </h2>
-              <span className="text-xs text-muted-foreground font-mono">
-                {totalStock} in stock
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Breakdown of price, attributes, and inventory quantities per variant.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-primary/10 border border-primary/20 text-primary">
+                {product.variants?.length || 0} Total Variants
+              </span>
+              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 border border-emerald-500/20 text-emerald-500">
+                {totalStock} Units in Stock
               </span>
             </div>
+          </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse text-xs">
-                <thead>
-                  <tr className="bg-slate-100 dark:bg-zinc-900 text-slate-800 dark:text-zinc-200 uppercase tracking-wider font-bold border-b border-border">
-                    <th className="p-3">SKU</th>
-                    <th className="p-3">Attributes</th>
-                    <th className="p-3">Price</th>
-                    <th className="p-3">Compare At</th>
-                    <th className="p-3">Stock Level</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {product.variants.map((v) => {
-                    const variantStock = v.inventories?.reduce((sum, inv) => sum + (inv.quantity || 0), 0) || 0;
-                    return (
-                      <tr key={v.id} className="hover:bg-accent/40">
-                        <td className="p-3 font-mono font-semibold text-foreground">
-                          {v.sku}
-                        </td>
-                        <td className="p-3">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            {v.attributes?.map((attr) => (
-                              <span
-                                key={attr.id}
-                                className="px-2 py-0.5 rounded bg-muted border border-border text-[11px] font-medium"
-                              >
-                                {attr.attribute_value?.attribute?.name}:{' '}
-                                <strong className="text-foreground">{attr.attribute_value?.value}</strong>
-                              </span>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="bg-slate-100 dark:bg-zinc-900 text-slate-800 dark:text-zinc-200 uppercase tracking-wider font-bold border-b border-border">
+                  <th className="p-3.5">SKU Code</th>
+                  <th className="p-3.5">Attributes</th>
+                  <th className="p-3.5">Selling Price</th>
+                  <th className="p-3.5">Compare Price</th>
+                  <th className="p-3.5">Stock Level</th>
+                  <th className="p-3.5">Warehouse Allocation</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {product.variants?.map((v) => {
+                  const variantStock = v.inventories?.reduce((sum, inv) => sum + (inv.quantity || 0), 0) || 0;
+                  const variantCompare = v.compare_price ? Number(v.compare_price) : null;
+                  return (
+                    <tr key={v.id} className="hover:bg-accent/40 text-foreground transition">
+                      <td className="p-3.5 font-mono font-bold text-primary">
+                        {v.sku}
+                      </td>
+                      <td className="p-3.5">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {v.attributes?.map((attr) => (
+                            <span
+                              key={attr.id}
+                              className="px-2 py-0.5 rounded bg-muted border border-border text-[11px] font-medium"
+                            >
+                              {attr.attribute_value?.attribute?.name}:{' '}
+                              <strong className="text-foreground">{attr.attribute_value?.value}</strong>
+                            </span>
+                          ))}
+                        </div>
+                      </td>
+                      <td className="p-3.5 font-bold text-foreground">
+                        AED {Number(v.price).toFixed(2)}
+                      </td>
+                      <td className="p-3.5 text-muted-foreground">
+                        {variantCompare ? (
+                          <span className="line-through">AED {variantCompare.toFixed(2)}</span>
+                        ) : (
+                          '—'
+                        )}
+                      </td>
+                      <td className="p-3.5">
+                        {variantStock <= 0 ? (
+                          <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-red-500/10 text-red-500 border border-red-500/20">
+                            Out of Stock (0)
+                          </span>
+                        ) : variantStock <= 5 ? (
+                          <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                            Low Stock ({variantStock})
+                          </span>
+                        ) : (
+                          <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                            In Stock ({variantStock})
+                          </span>
+                        )}
+                      </td>
+                      <td className="p-3.5 text-muted-foreground">
+                        {v.inventories?.length > 0 ? (
+                          <div className="space-y-0.5">
+                            {v.inventories.map((inv) => (
+                              <div key={inv.id} className="text-[11px]">
+                                <span className="font-medium text-foreground">{inv.warehouse?.name || 'Main Warehouse'}:</span>{' '}
+                                <span>{inv.quantity} units</span>
+                              </div>
                             ))}
                           </div>
-                        </td>
-                        <td className="p-3 font-bold text-foreground">
-                          AED {Number(v.price).toFixed(2)}
-                        </td>
-                        <td className="p-3 text-muted-foreground">
-                          {v.compare_price ? (
-                            <span className="line-through">AED {Number(v.compare_price).toFixed(2)}</span>
-                          ) : (
-                            '—'
-                          )}
-                        </td>
-                        <td className="p-3">
-                          {variantStock <= 0 ? (
-                            <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-red-100 dark:bg-red-950/60 text-red-900 dark:text-red-200 border border-red-300">
-                              Out of Stock (0)
-                            </span>
-                          ) : variantStock <= 5 ? (
-                            <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-200 border border-amber-300">
-                              Low Stock ({variantStock})
-                            </span>
-                          ) : (
-                            <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-200 border border-emerald-300">
-                              In Stock ({variantStock})
-                            </span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                        ) : (
+                          <span className="italic">Standard stock pool</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* ── TAB 3: MEDIA GALLERY ── */}
+      {activeTab === 'media' && (
+        <div className="bg-card border border-border rounded-2xl p-6 space-y-6 shadow-sm">
+          <div className="flex items-center justify-between border-b border-border pb-4">
+            <div>
+              <h2 className="text-base font-bold text-foreground flex items-center gap-2">
+                <Box size={18} className="text-primary" />
+                <span>Media &amp; Visual Gallery</span>
+              </h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                All visual assets attached to this product catalog entry.
+              </p>
             </div>
+            <span className="text-xs text-muted-foreground">
+              {product.images?.length || 0} image{(product.images?.length || 0) === 1 ? '' : 's'}
+            </span>
           </div>
 
-          {/* Full Description & Content */}
-          <div className="bg-card border border-border rounded-xl p-5 space-y-3 shadow-xs">
-            <h2 className="text-sm font-bold text-foreground border-b border-border pb-3">
-              Product Description
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+            {product.images?.map((img, idx) => {
+              const resolvedImg = img.image_url.startsWith('http')
+                ? img.image_url
+                : `${API_BASE_URL}${img.image_url.startsWith('/') ? '' : '/'}${img.image_url}`;
+              return (
+                <div
+                  key={img.id || idx}
+                  className="group relative bg-background border border-border rounded-xl overflow-hidden shadow-2xs space-y-2 pb-3"
+                >
+                  <div className="aspect-square w-full bg-muted/40 relative overflow-hidden flex items-center justify-center">
+                    <img
+                      src={resolvedImg}
+                      alt={img.alt_text || product.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                    />
+                    {img.is_thumbnail && (
+                      <span className="absolute top-2 left-2 bg-primary text-primary-foreground text-[10px] font-bold px-2 py-0.5 rounded shadow">
+                        Main Thumbnail
+                      </span>
+                    )}
+                  </div>
+                  <div className="px-3 space-y-1 text-xs">
+                    <p className="font-semibold text-foreground truncate">
+                      {img.alt_text || `Image #${idx + 1}`}
+                    </p>
+                    <a
+                      href={resolvedImg}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[11px] text-primary hover:underline flex items-center gap-1 font-mono truncate"
+                    >
+                      <ExternalLink size={10} /> View full size
+                    </a>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ── TAB 4: SEO & META ── */}
+      {activeTab === 'seo' && (
+        <div className="bg-card border border-border rounded-2xl p-6 space-y-6 shadow-sm">
+          <div>
+            <h2 className="text-base font-bold text-foreground flex items-center gap-2">
+              <Globe size={18} className="text-primary" />
+              <span>Search Engine Optimization &amp; Metadata</span>
             </h2>
-            {product.short_description && (
-              <div className="p-3.5 bg-muted/30 border border-border rounded-lg text-xs text-foreground italic">
-                {product.short_description}
+            <p className="text-xs text-muted-foreground mt-0.5">
+              How this product appears on Google and social search engines.
+            </p>
+          </div>
+
+          {/* Google Search Snippet Simulation */}
+          <div className="p-4 bg-muted/30 border border-border rounded-xl space-y-1.5 max-w-2xl">
+            <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">
+              Google Search Result Preview
+            </span>
+            <p className="text-xs text-emerald-600 dark:text-emerald-400 font-mono">
+              https://example.com/product/{product.slug}
+            </p>
+            <h4 className="text-sm font-semibold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
+              {product.seo_title || product.name}
+            </h4>
+            <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
+              {product.seo_description || product.short_description || 'Explore the elegant collection on BorkaCommerce. Premium materials and modern modest designs.'}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+            <div className="p-4 bg-background border border-border rounded-xl space-y-1">
+              <span className="text-[11px] text-muted-foreground font-semibold">SEO Meta Title:</span>
+              <p className="font-medium text-foreground">{product.seo_title || product.name}</p>
+            </div>
+
+            <div className="p-4 bg-background border border-border rounded-xl space-y-1">
+              <span className="text-[11px] text-muted-foreground font-semibold">SEO Keywords:</span>
+              <p className="font-medium text-foreground">{product.seo_keywords || 'None specified'}</p>
+            </div>
+
+            <div className="p-4 bg-background border border-border rounded-xl space-y-1 md:col-span-2">
+              <span className="text-[11px] text-muted-foreground font-semibold">SEO Meta Description:</span>
+              <p className="font-medium text-foreground leading-relaxed">
+                {product.seo_description || 'None specified'}
+              </p>
+            </div>
+
+            {product.tags && (
+              <div className="p-4 bg-background border border-border rounded-xl space-y-2 md:col-span-2">
+                <span className="text-[11px] text-muted-foreground font-semibold">Product Tags:</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {product.tags.split(',').map((t, idx) => (
+                    <span
+                      key={idx}
+                      className="px-2.5 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-primary font-medium text-[11px]"
+                    >
+                      #{t.trim()}
+                    </span>
+                  ))}
+                </div>
               </div>
             )}
-            <div
-              className="prose prose-sm dark:prose-invert max-w-none text-xs text-foreground leading-relaxed pt-2"
-              dangerouslySetInnerHTML={{ __html: product.description || '<p className="text-muted-foreground italic">No detailed description provided.</p>' }}
-            />
+          </div>
+        </div>
+      )}
+
+      {/* ── TAB 5: REVIEWS ── */}
+      {activeTab === 'reviews' && (
+        <div className="bg-card border border-border rounded-2xl p-6 space-y-4 shadow-sm">
+          <div className="flex items-center justify-between border-b border-border pb-4">
+            <div>
+              <h2 className="text-base font-bold text-foreground flex items-center gap-2">
+                <Star size={18} className="text-amber-500" />
+                <span>Customer Reviews &amp; Ratings</span>
+              </h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Verified buyer feedback and star evaluations.
+              </p>
+            </div>
+            <span className="text-xs font-semibold text-primary">
+              {product.reviews?.length || 0} Review{(product.reviews?.length || 0) === 1 ? '' : 's'}
+            </span>
           </div>
 
-          {/* YouTube Video Preview (if available) */}
-          {videoEmbed && (
-            <div className="bg-card border border-border rounded-xl p-5 space-y-3 shadow-xs">
-              <h2 className="text-sm font-bold text-foreground flex items-center gap-2 border-b border-border pb-3">
-                <Video size={16} className="text-red-500" />
-                <span>Embedded Video Showcase</span>
-              </h2>
-              <div className="w-full aspect-video rounded-xl overflow-hidden border border-border shadow-sm">
-                <iframe
-                  src={videoEmbed}
-                  title="Product Video"
-                  className="w-full h-full border-0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                />
-              </div>
+          {product.reviews?.length > 0 ? (
+            <div className="divide-y divide-border">
+              {product.reviews.map((r) => (
+                <div key={r.id} className="py-4 space-y-2 text-xs">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-foreground">
+                        {r.customer?.first_name ? `${r.customer.first_name} ${r.customer.last_name || ''}` : 'Verified Customer'}
+                      </span>
+                      <span className="text-amber-500 font-bold">
+                        {'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}
+                      </span>
+                    </div>
+                    <span className="text-muted-foreground font-mono text-[11px]">
+                      {new Date(r.created_at).toLocaleDateString()}
+                    </span>
+                  </div>
+                  {r.comment && <p className="text-foreground leading-relaxed">{r.comment}</p>}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="p-8 text-center text-xs text-muted-foreground border border-dashed border-border rounded-xl">
+              No customer reviews posted yet for this product.
             </div>
           )}
         </div>
-
-        {/* RIGHT SIDEBAR: 4 COLS */}
-        <div className="lg:col-span-4 space-y-6">
-          {/* LIVE VIEW CARD */}
-          <div className="bg-primary/5 border-2 border-primary/30 rounded-xl p-5 space-y-3.5 shadow-sm">
-            <div className="flex items-center gap-2 text-primary font-bold text-sm">
-              <Sparkles size={16} />
-              <span>Customer Storefront Preview</span>
-            </div>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Experience the live product presentation exactly as your shoppers see it on the web.
-            </p>
-            <div className="space-y-2">
-              <Link
-                href={`/product/${product.slug}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs rounded-lg transition shadow cursor-pointer"
-              >
-                <Eye size={15} />
-                <span>Open Live Storefront View</span>
-                <ExternalLink size={13} />
-              </Link>
-
-              <button
-                type="button"
-                onClick={copyStorefrontLink}
-                className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-card hover:bg-accent border border-border text-foreground text-xs font-semibold rounded-lg transition cursor-pointer"
-              >
-                {copiedSlug ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
-                <span>{copiedSlug ? 'Direct URL Copied!' : 'Copy Direct Storefront URL'}</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Categories & Taxonomies Card */}
-          <div className="bg-card border border-border rounded-xl p-5 space-y-3 shadow-xs">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground border-b border-border pb-2">
-              Categories &amp; Navigation
-            </h3>
-            <div className="space-y-3 text-xs">
-              <div>
-                <span className="text-[11px] text-muted-foreground block mb-1">Primary Categories:</span>
-                <div className="flex flex-wrap gap-1.5">
-                  {product.product_categories?.length > 0 ? (
-                    product.product_categories.map((pc) => (
-                      <span
-                        key={pc.id}
-                        className="px-2.5 py-1 bg-primary/10 border border-primary/20 text-primary font-semibold rounded-md"
-                      >
-                        {pc.category?.name || 'Category'}
-                      </span>
-                    ))
-                  ) : (
-                    <span className="text-muted-foreground italic">None assigned</span>
-                  )}
-                </div>
-              </div>
-
-              {product.related_categories?.length > 0 && (
-                <div>
-                  <span className="text-[11px] text-muted-foreground block mb-1">Related Categories:</span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {product.related_categories.map((rc) => (
-                      <span
-                        key={rc.id}
-                        className="px-2 py-0.5 bg-muted border border-border text-foreground rounded-md text-[11px]"
-                      >
-                        {rc.category?.name}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* SEO & Search Meta Card */}
-          <div className="bg-card border border-border rounded-xl p-5 space-y-3 shadow-xs">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground border-b border-border pb-2">
-              Search &amp; SEO Metadata
-            </h3>
-            <div className="space-y-3 text-xs">
-              <div>
-                <span className="text-[11px] text-muted-foreground block">Meta Title:</span>
-                <p className="font-semibold text-foreground mt-0.5">
-                  {product.seo_title || product.name}
-                </p>
-              </div>
-
-              {product.seo_description && (
-                <div>
-                  <span className="text-[11px] text-muted-foreground block">Meta Description:</span>
-                  <p className="text-muted-foreground mt-0.5 leading-relaxed">
-                    {product.seo_description}
-                  </p>
-                </div>
-              )}
-
-              {product.tags && (
-                <div>
-                  <span className="text-[11px] text-muted-foreground block mb-1">Tags:</span>
-                  <div className="flex flex-wrap gap-1">
-                    {product.tags.split(',').map((t, i) => (
-                      <span
-                        key={i}
-                        className="px-2 py-0.5 bg-muted text-foreground border border-border rounded text-[11px]"
-                      >
-                        {t.trim()}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Audit Timestamps */}
-          <div className="bg-card border border-border rounded-xl p-5 space-y-2.5 shadow-xs text-xs text-muted-foreground">
-            <div className="flex items-center justify-between">
-              <span className="flex items-center gap-1.5">
-                <Calendar size={13} /> Created:
-              </span>
-              <span className="text-foreground font-mono">
-                {new Date(product.created_at).toLocaleDateString()}
-              </span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="flex items-center gap-1.5">
-                <Calendar size={13} /> Last Updated:
-              </span>
-              <span className="text-foreground font-mono">
-                {new Date(product.updated_at).toLocaleDateString()}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
+      )}
     </div>
   );
 }

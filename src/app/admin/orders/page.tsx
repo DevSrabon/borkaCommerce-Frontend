@@ -22,6 +22,7 @@ import {
   ChevronDown,
 } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import CreateManualOrderModal from '@/components/admin/CreateManualOrderModal';
 import AdminPagination from '@/components/admin/AdminPagination';
 
@@ -94,21 +95,39 @@ const getItemFeaturedImage = (item: OrderItem) => {
 };
 
 export default function OrdersAdminPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+
   const token = useSelector((state: RootState) => state.auth.token);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [generatingProdId, setGeneratingProdId] = useState<string | null>(null);
-  const [search, setSearch] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState<string>('ALL');
-  const [startDate, setStartDate] = useState<string>('');
-  const [endDate, setEndDate] = useState<string>('');
+
+  // Read initial states from URL query parameters
+  const [search, setSearch] = useState(searchParams?.get('search') || '');
+  const [selectedStatus, setSelectedStatus] = useState<string>(searchParams?.get('status') || 'ALL');
+  const [startDate, setStartDate] = useState<string>(searchParams?.get('start_date') || '');
+  const [endDate, setEndDate] = useState<string>(searchParams?.get('end_date') || '');
   const [showManualModal, setShowManualModal] = useState(false);
 
-  // Pagination states (default limit: 50, skip: 0)
-  const [page, setPage] = useState(1);
+  // Pagination states
+  const [page, setPage] = useState(parseInt(searchParams?.get('page') || '1', 10) || 1);
   const [limit, setLimit] = useState(50);
   const [totalOrders, setTotalOrders] = useState(0);
+
+  // Sync state changes back to URL query parameters
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (search.trim()) params.set('search', search.trim());
+    if (selectedStatus && selectedStatus !== 'ALL') params.set('status', selectedStatus);
+    if (startDate) params.set('start_date', startDate);
+    if (endDate) params.set('end_date', endDate);
+    if (page > 1) params.set('page', page.toString());
+    const query = params.toString();
+    router.replace(`${pathname}${query ? `?${query}` : ''}`, { scroll: false });
+  }, [search, selectedStatus, startDate, endDate, page]);
 
   const fetchOrders = useCallback(async () => {
     setLoading(true);
@@ -261,7 +280,7 @@ export default function OrdersAdminPage() {
         <div>
           <h1 className="font-serif text-2xl font-bold tracking-tight text-foreground">Orders</h1>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Manage customer purchases, workshop production IDs, and logistics tracking.
+            Manage customer purchases, product numbers, and logistics tracking.
           </p>
         </div>
         <div className="flex items-center gap-2.5 flex-wrap">
@@ -291,7 +310,7 @@ export default function OrdersAdminPage() {
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Search by Order # (SW...), Production # (P-...), or customer name/email…"
+              placeholder="Search by Order # (SW...), Product No (P-...), or customer name/email…"
               className="w-full pl-9 pr-3 py-2 text-xs bg-background border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-primary shadow-xs"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -419,7 +438,7 @@ export default function OrdersAdminPage() {
         {loading ? (
           <div className="p-16 text-center text-xs text-muted-foreground animate-pulse space-y-2">
             <RefreshCw size={20} className="animate-spin mx-auto text-primary" />
-            <p>Loading orders with production records…</p>
+            <p>Loading orders with product records…</p>
           </div>
         ) : filtered.length === 0 ? (
           <div className="p-16 text-center text-xs text-muted-foreground space-y-3">
@@ -442,7 +461,7 @@ export default function OrdersAdminPage() {
             <table className="w-full min-w-[950px] text-left border-collapse text-xs">
               <thead>
                 <tr className="bg-slate-100 dark:bg-zinc-900 text-slate-800 dark:text-zinc-200 uppercase tracking-wider font-bold border-b border-border text-xs">
-                  <th className="px-5 py-3.5 whitespace-nowrap">Order / Production #</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">Order / Product No</th>
                   <th className="px-5 py-3.5 min-w-[160px]">Customer</th>
                   <th className="px-4 py-3.5 min-w-[120px]">Items</th>
                   <th className="px-4 py-3.5 whitespace-nowrap">Date</th>
@@ -455,7 +474,7 @@ export default function OrdersAdminPage() {
               <tbody className="divide-y divide-border">
                 {filtered.map((ord) => (
                   <tr key={ord.id} className="hover:bg-accent/30 transition">
-                    {/* Combined: Order # & Production # */}
+                    {/* Combined: Order # & Product # */}
                     <td className="px-5 py-3.5 whitespace-nowrap">
                       <div className="space-y-1">
                         <Link
@@ -469,7 +488,7 @@ export default function OrdersAdminPage() {
                           {ord.production_no ? (
                             <span
                               className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-amber-100 text-amber-900 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-700 shadow-2xs"
-                              title="Workshop & Tailoring Production Number"
+                              title="Product Number"
                             >
                               <Factory size={10} className="text-amber-800 dark:text-amber-400" />
                               <span>{ord.production_no}</span>
@@ -479,7 +498,7 @@ export default function OrdersAdminPage() {
                               onClick={() => handleGenerateProductionNo(ord.id)}
                               disabled={generatingProdId === ord.id}
                               className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-primary/10 text-primary border border-primary/30 hover:bg-primary/20 transition cursor-pointer"
-                              title="Generate workshop production ID"
+                              title="Generate Product Number"
                             >
                               {generatingProdId === ord.id ? (
                                 <RefreshCw size={10} className="animate-spin" />

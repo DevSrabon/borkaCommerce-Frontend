@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { API_BASE_URL } from '@/config/api';
+import { io, Socket } from 'socket.io-client';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
 import {
@@ -22,6 +23,7 @@ import {
   X,
   Mail,
   Check,
+  Trash2,
 } from 'lucide-react';
 
 interface ChatSession {
@@ -95,6 +97,11 @@ export default function AdminChatPage() {
   const [showScrollBottomBtn, setShowScrollBottomBtn] = useState(false);
   // Email dispatch option (default OFF as required)
   const [sendEmailCopy, setSendEmailCopy] = useState<boolean>(false);
+
+  // Deletion modals state
+  const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
+  const [showClearAllModal, setShowClearAllModal] = useState<boolean>(false);
+  const [deleting, setDeleting] = useState<boolean>(false);
 
   // Admin attachment state
   const [adminPendingFile, setAdminPendingFile] = useState<{
@@ -234,9 +241,69 @@ export default function AdminChatPage() {
 
   useEffect(() => {
     fetchSessions();
-    const interval = setInterval(fetchSessions, 3000);
+    const interval = setInterval(fetchSessions, 6000);
     return () => clearInterval(interval);
   }, [token]);
+
+  // Socket.IO Real-Time Chat Synchronization
+  useEffect(() => {
+    let socket: Socket | null = null;
+    try {
+      socket = io(API_BASE_URL, {
+        transports: ['websocket', 'polling'],
+        reconnection: true,
+      });
+
+      socket.on('connect', () => {
+        socket?.emit('join_admin');
+        if (activeSessionIdRef.current) {
+          socket?.emit('join_session', { session_id: activeSessionIdRef.current });
+        }
+      });
+
+      socket.on('chat_message', (msg: any) => {
+        if (!msg) return;
+        if (msg.session_id === activeSessionIdRef.current) {
+          setMessages((prev) => {
+            if (prev.some((m) => m.id === msg.id)) return prev;
+            return [...prev, msg];
+          });
+          setTimeout(() => scrollToBottom('smooth'), 50);
+        }
+        fetchSessions();
+        if (msg.sender_type === 'CUSTOMER') {
+          playNotificationSound();
+        }
+      });
+
+      socket.on('chat_typing', (data: { session_id: string; is_typing: boolean; sender_type: string }) => {
+        if (data?.session_id === activeSessionIdRef.current && data?.sender_type === 'CUSTOMER') {
+          setActiveSession((prev: any) => (prev ? { ...prev, is_customer_typing: data.is_typing } : prev));
+        }
+      });
+
+      socket.on('chat_session_deleted', (data: { session_id: string }) => {
+        if (!data?.session_id) return;
+        setSessions((prev) => prev.filter((s) => s.session_id !== data.session_id));
+        if (activeSessionIdRef.current === data.session_id) {
+          setActiveSessionId(null);
+          setActiveSession(null);
+          setMessages([]);
+        }
+      });
+
+      socket.on('chat_all_sessions_deleted', () => {
+        setSessions([]);
+        setActiveSessionId(null);
+        setActiveSession(null);
+        setMessages([]);
+      });
+    } catch (_) {}
+
+    return () => {
+      if (socket) socket.disconnect();
+    };
+  }, []);
 
   useEffect(() => {
     if (!activeSessionId) return;
@@ -252,7 +319,7 @@ export default function AdminChatPage() {
 
     const interval = setInterval(() => {
       fetchActiveMessages(activeSessionId, false);
-    }, 2500);
+    }, 5000);
     return () => clearInterval(interval);
   }, [activeSessionId, token]);
 
@@ -384,6 +451,52 @@ export default function AdminChatPage() {
     }
   };
 
+  const handleDeleteSession = async (sessionId: string) => {
+    if (!token) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/admin/chat/sessions/${sessionId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        setSessions((prev) => prev.filter((s) => s.session_id !== sessionId));
+        if (activeSessionId === sessionId) {
+          setActiveSessionId(null);
+          setActiveSession(null);
+          setMessages([]);
+        }
+        setSessionToDelete(null);
+      }
+    } catch (err) {
+      console.error('Failed to delete chat session:', err);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleDeleteAllSessions = async () => {
+    if (!token) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/admin/chat/sessions`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        setSessions([]);
+        setActiveSessionId(null);
+        setActiveSession(null);
+        setMessages([]);
+        setShowClearAllModal(false);
+      }
+    } catch (err) {
+      console.error('Failed to delete all chat sessions:', err);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const filteredSessions = sessions.filter((s) => {
     const q = searchQuery.toLowerCase();
     return (
@@ -411,7 +524,7 @@ export default function AdminChatPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <button
             onClick={() => setSoundEnabled(!soundEnabled)}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition cursor-pointer ${
@@ -423,6 +536,16 @@ export default function AdminChatPage() {
           >
             {soundEnabled ? <Volume2 className="w-4 h-4 text-primary" /> : <VolumeX className="w-4 h-4 text-muted-foreground" />}
             <span>{soundEnabled ? 'Sound On' : 'Muted'}</span>
+          </button>
+
+          <button
+            onClick={() => setShowClearAllModal(true)}
+            disabled={sessions.length === 0}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-rose-500/30 text-rose-500 bg-rose-500/10 hover:bg-rose-500/20 transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            title="Delete all chat conversations"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            <span>Clear All</span>
           </button>
         </div>
       </div>
@@ -457,11 +580,12 @@ export default function AdminChatPage() {
                 const unread = s.unread_admin_count || 0;
 
                 return (
-                  <button
+                  <div
                     key={s.id}
-                    type="button"
+                    role="button"
+                    tabIndex={0}
                     onClick={() => handleSelectSession(s.session_id)}
-                    className={`w-full text-left p-3.5 transition flex items-start gap-3 cursor-pointer ${
+                    className={`group w-full text-left p-3.5 transition flex items-start gap-3 cursor-pointer ${
                       isSelected
                         ? 'bg-primary/10 border-l-4 border-primary'
                         : 'hover:bg-muted/60'
@@ -507,10 +631,23 @@ export default function AdminChatPage() {
                             </span>
                           )}
                         </div>
-                        <span className="text-xs text-muted-foreground flex items-center gap-1 shrink-0">
-                          <Clock className="w-3 h-3" />
-                          {new Date(s.last_message_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </span>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <span className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {new Date(s.last_message_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSessionToDelete(s.session_id);
+                            }}
+                            className="opacity-0 group-hover:opacity-100 hover:text-rose-500 hover:bg-rose-500/10 p-1 rounded transition text-muted-foreground cursor-pointer ml-1"
+                            title="Delete this conversation"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
 
                       {s.customer_email && (
@@ -534,7 +671,7 @@ export default function AdminChatPage() {
                         </p>
                       )}
                     </div>
-                  </button>
+                  </div>
                 );
               })
             )}
@@ -814,6 +951,106 @@ export default function AdminChatPage() {
           </div>
         )}
       </div>
+
+      {/* Delete Single Conversation Confirmation Modal */}
+      {sessionToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="bg-card border border-border rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-500 flex items-center justify-center">
+                  <Trash2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-foreground">Delete Conversation</h3>
+                  <p className="text-xs text-muted-foreground">Permanent deletion</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSessionToDelete(null)}
+                className="text-muted-foreground hover:text-foreground p-1 rounded-lg transition"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Are you sure you want to delete this customer conversation? All chat messages, attachments, and session history will be permanently deleted.
+            </p>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setSessionToDelete(null)}
+                disabled={deleting}
+                className="px-4 py-2 rounded-xl border border-border text-xs font-semibold text-foreground hover:bg-muted transition cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDeleteSession(sessionToDelete)}
+                disabled={deleting}
+                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold transition flex items-center gap-2 cursor-pointer shadow-sm"
+              >
+                {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                <span>Delete Conversation</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Clear All Conversations Confirmation Modal */}
+      {showClearAllModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="bg-card border border-border rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-500 flex items-center justify-center">
+                  <Trash2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-foreground">Clear All Conversations</h3>
+                  <p className="text-xs text-muted-foreground">Bulk deletion</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowClearAllModal(false)}
+                className="text-muted-foreground hover:text-foreground p-1 rounded-lg transition"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Are you sure you want to delete <strong className="text-foreground">ALL {sessions.length} customer chat conversations</strong>? This will permanently wipe all message logs and cannot be recovered.
+            </p>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowClearAllModal(false)}
+                disabled={deleting}
+                className="px-4 py-2 rounded-xl border border-border text-xs font-semibold text-foreground hover:bg-muted transition cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteAllSessions}
+                disabled={deleting}
+                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold transition flex items-center gap-2 cursor-pointer shadow-sm"
+              >
+                {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                <span>Delete All</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

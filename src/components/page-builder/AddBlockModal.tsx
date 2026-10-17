@@ -18,6 +18,7 @@ import {
   MapPin,
 } from 'lucide-react';
 import { BlockType, PageBlock } from '@/types/page-builder';
+import { PAGE_TEMPLATES } from './pageTemplates';
 
 interface AddBlockModalProps {
   isOpen: boolean;
@@ -187,6 +188,90 @@ const BLOCK_DEFINITIONS: {
       map_height: 420,
       layout: 'split',
       show_card: true,
+    },
+  },
+  {
+    type: 'IMAGE',
+    title: 'Single Image / Visual Banner',
+    description: 'Standalone image section with caption, custom aspect ratio, link, and rounded corners',
+    icon: Layout,
+    defaultData: {
+      image_url: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=1600&q=80',
+      caption: 'Saba Al Wadi Autumn Haute Couture Lookbook',
+      alt_text: 'Luxury modest wear collection',
+      aspect_ratio: '16/9',
+      max_width: 'boxed',
+      link_url: '/catalog',
+      overlay_badge: 'Exclusive Atelier',
+      overlay_title: 'Handcrafted With Uncompromising Modesty',
+    },
+  },
+  {
+    type: 'CARDS_GRID',
+    title: 'Content & Product Cards Grid',
+    description: 'Interactive cards for showcasing abaya collections, products, features, or team with images, tags and buttons',
+    icon: Layers,
+    defaultData: {
+      title: 'Curated Seasonal Highlights',
+      subtitle: 'Hand-tailored creations in limited quantities for discerning clients',
+      columns: 3,
+      cards: [
+        {
+          image_url: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=800&q=80',
+          badge: 'Best Seller',
+          title: 'Royal Nada Open Abaya',
+          description: 'Pure Korean Nada textile with hand-embellished crystal sleeves and architectural drape.',
+          tag: 'AED 450',
+          button_label: 'View Piece',
+          button_url: '/catalog',
+        },
+        {
+          image_url: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=800&q=80',
+          badge: 'Atelier Signature',
+          title: 'Midnight Black French Crepe',
+          description: 'Floor-sweeping architectural silhouette designed for graceful, dignified modesty.',
+          tag: 'AED 520',
+          button_label: 'View Piece',
+          button_url: '/catalog',
+        },
+        {
+          image_url: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=800&q=80',
+          badge: 'New Arrival',
+          title: 'Champagne Gold Embroidered Set',
+          description: 'Complete 3-piece set with matching silk chiffon Sheila and tailored sleeves.',
+          tag: 'AED 610',
+          button_label: 'View Piece',
+          button_url: '/catalog',
+        },
+      ],
+    },
+  },
+  {
+    type: 'GALLERY',
+    title: 'Image Gallery / Lookbook Grid',
+    description: 'Multi-image lookbook gallery showcasing atelier craftsmanship, fabrics, and styling',
+    icon: Grid,
+    defaultData: {
+      title: 'Atelier Lookbook Gallery',
+      subtitle: 'A visual celebration of modest couture and artisanal craftsmanship',
+      columns: 3,
+      images: [
+        {
+          url: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=800&q=80',
+          caption: 'Hand Embroidery Details',
+          link: '/catalog',
+        },
+        {
+          url: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=800&q=80',
+          caption: 'Silk Chiffon Drapes',
+          link: '/catalog',
+        },
+        {
+          url: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=800&q=80',
+          caption: 'Bespoke Atelier Workshop',
+          link: '/catalog',
+        },
+      ],
     },
   },
 ];
@@ -386,23 +471,22 @@ export default function AddBlockModal({
         <div className="bg-primary/5 border-b border-primary/20 px-6 py-3 flex items-center justify-between flex-wrap gap-2">
           <div className="text-xs font-semibold text-primary flex items-center gap-1.5">
             <BookOpen size={14} />
-            Quick Start Starter Kits:
+            Pre-built 1-Click Templates:
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={handleLoadAboutTemplate}
-              className="px-3 py-1 text-xs rounded bg-card border border-border hover:border-primary/50 text-foreground transition font-medium cursor-pointer"
-            >
-              Load "About Us" Template
-            </button>
-            <button
-              type="button"
-              onClick={handleLoadContactTemplate}
-              className="px-3 py-1 text-xs rounded bg-card border border-border hover:border-primary/50 text-foreground transition font-medium cursor-pointer"
-            >
-              Load "Contact Us" Template
-            </button>
+          <div className="flex items-center gap-2 flex-wrap">
+            {PAGE_TEMPLATES.map((tmpl) => (
+              <button
+                key={tmpl.id}
+                type="button"
+                onClick={() => {
+                  onLoadTemplate(tmpl.blocks);
+                  onClose();
+                }}
+                className="px-2.5 py-1 text-xs rounded bg-card border border-border hover:border-primary hover:bg-primary/5 text-foreground transition font-medium cursor-pointer shadow-xs"
+              >
+                {tmpl.name.split(' (')[0]}
+              </button>
+            ))}
           </div>
         </div>
 

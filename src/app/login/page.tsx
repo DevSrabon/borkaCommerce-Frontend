@@ -35,9 +35,44 @@ function LoginContent() {
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [socialConfig, setSocialConfig] = useState<{ google_client_id?: string; facebook_app_id?: string } | null>(null);
 
   useEffect(() => {
     setMounted(true);
+    fetch(`${API_BASE_URL}/ecommerce/auth/social-config`)
+      .then((r) => r.json())
+      .then((cfg) => {
+        if (cfg) {
+          setSocialConfig(cfg);
+          if (cfg.facebook_app_id && typeof window !== 'undefined' && !(window as any).FB) {
+            (window as any).fbAsyncInit = function () {
+              (window as any).FB.init({
+                appId: cfg.facebook_app_id,
+                cookie: true,
+                xfbml: true,
+                version: 'v18.0',
+              });
+            };
+            const s = document.createElement('script');
+            s.id = 'facebook-jssdk';
+            s.src = 'https://connect.facebook.net/en_US/sdk.js';
+            s.async = true;
+            s.defer = true;
+            document.head.appendChild(s);
+          }
+
+          if (cfg.google_client_id && typeof window !== 'undefined' && !(window as any).google?.accounts?.oauth2) {
+            const g = document.createElement('script');
+            g.id = 'google-gsi-client';
+            g.src = 'https://accounts.google.com/gsi/client';
+            g.async = true;
+            g.defer = true;
+            document.head.appendChild(g);
+          }
+        }
+      })
+      .catch(() => {});
+
     if (mounted && token) {
       const redirect = searchParams?.get('redirect') || '/';
       router.push(redirect);
@@ -172,39 +207,159 @@ function LoginContent() {
   const handleSocialLogin = async (provider: 'google' | 'facebook') => {
     setError('');
     setLoading(true);
-    try {
-      // In web production, this hooks up with Google Identity Services SDK or Facebook SDK
-      // The backend accepts the verified payload and signs the user in
-      const mockEmail = provider === 'google' ? 'guest.google@example.com' : 'guest.fb@example.com';
-      const mockName = provider === 'google' ? 'Google Customer' : 'Facebook Customer';
 
-      const res = await fetch(`${API_BASE_URL}/ecommerce/auth/social-login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          provider,
-          email: mockEmail,
-          name: mockName,
-          social_id: `${provider}_${Date.now()}`,
-        }),
-      });
+    const completeSocialAuth = async (
+      email: string,
+      name: string,
+      social_id: string,
+      accessToken?: string,
+      avatarUrl?: string
+    ) => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/ecommerce/auth/social-login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            provider,
+            email,
+            name,
+            social_id,
+            access_token: accessToken,
+            avatar_url: avatarUrl,
+          }),
+        });
 
-      const data = await res.json();
-      if (res.ok) {
-        dispatch(
-          setSession({
-            user: data.user,
-            token: data.token,
-          })
-        );
-        const redirect = searchParams?.get('redirect') || '/';
-        router.push(redirect);
-      } else {
-        setError(data.message || `${provider} sign in failed`);
+        const data = await res.json();
+        if (res.ok) {
+          dispatch(
+            setSession({
+              user: data.user,
+              token: data.token,
+            })
+          );
+          const redirect = searchParams?.get('redirect') || '/';
+          router.push(redirect);
+        } else {
+          setError(data.message || `${provider} sign in failed`);
+        }
+      } catch {
+        setError(`Failed to complete ${provider} authentication with server`);
+      } finally {
+        setLoading(false);
       }
+    };
+
+    try {
+      // 1. Google OAuth via Google Identity Services (GIS)
+      if (provider === 'google') {
+        const clientId = socialConfig?.google_client_id?.trim();
+        if (!clientId) {
+          setLoading(false);
+          setError('Google OAuth Client ID is not configured. Please enter your Google Client ID in Admin > Settings > Social Logins.');
+          return;
+        }
+
+        // Ensure script is attached
+        if (typeof window !== 'undefined' && !(window as any).google?.accounts?.oauth2) {
+          if (!document.getElementById('google-gsi-client')) {
+            const g = document.createElement('script');
+            g.id = 'google-gsi-client';
+            g.src = 'https://accounts.google.com/gsi/client';
+            g.async = true;
+            g.defer = true;
+            document.head.appendChild(g);
+          }
+        }
+
+        // Wait up to 2.5s for GIS script
+        let attempts = 0;
+        while (typeof window !== 'undefined' && !(window as any).google?.accounts?.oauth2 && attempts < 25) {
+          await new Promise((r) => setTimeout(r, 100));
+          attempts++;
+        }
+
+        if (typeof window === 'undefined' || !(window as any).google?.accounts?.oauth2) {
+          setLoading(false);
+          setError('Google Sign-In SDK could not be loaded. Please ensure browser extensions or shields are not blocking Google.');
+          return;
+        }
+
+        const tokenClient = (window as any).google.accounts.oauth2.initTokenClient({
+          client_id: clientId,
+          scope: 'email profile openid',
+          callback: async (tokenResponse: any) => {
+            if (tokenResponse.error) {
+              setLoading(false);
+              if (tokenResponse.error !== 'popup_closed_by_user') {
+                setError(`Google sign-in error: ${tokenResponse.error_description || tokenResponse.error}`);
+              }
+              return;
+            }
+
+            if (tokenResponse.access_token) {
+              try {
+                const userRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                  headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+                });
+                if (!userRes.ok) {
+                  throw new Error('Failed to retrieve verified Google profile');
+                }
+                const profile = await userRes.json();
+                const email = profile.email;
+                const name =
+                  profile.name ||
+                  `${profile.given_name || ''} ${profile.family_name || ''}`.trim() ||
+                  'Google User';
+                const socialId = profile.sub;
+                const avatar = profile.picture;
+
+                await completeSocialAuth(email, name, socialId, tokenResponse.access_token, avatar);
+              } catch (err: any) {
+                setError(err?.message || 'Failed to authenticate Google user');
+                setLoading(false);
+              }
+            } else {
+              setLoading(false);
+            }
+          },
+        });
+
+        tokenClient.requestAccessToken({ prompt: 'select_account' });
+        return;
+      }
+
+      // 2. Facebook SDK Login
+      if (provider === 'facebook' && typeof window !== 'undefined' && (window as any).FB) {
+        (window as any).FB.login(
+          (response: any) => {
+            if (response.authResponse) {
+              const accessToken = response.authResponse.accessToken;
+              const userId = response.authResponse.userID;
+              (window as any).FB.api('/me', { fields: 'name,email,picture' }, async (userInfo: any) => {
+                const fbEmail = userInfo.email || `fb_${userId}@sabaalwadi.customer`;
+                const fbName = userInfo.name || 'Facebook User';
+                const fbAvatar = userInfo.picture?.data?.url;
+                try {
+                  await completeSocialAuth(fbEmail, fbName, userId, accessToken, fbAvatar);
+                } catch {
+                  setError('Facebook sign-in failed on server');
+                  setLoading(false);
+                }
+              });
+            } else {
+              setLoading(false);
+              setError('Facebook login was cancelled');
+            }
+          },
+          { scope: 'public_profile,email' }
+        );
+        return;
+      }
+
+      setError(`Could not initiate ${provider} login. Please verify settings.`);
+      setLoading(false);
     } catch (err: any) {
-      setError(`Failed to connect with ${provider}`);
-    } finally {
+      setError(`Failed to connect with ${provider}: ${err?.message || ''}`);
       setLoading(false);
     }
   };

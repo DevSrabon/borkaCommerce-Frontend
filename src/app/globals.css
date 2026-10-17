@@ -459,10 +459,9 @@ body {
   box-shadow: 0 4px 12px rgba(184, 144, 71, 0.3) !important;
 }
 
-/* Floating Image Toolbar Popup on click */
-.jodit-popup,
-.jodit-popup__content,
-.jodit-toolbar-editor-collection {
+/* Floating Image Toolbar Popup on click (Dark mode only) */
+.dark .jodit-popup,
+.dark .jodit-popup__content {
   background-color: #18181b !important;
   border: 1px solid #27272a !important;
   color: #fafafa !important;
@@ -470,14 +469,15 @@ body {
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5) !important;
 }
 
-.jodit-popup .jodit-ui-button svg,
-.jodit-toolbar-editor-collection .jodit-ui-button svg {
+.dark .jodit-popup .jodit-ui-button svg {
   fill: #fafafa !important;
   color: #fafafa !important;
 }
 
-/* Editor Always Light Mode */
+/* Editor Always Light Mode (Clean Light Canvas & Light Toolbar) */
+.jodit-container,
 .jodit-container:not(.jodit_inline),
+.jodit-always-light,
 .jodit-always-light .jodit-container {
   background-color: #ffffff !important;
   border: 1px solid #e2e8f0 !important;
@@ -485,22 +485,50 @@ body {
 }
 
 .jodit-toolbar__box,
-.jodit-always-light .jodit-toolbar__box {
+.jodit-toolbar-editor-collection,
+.jodit-always-light .jodit-toolbar__box,
+.jodit-always-light .jodit-toolbar-editor-collection {
   background-color: #f8fafc !important;
   border-bottom: 1px solid #e2e8f0 !important;
 }
 
+.jodit-toolbar-button,
+.jodit-always-light .jodit-toolbar-button {
+  background-color: transparent !important;
+}
+
 .jodit-toolbar-button__text,
 .jodit-toolbar-button svg,
+.jodit-toolbar-editor-collection .jodit-ui-button svg,
 .jodit-always-light .jodit-toolbar-button__text,
-.jodit-always-light .jodit-toolbar-button svg {
-  color: #1e293b !important;
-  fill: #1e293b !important;
+.jodit-always-light .jodit-toolbar-button svg,
+.jodit-always-light .jodit-toolbar-editor-collection .jodit-ui-button svg {
+  color: #334155 !important;
+  fill: #334155 !important;
 }
 
 .jodit-toolbar-button:hover,
 .jodit-always-light .jodit-toolbar-button:hover {
   background-color: #e2e8f0 !important;
+}
+
+.jodit-toolbar-button:hover svg,
+.jodit-always-light .jodit-toolbar-button:hover svg {
+  color: #0f172a !important;
+  fill: #0f172a !important;
+}
+
+.jodit-toolbar-button[aria-pressed="true"],
+.jodit-toolbar-button.jodit-toolbar-button_active,
+.jodit-always-light .jodit-toolbar-button[aria-pressed="true"],
+.jodit-always-light .jodit-toolbar-button.jodit-toolbar-button_active {
+  background-color: #e2e8f0 !important;
+  color: #b89047 !important;
+}
+
+.jodit-toolbar-separator,
+.jodit-always-light .jodit-toolbar-separator {
+  border-color: #e2e8f0 !important;
 }
 
 .jodit-wysiwyg,
@@ -514,6 +542,21 @@ body {
   background-color: #f8fafc !important;
   border-top: 1px solid #e2e8f0 !important;
   color: #475569 !important;
+}
+
+/* Light popup inside light mode / always light */
+.jodit-always-light .jodit-popup,
+.jodit-always-light .jodit-popup__content {
+  background-color: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #0f172a !important;
+  border-radius: 8px !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12) !important;
+}
+
+.jodit-always-light .jodit-popup .jodit-ui-button svg {
+  fill: #334155 !important;
+  color: #334155 !important;
 }
 
 /* =============================================

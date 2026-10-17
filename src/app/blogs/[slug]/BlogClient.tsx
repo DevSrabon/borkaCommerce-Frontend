@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { API_BASE_URL } from '@/config/api';
 import {
   Calendar,
@@ -10,6 +11,8 @@ import {
   MessageSquare,
   CheckCircle2,
   AlertCircle,
+  Search,
+  Tag,
 } from 'lucide-react';
 
 interface CommentItem {
@@ -49,10 +52,19 @@ interface BlogClientProps {
   initialBlog: BlogPostDetail;
 }
 
+const POPULAR_SEARCH_TAGS = ['Abaya', 'Bridal', 'Kimono', 'Silk', 'Everyday', 'Fabric Guide'];
+
 export default function BlogClient({ initialBlog }: BlogClientProps) {
+  const router = useRouter();
   const [blog, setBlog] = useState<BlogPostDetail>(initialBlog);
   const [latestBlogs, setLatestBlogs] = useState<SidebarBlogItem[]>([]);
   const [popularBlogs, setPopularBlogs] = useState<SidebarBlogItem[]>([]);
+  const [sidebarSearch, setSidebarSearch] = useState('');
+
+  const handleSearchSubmit = (text: string) => {
+    if (!text.trim()) return;
+    router.push(`/blogs?search=${encodeURIComponent(text.trim())}`);
+  };
 
   // Comment Form state
   const [commentName, setCommentName] = useState('');
@@ -307,7 +319,57 @@ export default function BlogClient({ initialBlog }: BlogClientProps) {
 
       {/* Right Column: Sidebar (4 of 12) */}
       <aside className="lg:col-span-4 space-y-8">
-        {/* 1. Latest Blogs Card */}
+        {/* 1. Search Articles Widget */}
+        <div className="bg-card border border-border rounded-xl p-5 shadow-xs space-y-3.5">
+          <h2 className="text-base font-serif font-bold text-foreground pb-2 border-b border-border flex items-center justify-between">
+            <span>Search Articles</span>
+            <Search size={15} className="text-primary" />
+          </h2>
+
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSearchSubmit(sidebarSearch);
+            }}
+            className="relative"
+          >
+            <input
+              type="text"
+              placeholder="Keywords (e.g. Silk, Abaya)..."
+              value={sidebarSearch}
+              onChange={(e) => setSidebarSearch(e.target.value)}
+              className="w-full pl-3.5 pr-10 py-2.5 bg-background border border-border rounded-lg text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition"
+            />
+            <button
+              type="submit"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1.5 rounded-md text-primary hover:bg-primary/10 transition cursor-pointer"
+              aria-label="Search articles"
+            >
+              <Search size={15} />
+            </button>
+          </form>
+
+          {/* Popular Search Tag Pills */}
+          <div className="space-y-1.5 pt-1">
+            <span className="text-[11px] font-medium text-muted-foreground block flex items-center gap-1">
+              <Tag size={11} className="text-primary" /> Popular Topics:
+            </span>
+            <div className="flex flex-wrap gap-1.5">
+              {POPULAR_SEARCH_TAGS.map((tag) => (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => handleSearchSubmit(tag)}
+                  className="text-[11px] px-2.5 py-1 rounded-md bg-muted/60 hover:bg-primary/10 hover:text-primary hover:border-primary/40 border border-border transition font-medium cursor-pointer"
+                >
+                  #{tag}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* 2. Latest Blogs Card */}
         <div className="bg-card border border-border rounded-xl p-5 shadow-xs space-y-4">
           <h2 className="text-base font-serif font-bold text-emerald-800 dark:text-emerald-400 pb-2 border-b border-border">
             Latest Blogs

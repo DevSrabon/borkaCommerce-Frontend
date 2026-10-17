@@ -51,6 +51,9 @@ interface Order {
   id: string;
   order_number: string;
   status: 'PENDING' | 'CONFIRMED' | 'PACKED' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | 'REFUNDED';
+  subtotal?: number | string;
+  discount?: number | string;
+  shipping?: number | string;
   total: number | string;
   payment_status: 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED';
   payment_method?: 'STRIPE' | 'CASH_ON_DELIVERY' | string | null;
@@ -489,6 +492,49 @@ export default function ProfilePage() {
     return '';
   };
 
+  const getItemAttributes = (item: any) => {
+    if (!item) return [];
+
+    // 1. Relational attributes attached to variant
+    const relationalAttrs = (item.variant?.attributes || [])
+      .map((a: any) => {
+        const name = a.attribute_value?.attribute?.name || a.attribute?.name || 'Option';
+        const val = a.attribute_value?.value || a.value || '';
+        return val ? { name, val } : null;
+      })
+      .filter(Boolean);
+    if (relationalAttrs.length > 0) return relationalAttrs;
+
+    // 2. Snapshot variant_name string (e.g. "Size: 52, Color: Dusty Rose")
+    const rawVariant = (item.variant_name || '').trim();
+    if (rawVariant && !rawVariant.startsWith('SW-') && rawVariant !== item.sku) {
+      if (rawVariant.includes(':') || rawVariant.includes(',')) {
+        const parts = rawVariant.split(/[,|]/).map((s: string) => s.trim());
+        const parsed = parts
+          .map((p: string) => {
+            if (p.includes(':')) {
+              const [k, v] = p.split(':');
+              return { name: k.trim(), val: v.trim() };
+            }
+            return { name: 'Option', val: p };
+          })
+          .filter((p: { name: string; val: string }) => Boolean(p.val));
+        if (parsed.length > 0) return parsed;
+      } else {
+        return [{ name: 'Option', val: rawVariant }];
+      }
+    }
+
+    // 3. Fallback: Parse SKU suffix for size (e.g. SW-DUSTY-RO-125-52 -> Size: 52)
+    const sku = (item.sku || '').trim();
+    const sizeMatch = sku.match(/-(\d{2})$/);
+    if (sizeMatch && sizeMatch[1]) {
+      return [{ name: 'Size', val: sizeMatch[1] }];
+    }
+
+    return [];
+  };
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8 w-full space-y-12">
       {/* Welcome Banner */}
@@ -645,8 +691,25 @@ export default function ProfilePage() {
                                 </div>
                               )}
                             </div>
-                            <div className="space-y-0.5 min-w-0">
+                            <div className="space-y-1 min-w-0">
                               <h4 className="font-medium text-xs text-foreground truncate">{item.product_name}</h4>
+                              {(() => {
+                                const attrs = getItemAttributes(item);
+                                if (attrs.length === 0) return null;
+                                return (
+                                  <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                                    {attrs.map((attr: { name: string; val: string }, idx: number) => (
+                                      <span
+                                        key={idx}
+                                        className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-secondary text-secondary-foreground border border-border/70"
+                                      >
+                                        <span className="text-muted-foreground mr-1">{attr.name}:</span>
+                                        <span className="font-semibold text-foreground">{attr.val}</span>
+                                      </span>
+                                    ))}
+                                  </div>
+                                );
+                              })()}
                               <p className="text-xs text-muted-foreground font-mono">
                                 SKU: {item.sku} &bull; Qty: {item.quantity}
                               </p>
@@ -691,7 +754,7 @@ export default function ProfilePage() {
                     )}
 
                     {/* Order-specific Delivery Address */}
-                    <div className="bg-muted/40 border border-border/80 rounded-md p-3 text-xs space-y-1">
+                    <div className="bg-muted/40 border border-border/80 rounded-md p-3 text-xs space-y-2">
                       <div className="flex items-center justify-between text-foreground">
                         <span className="font-semibold flex items-center gap-1.5 text-primary">
                           <MapPin size={13} /> Delivery Address (Order #{order.order_number}):
@@ -714,11 +777,45 @@ export default function ProfilePage() {
                           .filter(Boolean)
                           .join(', ') || 'Address recorded with order'}
                       </p>
+                      {((order as any).customer?.phone || (user as any)?.phone) && (
+                        <div className="flex items-center gap-2 pl-4 pt-1.5 border-t border-border/50 text-muted-foreground">
+                          <Phone size={12} className="text-primary shrink-0" />
+                          <span className="font-medium">Phone / Contact:</span>
+                          <span className="font-bold text-foreground font-mono">
+                            {(order as any).customer?.phone || (user as any)?.phone}
+                          </span>
+                        </div>
+                      )}
                     </div>
 
-                    <div className="border-t border-border pt-4 flex justify-between items-center text-sm font-semibold">
-                      <span className="text-muted text-xs font-light">Total Amount</span>
-                      <span className="text-primary font-serif">{order.currency || 'AED'} {Number(order.total ?? 0).toFixed(2)}</span>
+                    {/* Financial Breakdown: Subtotal, Discount, Delivery Charge, Total */}
+                    <div className="border-t border-border pt-3.5 space-y-1.5 text-xs">
+                      <div className="flex justify-between items-center text-muted-foreground">
+                        <span>Items Subtotal</span>
+                        <span>{order.currency || 'AED'} {Number(order.subtotal ?? (Number(order.total) - Number(order.shipping ?? 0) + Number(order.discount ?? 0))).toFixed(2)}</span>
+                      </div>
+                      {Number(order.discount ?? 0) > 0 && (
+                        <div className="flex justify-between items-center text-emerald-600 dark:text-emerald-400 font-medium">
+                          <span>Coupon Discount</span>
+                          <span>-{order.currency || 'AED'} {Number(order.discount).toFixed(2)}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between items-center text-muted-foreground">
+                        <span>Delivery Charge</span>
+                        <span>
+                          {Number(order.shipping ?? 0) === 0 ? (
+                            <span className="text-emerald-600 dark:text-emerald-400 font-medium">Free Delivery</span>
+                          ) : (
+                            `${order.currency || 'AED'} ${Number(order.shipping).toFixed(2)}`
+                          )}
+                        </span>
+                      </div>
+                      <div className="border-t border-border/70 pt-2 flex justify-between items-center text-sm font-semibold">
+                        <span className="text-foreground font-serif">Total Amount</span>
+                        <span className="text-primary font-serif font-bold text-base">
+                          {order.currency || 'AED'} {Number(order.total ?? 0).toFixed(2)}
+                        </span>
+                      </div>
                     </div>
 
                     {/* Order Action Buttons (Cancel / Chat Refund) */}

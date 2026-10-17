@@ -19,12 +19,16 @@ import {
 } from 'lucide-react';
 import { PageBlock } from '@/types/page-builder';
 import BlockRenderer from './BlockRenderer';
+import { PAGE_TEMPLATES, PageTemplateInfo } from './pageTemplates';
 
 interface PageBuilderCanvasProps {
   blocks: PageBlock[];
   onChangeBlocks: (blocks: PageBlock[]) => void;
   onEditBlock: (block: PageBlock) => void;
   onOpenAddModal: (insertIndex?: number) => void;
+  onLoadTemplate?: (template: PageTemplateInfo) => void;
+  deviceView?: 'desktop' | 'tablet' | 'mobile';
+  onDeviceViewChange?: (view: 'desktop' | 'tablet' | 'mobile') => void;
 }
 
 export default function PageBuilderCanvas({
@@ -32,8 +36,16 @@ export default function PageBuilderCanvas({
   onChangeBlocks,
   onEditBlock,
   onOpenAddModal,
+  onLoadTemplate,
+  deviceView: controlledDeviceView,
+  onDeviceViewChange,
 }: PageBuilderCanvasProps) {
-  const [deviceView, setDeviceView] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
+  const [internalDeviceView, setInternalDeviceView] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
+  const deviceView = controlledDeviceView || internalDeviceView;
+  const setDeviceView = (view: 'desktop' | 'tablet' | 'mobile') => {
+    if (onDeviceViewChange) onDeviceViewChange(view);
+    setInternalDeviceView(view);
+  };
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
@@ -193,24 +205,60 @@ export default function PageBuilderCanvas({
           {/* Inner Content Area */}
           <div className="min-h-[500px]">
             {blocks.length === 0 ? (
-              <div className="p-12 text-center border-2 border-dashed border-border rounded-xl space-y-4 my-10 mx-4 bg-card/30">
-                <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center mx-auto">
-                  <Plus size={24} />
-                </div>
-                <div>
-                  <h3 className="font-serif text-lg font-bold">This page is currently empty</h3>
-                  <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">
-                    Click the button below to add your first block, or choose a pre-designed luxury template.
+              <div className="p-8 sm:p-12 text-center border-2 border-dashed border-border rounded-2xl space-y-6 my-8 mx-4 bg-card/40 backdrop-blur-xs">
+                <div className="space-y-2 max-w-lg mx-auto">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold uppercase tracking-wider">
+                    <Sparkles size={13} /> WordPress-Style Site Customizer
+                  </div>
+                  <h3 className="font-serif text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+                    Build Your Page in Seconds
+                  </h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Choose one of our handcrafted luxury boutique templates below for instant setup, or start with a custom block.
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => onOpenAddModal(0)}
-                  className="px-5 py-2.5 btn-luxury rounded text-xs font-semibold uppercase tracking-wider inline-flex items-center gap-2 cursor-pointer shadow-lg"
-                >
-                  <Plus size={14} />
-                  Add First Block
-                </button>
+
+                {/* 1-Click Starter Templates Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 max-w-2xl mx-auto text-left">
+                  {PAGE_TEMPLATES.map((tmpl) => (
+                    <button
+                      key={tmpl.id}
+                      type="button"
+                      onClick={() => onLoadTemplate ? onLoadTemplate(tmpl) : onOpenAddModal(0)}
+                      className="p-4 rounded-xl border border-border bg-background/80 hover:bg-accent/40 hover:border-primary/60 transition group flex flex-col justify-between space-y-2.5 cursor-pointer shadow-xs text-left"
+                    >
+                      <div className="flex items-center justify-between w-full">
+                        <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                          {tmpl.badge}
+                        </span>
+                        <span className="text-[11px] text-muted-foreground font-mono">
+                          {tmpl.blocks.length} sections
+                        </span>
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-bold text-foreground group-hover:text-primary transition-colors flex items-center justify-between">
+                          <span>{tmpl.name}</span>
+                          <span className="opacity-0 group-hover:opacity-100 transition-opacity text-primary">→</span>
+                        </h4>
+                        <p className="text-[11px] text-muted-foreground mt-1 line-clamp-2 leading-relaxed">
+                          {tmpl.description}
+                        </p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+
+                <div className="pt-2 flex items-center justify-center gap-3">
+                  <span className="text-xs text-muted-foreground">Or build from scratch:</span>
+                  <button
+                    type="button"
+                    onClick={() => onOpenAddModal(0)}
+                    className="px-4 py-2 border border-border hover:border-primary/50 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 transition cursor-pointer"
+                  >
+                    <Plus size={13} />
+                    Add Custom Block
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="space-y-0">

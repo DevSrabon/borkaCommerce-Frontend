@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import { API_BASE_URL } from '@/config/api';
+import { io, Socket } from 'socket.io-client';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
 import {
@@ -55,6 +56,7 @@ export default function CustomerChatWidget() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const user = useSelector((state: RootState) => state.auth.user);
+  const widgetRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -86,6 +88,24 @@ export default function CustomerChatWidget() {
       window.removeEventListener('open-support-chat', handleOpenChat);
     };
   }, []);
+
+  // Minimize chat when clicking outside the chat window
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+      if (widgetRef.current && !widgetRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [isOpen]);
 
   // Track user scroll position
   const handleScroll = () => {
@@ -169,12 +189,48 @@ export default function CustomerChatWidget() {
     if (!sessionId) return;
     fetchMessages(sessionId);
 
-    // Poll every 2.5 seconds
     const interval = setInterval(() => {
       fetchMessages(sessionId);
-    }, 2500);
+    }, 6000);
 
     return () => clearInterval(interval);
+  }, [sessionId, isOpen]);
+
+  // Real-Time Socket.IO Synchronization for customer
+  useEffect(() => {
+    if (!sessionId) return;
+    let socket: Socket | null = null;
+    try {
+      socket = io(API_BASE_URL, {
+        transports: ['websocket', 'polling'],
+        reconnection: true,
+      });
+
+      socket.on('connect', () => {
+        socket?.emit('join_session', { session_id: sessionId });
+      });
+
+      socket.on('chat_message', (msg: ChatMessage) => {
+        if (!msg) return;
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === msg.id)) return prev;
+          return [...prev, msg];
+        });
+        if (!isOpen && msg.sender_type !== 'CUSTOMER') {
+          setUnreadCount((c) => c + 1);
+        }
+      });
+
+      socket.on('chat_typing', (data: { session_id: string; is_typing: boolean; sender_type: string }) => {
+        if (data?.session_id === sessionId && data?.sender_type === 'ADMIN') {
+          setIsAdminTyping(data.is_typing);
+        }
+      });
+    } catch (_) {}
+
+    return () => {
+      if (socket) socket.disconnect();
+    };
   }, [sessionId, isOpen]);
 
   // Smart auto-scroll: ONLY when new messages arrive and user was already at the bottom
@@ -329,7 +385,7 @@ export default function CustomerChatWidget() {
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-50">
+    <div ref={widgetRef} className="fixed bottom-6 right-6 z-50">
       {/* Floating Toggle Button */}
       {!isOpen && (
         <button

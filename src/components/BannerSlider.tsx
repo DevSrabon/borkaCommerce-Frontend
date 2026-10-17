@@ -68,46 +68,51 @@ export default function BannerSlider({ serverBanners }: Props) {
               <img
                 src={b.mobile_image_url}
                 alt={b.title}
-                className="w-full h-full object-cover object-center brightness-50 md:hidden"
+                className="w-full h-full object-cover object-center brightness-[0.72] md:hidden"
               />
               {/* Desktop landscape banner */}
               <img
                 src={b.image_url}
                 alt={b.title}
-                className="w-full h-full object-cover object-center brightness-50 hidden md:block"
+                className="w-full h-full object-cover object-center brightness-[0.72] hidden md:block"
               />
             </>
           ) : (
             <img
               src={b.image_url}
               alt={b.title}
-              className="w-full h-full object-cover object-center brightness-50"
+              className="w-full h-full object-cover object-center brightness-[0.72]"
             />
           )}
         </div>
       ))}
 
-      {/* Bottom gradient */}
-      <div className="absolute inset-0 z-0 bg-gradient-to-t from-background via-transparent to-transparent pointer-events-none" />
+      {/* Gentle left vignette to ensure text contrast without covering image */}
+      <div className="absolute inset-0 z-0 bg-gradient-to-r from-black/70 via-black/30 to-transparent pointer-events-none" />
+
+      {/* Highly transparent bottom fade to gently blend into background without milky white fog */}
+      <div className="absolute inset-x-0 bottom-0 h-28 z-0 bg-gradient-to-t from-background/30 via-background/5 to-transparent pointer-events-none" />
 
       {/* Content */}
       <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 w-full">
         <div className="max-w-2xl space-y-3 sm:space-y-5">
-          <span className="text-primary font-medium tracking-widest text-xs sm:text-xs uppercase block animate-fade-in">
+          <span className="text-[#F3C64F] font-semibold tracking-widest text-xs uppercase block animate-fade-in drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]">
             {current === 0 && serverBanners.length === 0 ? 'Eid Collection 2026' : `Slide ${current + 1} of ${banners.length}`}
           </span>
           <h1
             key={slide.id + '-title'}
-            className="font-serif text-2xl sm:text-4xl md:text-6xl font-bold tracking-tight text-white leading-tight"
+            className="font-serif text-2xl sm:text-4xl md:text-6xl font-bold tracking-tight text-white leading-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)]"
             style={{ animation: 'slideUp 0.6s ease-out' }}
           >
             {slide.title.split(' ').slice(0, -1).join(' ')}{' '}
-            <span className="text-primary font-serif">{slide.title.split(' ').slice(-1)}</span>
+            <span className="font-serif text-[#F5C249] drop-shadow-[0_3px_10px_rgba(0,0,0,0.95)]">
+              {slide.title.split(' ').slice(-1)}
+            </span>
           </h1>
           {slide.subtitle && (
             <p
               key={slide.id + '-sub'}
-              className="text-zinc-300 text-xs sm:text-base md:text-lg leading-relaxed max-w-lg font-light line-clamp-3 sm:line-clamp-none"
+              className="text-zinc-100 text-xs sm:text-base md:text-lg leading-relaxed max-w-lg font-normal line-clamp-3 sm:line-clamp-none drop-shadow-[0_1px_4px_rgba(0,0,0,0.9)]"
               style={{ animation: 'slideUp 0.7s ease-out' }}
             >
               {slide.subtitle}
