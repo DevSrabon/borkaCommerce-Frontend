@@ -123,6 +123,7 @@ export default function AdminProductsPage() {
     related_category_ids: [] as string[],
     status: 'DRAFT',
     is_cod_allowed: true,
+    is_featured: false,
   };
 
   const [form, setForm] = useState(emptyForm);
@@ -655,6 +656,7 @@ export default function AdminProductsPage() {
           related_category_ids: fullProd.related_categories?.map((rc: any) => rc.category_id) || [],
           status: fullProd.status,
           is_cod_allowed: fullProd.is_cod_allowed !== false,
+          is_featured: !!fullProd.is_featured,
         });
         setImages(fullProd.images?.map((img: any) => ({ id: img.id, image_url: img.image_url, alt_text: img.alt_text || '', is_thumbnail: img.is_thumbnail })) || []);
         setVariants(fullProd.variants?.map((v: any) => ({
@@ -1507,6 +1509,28 @@ export default function AdminProductsPage() {
           <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
         </label>
       </div>
+
+      {/* Featured Masterpiece Toggle */}
+      <div className="col-span-2 flex items-center justify-between p-3.5 bg-card/60 border border-border rounded-xl">
+        <div className="space-y-0.5">
+          <label className="text-sm font-medium text-foreground flex items-center gap-1.5">
+            <Sparkles size={14} className="text-amber-500" /> Featured Masterpiece (Homepage)
+          </label>
+          <p className="text-xs text-muted-foreground">
+            Display this product in the homepage "Featured Masterpieces" showcase section.
+          </p>
+        </div>
+        <label className="relative inline-flex items-center cursor-pointer">
+          <input
+            type="checkbox"
+            name="is_featured"
+            checked={!!(form as any).is_featured}
+            onChange={(e) => setForm((prev: any) => ({ ...prev, is_featured: e.target.checked }))}
+            className="sr-only peer"
+          />
+          <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+        </label>
+      </div>
       <div className="space-y-2 col-span-2">
         <label className="text-xs font-semibold text-muted-foreground uppercase block">Categories</label>
         <div className="flex flex-wrap gap-4 pt-1">
@@ -1812,7 +1836,14 @@ export default function AdminProductsPage() {
                                 >
                                   {p.name}
                                 </Link>
-                                <p className="text-xs text-muted-foreground font-mono truncate">{p.variants?.[0]?.sku || ''}</p>
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <p className="text-xs text-muted-foreground font-mono truncate">{p.variants?.[0]?.sku || ''}</p>
+                                  {(p as any).is_featured && (
+                                    <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-500/15 text-amber-500 border border-amber-500/30 inline-flex items-center gap-0.5">
+                                      <Sparkles size={9} /> Featured
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           </td>
