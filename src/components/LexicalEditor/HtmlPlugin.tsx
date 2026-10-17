@@ -3,7 +3,16 @@
 import { useEffect, useRef } from 'react';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import { $generateHtmlFromNodes, $generateNodesFromDOM } from '@lexical/html';
-import { $getRoot, $insertNodes, $createParagraphNode } from 'lexical';
+import {
+  $getRoot,
+  $createParagraphNode,
+  $isElementNode,
+  $isDecoratorNode,
+  $isTextNode,
+  ElementNode,
+  DecoratorNode,
+  ParagraphNode,
+} from 'lexical';
 
 interface HtmlPluginProps {
   value: string;
@@ -103,10 +112,32 @@ export function HtmlPlugin({ value, onChange }: HtmlPluginProps) {
           const dom = parser.parseFromString(preprocessed, 'text/html');
           const nodes = $generateNodesFromDOM(editor, dom);
 
-          if (nodes.length === 0) {
+          const validRootNodes: (ElementNode | DecoratorNode)[] = [];
+          let currentParagraph: ParagraphNode | null = null;
+
+          for (const node of nodes) {
+            if (($isElementNode(node) || $isDecoratorNode(node)) && !node.isInline()) {
+              currentParagraph = null;
+              validRootNodes.push(node);
+            } else {
+              // This is an inline node (TextNode, LineBreakNode, inline ElementNode, etc.)
+              // If it's a pure whitespace text node and we don't have an active paragraph, skip formatting whitespace
+              if ($isTextNode(node) && currentParagraph === null && !node.getTextContent().trim()) {
+                continue;
+              }
+
+              if (!currentParagraph) {
+                currentParagraph = $createParagraphNode();
+                validRootNodes.push(currentParagraph);
+              }
+              currentParagraph.append(node);
+            }
+          }
+
+          if (validRootNodes.length === 0) {
             root.append($createParagraphNode());
           } else {
-            root.append(...nodes);
+            root.append(...validRootNodes);
           }
         } catch (err) {
           console.error('Error importing HTML into Lexical:', err);

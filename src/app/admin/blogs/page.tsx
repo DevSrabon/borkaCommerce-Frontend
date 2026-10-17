@@ -26,6 +26,10 @@ import {
   Upload,
   Image as ImageIcon,
   Tag,
+  ArrowLeft,
+  Save,
+  Loader2,
+  Globe,
 } from 'lucide-react';
 import RichTextEditor from '@/components/RichTextEditor';
 import { useAdminPermissions } from '@/hooks/useAdminPermissions';
@@ -511,6 +515,352 @@ export default function AdminBlogsPage() {
   };
 
   const pendingCommentsCount = comments.filter((c) => c.status === 'PENDING').length;
+
+  // ─── DEDICATED FULL SINGLE PAGE FOR WRITE / EDIT BLOG ─────────
+  if (showBlogModal) {
+    return (
+      <div className="space-y-6 max-w-7xl mx-auto p-2 sm:p-4 animate-in fade-in">
+        {/* Top Header Bar */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-border sticky top-0 bg-background/95 backdrop-blur-md z-30 pt-1">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setShowBlogModal(false)}
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border bg-card hover:bg-muted text-foreground font-medium transition cursor-pointer text-xs shadow-2xs"
+            >
+              <ArrowLeft size={15} />
+              <span>Back to Articles</span>
+            </button>
+            <span className="text-muted-foreground text-xs select-none">/</span>
+            <div>
+              <h1 className="text-xl sm:text-2xl font-serif font-bold text-foreground leading-tight">
+                {editingBlogId ? 'Edit Article' : 'Write New Article'}
+              </h1>
+              <p className="text-xs text-muted-foreground">
+                {editingBlogId ? 'Update content, typography, images, and publish status' : 'Create engaging modest fashion articles with full rich editor'}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 self-end sm:self-auto">
+            <button
+              type="button"
+              onClick={() => setShowBlogModal(false)}
+              className="px-4 py-2 border border-border rounded-lg text-foreground hover:bg-muted font-medium transition cursor-pointer text-xs"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const form = document.getElementById('blog-editor-form') as HTMLFormElement;
+                if (form) form.requestSubmit();
+              }}
+              disabled={savingBlog}
+              className="px-5 py-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg transition cursor-pointer shadow-sm text-xs flex items-center gap-1.5 disabled:opacity-50"
+            >
+              {savingBlog ? (
+                <>
+                  <Loader2 size={14} className="animate-spin" />
+                  <span>Saving...</span>
+                </>
+              ) : (
+                <>
+                  <Save size={14} />
+                  <span>{editingBlogId ? 'Update Article' : 'Publish Article'}</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* 2-Column Responsive Single Page Form */}
+        <form id="blog-editor-form" onSubmit={handleSaveBlog} className="grid grid-cols-1 lg:grid-cols-12 gap-6 text-xs">
+          {/* Main Left Column (8 cols): Title, Slug, Article Content, Excerpt */}
+          <div className="lg:col-span-8 space-y-5">
+            {/* Title & Slug Card */}
+            <div className="bg-card border border-border rounded-xl p-5 shadow-2xs space-y-4">
+              <div>
+                <label className="block font-semibold text-foreground mb-1.5 text-sm">
+                  Article Title *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. New Best Abaya Shop in Dubai: 7 Magnificent Reasons"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  className="w-full px-3.5 py-2.5 bg-background border border-border rounded-lg text-foreground font-medium text-base focus:outline-none focus:ring-2 focus:ring-primary shadow-2xs"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-muted-foreground mb-1">
+                  Slug (URL Path)
+                </label>
+                <div className="flex items-center gap-2">
+                  <span className="text-muted-foreground font-mono text-xs select-none">/blogs/</span>
+                  <input
+                    type="text"
+                    placeholder="leave-blank-to-auto-generate"
+                    value={formData.slug}
+                    onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+                    className="flex-1 px-3 py-1.5 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-mono text-xs"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Content Card with RichTextEditor */}
+            <div className="bg-card border border-border rounded-xl p-5 shadow-2xs space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="block font-semibold text-foreground text-sm">
+                  Article Content *
+                </label>
+                <span className="text-xs text-muted-foreground">
+                  Format headings, insert images, align left/center/right, and adjust font sizes
+                </span>
+              </div>
+              <div className="border border-border rounded-xl overflow-hidden shadow-2xs">
+                <RichTextEditor
+                  value={formData.content}
+                  onChange={(val) => setFormData((prev) => ({ ...prev, content: val }))}
+                  placeholder="Start crafting your article body. Use toolbar to format headings, align left/center/right, and insert media..."
+                  minHeight={520}
+                />
+              </div>
+            </div>
+
+            {/* Excerpt Card */}
+            <div className="bg-card border border-border rounded-xl p-5 shadow-2xs space-y-2">
+              <label className="block font-semibold text-foreground text-xs">
+                Short Excerpt (Introductory Summary)
+              </label>
+              <textarea
+                rows={3}
+                placeholder="A concise summary of the article displayed on blog cards, search previews, and social media..."
+                value={formData.excerpt}
+                onChange={(e) => setFormData({ ...formData, excerpt: e.target.value })}
+                className="w-full px-3 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-primary leading-relaxed"
+              />
+            </div>
+          </div>
+
+          {/* Right Sidebar Column (4 cols): Publish Status, Category, Featured Image, Main Image */}
+          <div className="lg:col-span-4 space-y-5">
+            {/* Publish Status Card */}
+            <div className="bg-card border border-border rounded-xl p-5 shadow-2xs space-y-4">
+              <h3 className="font-semibold text-foreground text-sm flex items-center gap-2">
+                <Globe size={15} className="text-primary" />
+                <span>Publish Settings</span>
+              </h3>
+
+              <div className="flex items-center justify-between p-3 bg-muted/20 border border-border/80 rounded-lg">
+                <div>
+                  <div className="font-medium text-foreground">Visibility Status</div>
+                  <div className="text-[11px] text-muted-foreground">
+                    {formData.is_published ? 'Publicly visible on storefront' : 'Draft only (hidden)'}
+                  </div>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.is_published}
+                    onChange={(e) => setFormData({ ...formData, is_published: e.target.checked })}
+                    className="sr-only peer"
+                  />
+                  <div className="w-9 h-5 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+                </label>
+              </div>
+
+              <button
+                type="submit"
+                disabled={savingBlog}
+                className="w-full py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg transition cursor-pointer shadow-sm text-xs flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {savingBlog ? (
+                  <>
+                    <Loader2 size={14} className="animate-spin" />
+                    <span>Saving Article...</span>
+                  </>
+                ) : (
+                  <>
+                    <Save size={14} />
+                    <span>{editingBlogId ? 'Update Article' : 'Publish Article'}</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Category Card */}
+            <div className="bg-card border border-border rounded-xl p-5 shadow-2xs space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold text-foreground text-sm flex items-center gap-2">
+                  <Tag size={15} className="text-primary" />
+                  <span>Category</span>
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = !isCustomCategory;
+                    setIsCustomCategory(next);
+                    if (!next && categories.length > 0) {
+                      setFormData({ ...formData, category: categories[0] });
+                    }
+                  }}
+                  className="text-xs text-primary hover:underline font-medium cursor-pointer"
+                >
+                  {isCustomCategory ? 'Choose Existing' : '+ Add New'}
+                </button>
+              </div>
+
+              {isCustomCategory ? (
+                <input
+                  type="text"
+                  placeholder="Type new category name..."
+                  value={customCategoryInput}
+                  onChange={(e) => setCustomCategoryInput(e.target.value)}
+                  className="w-full px-3 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                  autoFocus
+                />
+              ) : (
+                <select
+                  value={formData.category}
+                  onChange={(e) => {
+                    if (e.target.value === '__NEW__') {
+                      setIsCustomCategory(true);
+                      setCustomCategoryInput('');
+                    } else {
+                      setFormData({ ...formData, category: e.target.value });
+                    }
+                  }}
+                  className="w-full px-3 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
+                >
+                  {categories.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
+                  ))}
+                  {!categories.includes(formData.category) && formData.category && (
+                    <option value={formData.category}>{formData.category}</option>
+                  )}
+                  <option value="__NEW__">+ Add New Category...</option>
+                </select>
+              )}
+            </div>
+
+            {/* Featured Image Card */}
+            <div className="bg-card border border-border rounded-xl p-5 shadow-2xs space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold text-foreground text-sm flex items-center gap-2">
+                  <ImageIcon size={15} className="text-primary" />
+                  <span>Featured Image</span>
+                </h3>
+                <span className="text-[11px] text-muted-foreground">800×600 Card</span>
+              </div>
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                Card thumbnail displayed on storefront grids and social shares.
+              </p>
+
+              <div className="flex gap-2 items-center">
+                <input
+                  type="text"
+                  placeholder="Image URL or upload..."
+                  value={formData.featured_image}
+                  onChange={(e) => setFormData({ ...formData, featured_image: e.target.value })}
+                  className="flex-1 px-2.5 py-1.5 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-primary text-xs"
+                />
+                <label className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-secondary hover:bg-secondary/80 text-secondary-foreground rounded-lg border border-border cursor-pointer transition text-xs font-medium whitespace-nowrap shadow-xs">
+                  <Upload size={13} />
+                  <span>{uploadingFeatured ? '...' : 'Upload'}</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleImageUpload(e, 'featured_image')}
+                    disabled={uploadingFeatured}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+
+              {formData.featured_image && (
+                <div className="relative border border-border rounded-lg overflow-hidden group">
+                  <img
+                    src={formData.featured_image}
+                    alt="Featured Preview"
+                    className="w-full h-36 object-cover"
+                    onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, featured_image: '' })}
+                    className="absolute top-2 right-2 p-1.5 bg-destructive text-white rounded-md shadow-md opacity-90 hover:opacity-100 transition cursor-pointer"
+                    title="Remove Image"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Main Header Banner Image Card */}
+            <div className="bg-card border border-border rounded-xl p-5 shadow-2xs space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold text-foreground text-sm flex items-center gap-2">
+                  <ImageIcon size={15} className="text-primary" />
+                  <span>Main Banner Image</span>
+                </h3>
+                <span className="text-[11px] text-muted-foreground">1200×600 Hero</span>
+              </div>
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                Large cover header image displayed at the top of the full blog post.
+              </p>
+
+              <div className="flex gap-2 items-center">
+                <input
+                  type="text"
+                  placeholder="Banner image URL or upload..."
+                  value={formData.main_image}
+                  onChange={(e) => setFormData({ ...formData, main_image: e.target.value })}
+                  className="flex-1 px-2.5 py-1.5 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-primary text-xs"
+                />
+                <label className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-secondary hover:bg-secondary/80 text-secondary-foreground rounded-lg border border-border cursor-pointer transition text-xs font-medium whitespace-nowrap shadow-xs">
+                  <Upload size={13} />
+                  <span>{uploadingMain ? '...' : 'Upload'}</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleImageUpload(e, 'main_image')}
+                    disabled={uploadingMain}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+
+              {formData.main_image && (
+                <div className="relative border border-border rounded-lg overflow-hidden group">
+                  <img
+                    src={formData.main_image}
+                    alt="Main Banner Preview"
+                    className="w-full h-36 object-cover"
+                    onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, main_image: '' })}
+                    className="absolute top-2 right-2 p-1.5 bg-destructive text-white rounded-md shadow-md opacity-90 hover:opacity-100 transition cursor-pointer"
+                    title="Remove Banner"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </form>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -1108,270 +1458,6 @@ export default function AdminBlogsPage() {
         </div>
       )}
 
-      {/* ==================================================== */}
-      {/* WRITE / EDIT ARTICLE MODAL                          */}
-      {/* ==================================================== */}
-      {showBlogModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in">
-          <div className="bg-card border border-border w-full max-w-4xl max-h-[92vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden">
-            {/* Modal Header */}
-            <div className="p-5 border-b border-border flex items-center justify-between">
-              <h2 className="font-serif text-lg font-bold text-foreground">
-                {editingBlogId ? 'Edit Article' : 'Write New Article'}
-              </h2>
-              <button
-                type="button"
-                onClick={() => setShowBlogModal(false)}
-                className="p-1 rounded-md text-muted-foreground hover:text-foreground"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            {/* Modal Body Form */}
-            <form onSubmit={handleSaveBlog} className="p-5 overflow-y-auto space-y-4 text-xs flex-1">
-              {/* Title */}
-              <div>
-                <label className="block font-semibold mb-1">Title *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. New Best Abaya Shop in Dubai: 7 Magnificent Reasons"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full px-3 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-                />
-              </div>
-
-              {/* Slug & Category */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block font-semibold mb-1">Slug (URL path)</label>
-                  <input
-                    type="text"
-                    placeholder="Leave blank to auto-generate"
-                    value={formData.slug}
-                    onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                    className="w-full px-3 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-mono"
-                  />
-                </div>
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="block font-semibold">Category</label>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const next = !isCustomCategory;
-                        setIsCustomCategory(next);
-                        if (!next && categories.length > 0) {
-                          setFormData({ ...formData, category: categories[0] });
-                        }
-                      }}
-                      className="text-xs text-primary hover:underline font-medium cursor-pointer"
-                    >
-                      {isCustomCategory ? 'Choose Existing' : '+ Add New'}
-                    </button>
-                  </div>
-
-                  {isCustomCategory ? (
-                    <input
-                      type="text"
-                      placeholder="Type new category name..."
-                      value={customCategoryInput}
-                      onChange={(e) => setCustomCategoryInput(e.target.value)}
-                      className="w-full px-3 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-                      autoFocus
-                    />
-                  ) : (
-                    <select
-                      value={formData.category}
-                      onChange={(e) => {
-                        if (e.target.value === '__NEW__') {
-                          setIsCustomCategory(true);
-                          setCustomCategoryInput('');
-                        } else {
-                          setFormData({ ...formData, category: e.target.value });
-                        }
-                      }}
-                      className="w-full px-3 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
-                    >
-                      {categories.map((cat) => (
-                        <option key={cat} value={cat}>
-                          {cat}
-                        </option>
-                      ))}
-                      {!categories.includes(formData.category) && formData.category && (
-                        <option value={formData.category}>{formData.category}</option>
-                      )}
-                      <option value="__NEW__">+ Add New Category...</option>
-                    </select>
-                  )}
-                </div>
-              </div>
-
-              {/* Image Uploads: Featured Image & Main Image */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-muted/10 p-3.5 rounded-xl border border-border">
-                {/* 1. Featured Image */}
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <label className="block font-semibold text-foreground">
-                      ★ Featured Image
-                    </label>
-                    <span className="text-xs text-muted-foreground">Grid Card (800×600)</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Thumbnail for blog cards, category lists, and social shares.
-                  </p>
-                  <div className="flex gap-2 items-center">
-                    <input
-                      type="text"
-                      placeholder="Image URL or upload..."
-                      value={formData.featured_image}
-                      onChange={(e) => setFormData({ ...formData, featured_image: e.target.value })}
-                      className="flex-1 px-2.5 py-1.5 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-primary text-xs"
-                    />
-                    <label className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-secondary hover:bg-secondary/80 text-secondary-foreground rounded-lg border border-border cursor-pointer transition text-xs font-medium whitespace-nowrap shadow-xs">
-                      <Upload size={13} />
-                      <span>{uploadingFeatured ? '...' : 'Upload'}</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => handleImageUpload(e, 'featured_image')}
-                        disabled={uploadingFeatured}
-                        className="hidden"
-                      />
-                    </label>
-                  </div>
-                  {formData.featured_image && (
-                    <div className="flex items-center gap-2 p-1.5 bg-background border border-border rounded-lg mt-1.5">
-                      <img
-                        src={formData.featured_image}
-                        alt="Featured Preview"
-                        className="h-12 w-16 object-cover rounded border border-border"
-                        onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setFormData({ ...formData, featured_image: '' })}
-                        className="text-xs text-red-500 hover:underline flex items-center gap-1 cursor-pointer"
-                      >
-                        <Trash2 size={11} /> Remove
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                {/* 2. Main Image */}
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <label className="block font-semibold text-foreground">
-                      🖼 Main Article Image
-                    </label>
-                    <span className="text-xs text-muted-foreground">Header Banner (1200×600)</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Large hero cover banner at the top of the full article view.
-                  </p>
-                  <div className="flex gap-2 items-center">
-                    <input
-                      type="text"
-                      placeholder="Image URL or upload..."
-                      value={formData.main_image}
-                      onChange={(e) => setFormData({ ...formData, main_image: e.target.value })}
-                      className="flex-1 px-2.5 py-1.5 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-primary text-xs"
-                    />
-                    <label className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-secondary hover:bg-secondary/80 text-secondary-foreground rounded-lg border border-border cursor-pointer transition text-xs font-medium whitespace-nowrap shadow-xs">
-                      <Upload size={13} />
-                      <span>{uploadingMain ? '...' : 'Upload'}</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => handleImageUpload(e, 'main_image')}
-                        disabled={uploadingMain}
-                        className="hidden"
-                      />
-                    </label>
-                  </div>
-                  {formData.main_image && (
-                    <div className="flex items-center gap-2 p-1.5 bg-background border border-border rounded-lg mt-1.5">
-                      <img
-                        src={formData.main_image}
-                        alt="Main Preview"
-                        className="h-12 w-20 object-cover rounded border border-border"
-                        onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setFormData({ ...formData, main_image: '' })}
-                        className="text-xs text-red-500 hover:underline flex items-center gap-1 cursor-pointer"
-                      >
-                        <Trash2 size={11} /> Remove
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Excerpt */}
-              <div>
-                <label className="block font-semibold mb-1">Short Excerpt (Introductory Summary)</label>
-                <textarea
-                  rows={2}
-                  placeholder="A concise summary of the article..."
-                  value={formData.excerpt}
-                  onChange={(e) => setFormData({ ...formData, excerpt: e.target.value })}
-                  className="w-full px-3 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-                />
-              </div>
-
-              {/* Article Content with RichTextEditor */}
-              <div>
-                <label className="block font-semibold mb-1">Article Content *</label>
-                <div className="border border-border rounded-xl overflow-hidden">
-                  <RichTextEditor
-                    value={formData.content}
-                    onChange={(val) => setFormData((prev) => ({ ...prev, content: val }))}
-                    placeholder="Write the full body of the article here. Use bold, headings, images, lists..."
-                    minHeight={320}
-                  />
-                </div>
-              </div>
-
-              {/* Publish Checkbox */}
-              <div className="flex items-center gap-2 pt-1">
-                <input
-                  type="checkbox"
-                  id="is_published"
-                  checked={formData.is_published}
-                  onChange={(e) => setFormData({ ...formData, is_published: e.target.checked })}
-                  className="rounded border-border text-primary focus:ring-primary h-4 w-4"
-                />
-                <label htmlFor="is_published" className="font-medium text-foreground cursor-pointer">
-                  Publish this article immediately on the storefront
-                </label>
-              </div>
-
-              {/* Modal Footer */}
-              <div className="pt-4 border-t border-border flex items-center justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => setShowBlogModal(false)}
-                  className="px-4 py-2 border border-border rounded-lg text-foreground hover:bg-muted font-medium transition cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={savingBlog}
-                  className="px-5 py-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg transition cursor-pointer shadow-sm disabled:opacity-50"
-                >
-                  {savingBlog ? 'Saving...' : editingBlogId ? 'Update Article' : 'Publish Article'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

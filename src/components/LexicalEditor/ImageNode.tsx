@@ -138,73 +138,44 @@ function ImageComponent({
     window.addEventListener('mouseup', onMouseUp);
   };
 
-  // Align wrappers
-  let containerStyle: React.CSSProperties = {
-    display: 'inline-block',
-    position: 'relative',
-    maxWidth: '100%',
-    userSelect: 'none',
-  };
-
-  if (alignment === 'center') {
-    containerStyle = {
-      display: 'block',
-      marginLeft: 'auto',
-      marginRight: 'auto',
-      textAlign: 'center',
-      position: 'relative',
-      userSelect: 'none',
-      clear: 'both',
-    };
-  } else if (alignment === 'left') {
-    containerStyle = {
-      float: 'left',
-      marginRight: '1.25rem',
-      marginBottom: '0.75rem',
-      position: 'relative',
-      userSelect: 'none',
-    };
-  } else if (alignment === 'right') {
-    containerStyle = {
-      float: 'right',
-      marginLeft: '1.25rem',
-      marginBottom: '0.75rem',
-      position: 'relative',
-      userSelect: 'none',
-    };
-  }
+  const flexJustify =
+    alignment === 'left' ? 'justify-start text-left' : alignment === 'right' ? 'justify-end text-right' : 'justify-center text-center';
 
   const widthStyle = typeof width === 'number' ? `${width}px` : width;
   const heightStyle = typeof height === 'number' ? `${height}px` : height;
 
   return (
-    <span
-      style={containerStyle}
-      className="group my-2 inline-block relative max-w-full"
+    <div
+      className={`w-full flex ${flexJustify} my-3 select-none clear-both`}
+      style={{ width: '100%' }}
       onClick={(e) => {
         e.stopPropagation();
         setSelected(true);
       }}
     >
-      <span
+      <div
         className={`relative inline-block rounded-lg transition-all ${
           isSelected
             ? 'ring-2 ring-primary ring-offset-2 ring-offset-background shadow-md'
             : 'hover:ring-1 hover:ring-border'
         }`}
+        style={{
+          width: widthStyle || '100%',
+          maxWidth: '100%',
+        }}
       >
         <img
           ref={imageRef}
           src={src}
           alt={altText || 'Image'}
           style={{
-            width: widthStyle || '100%',
+            width: '100%',
             height: heightStyle || 'auto',
             maxWidth: '100%',
             display: 'block',
             borderRadius: '0.5rem',
           }}
-          className="mx-auto"
+          className="block"
           draggable={false}
         />
 
@@ -300,8 +271,8 @@ function ImageComponent({
             title="Drag to resize"
           />
         )}
-      </span>
-    </span>
+      </div>
+    </div>
   );
 }
 
@@ -359,9 +330,9 @@ export class ImageNode extends DecoratorNode<React.ReactElement> {
     if (this.__alignment === 'center') {
       style += 'display: block; margin-left: auto; margin-right: auto; clear: both; ';
     } else if (this.__alignment === 'left') {
-      style += 'float: left; margin-right: 1.25rem; margin-bottom: 0.75rem; ';
+      style += 'display: block; margin-right: auto; margin-left: 0; clear: both; ';
     } else if (this.__alignment === 'right') {
-      style += 'float: right; margin-left: 1.25rem; margin-bottom: 0.75rem; ';
+      style += 'display: block; margin-left: auto; margin-right: 0; clear: both; ';
     }
 
     if (style) {
@@ -431,6 +402,8 @@ export class ImageNode extends DecoratorNode<React.ReactElement> {
 
   createDOM(config: EditorConfig): HTMLElement {
     const span = document.createElement('span');
+    span.style.display = 'block';
+    span.style.width = '100%';
     const theme = config.theme;
     const className = theme.image;
     if (className !== undefined) {

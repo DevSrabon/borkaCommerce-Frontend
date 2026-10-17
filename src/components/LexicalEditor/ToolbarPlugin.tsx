@@ -338,6 +338,18 @@ export function ToolbarPlugin({
     setAlignment(align);
     setShowAlignDropdown(false);
     editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, align);
+
+    editor.update(() => {
+      const selection = $getSelection();
+      if ($isNodeSelection(selection)) {
+        const nodes = selection.getNodes();
+        nodes.forEach((node) => {
+          if (node instanceof ImageNode) {
+            node.setAlignment(align as any);
+          }
+        });
+      }
+    });
   };
 
   const applyCase = (c: 'uppercase' | 'lowercase' | 'capitalize' | 'clear') => {

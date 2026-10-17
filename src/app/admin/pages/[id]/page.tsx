@@ -139,6 +139,18 @@ const ELEMENTOR_WIDGETS: ElementorWidgetDef[] = [
     },
   },
   {
+    type: 'RICH_TEXT',
+    title: 'Rich Text',
+    category: 'Basic',
+    icon: FileText,
+    description: 'Formatted article with heading, custom typography, and media',
+    defaultData: {
+      title: 'Section Title',
+      html_content: '<p>Start writing your content or paste from Word / web...</p>',
+      max_width: 'normal',
+    },
+  },
+  {
     type: 'IMAGE',
     title: 'Image',
     category: 'Basic',
@@ -1283,25 +1295,73 @@ export default function ElementorPageBuilderPage() {
                       </>
                     )}
 
-                    {/* For TEXT_EDITOR: WordPress Classic Editor */}
-                    {selectedBlock.type === 'TEXT_EDITOR' && (
-                      <div className="space-y-2">
-                        <label className="block text-slate-700 font-semibold">
-                          WordPress Classic Text Editor
-                        </label>
-                        <div className="border border-slate-300 rounded-lg overflow-hidden bg-white text-black shadow-2xs">
-                          <WordPressEditor
-                            value={selectedBlock.data.content || selectedBlock.data.html_content || ''}
-                            onChange={(val) =>
-                              updateSelectedBlock((b) => {
-                                b.data.content = val;
-                                b.data.html_content = val;
-                                return b;
-                              })
-                            }
-                            minHeight={250}
-                          />
+                    {/* For TEXT_EDITOR & RICH_TEXT: WordPress / Lexical Editor */}
+                    {(selectedBlock.type === 'TEXT_EDITOR' || selectedBlock.type === 'RICH_TEXT') && (
+                      <div className="space-y-4">
+                        {/* Section Title (for RICH_TEXT or if title is present) */}
+                        {selectedBlock.type === 'RICH_TEXT' && (
+                          <div>
+                            <label className="block text-slate-700 font-semibold mb-1">
+                              Section Title
+                            </label>
+                            <input
+                              type="text"
+                              value={selectedBlock.data.title || ''}
+                              onChange={(e) =>
+                                updateSelectedBlock((b) => {
+                                  b.data.title = e.target.value;
+                                  return b;
+                                })
+                              }
+                              placeholder="e.g. Official Privacy Policy"
+                              className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs focus:ring-1 focus:ring-[#e2285c] focus:border-[#e2285c]"
+                            />
+                          </div>
+                        )}
+
+                        <div className="space-y-1.5">
+                          <label className="block text-slate-700 font-semibold mb-1">
+                            {selectedBlock.type === 'RICH_TEXT'
+                              ? 'Rich Text Content & Media'
+                              : 'WordPress Classic Text Editor'}
+                          </label>
+                          <div className="border border-slate-300 rounded-lg overflow-hidden bg-white text-black shadow-2xs">
+                            <WordPressEditor
+                              value={selectedBlock.data.html_content || selectedBlock.data.content || ''}
+                              onChange={(val) =>
+                                updateSelectedBlock((b) => {
+                                  b.data.content = val;
+                                  b.data.html_content = val;
+                                  return b;
+                                })
+                              }
+                              minHeight={320}
+                            />
+                          </div>
                         </div>
+
+                        {selectedBlock.type === 'RICH_TEXT' && (
+                          <div>
+                            <label className="block text-slate-700 font-semibold mb-1">
+                              Max Width
+                            </label>
+                            <select
+                              value={selectedBlock.data.max_width || 'normal'}
+                              onChange={(e) =>
+                                updateSelectedBlock((b) => {
+                                  b.data.max_width = e.target.value;
+                                  return b;
+                                })
+                              }
+                              className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded text-slate-900 text-xs"
+                            >
+                              <option value="narrow">Narrow (640px)</option>
+                              <option value="normal">Normal (768px)</option>
+                              <option value="wide">Wide (1024px)</option>
+                              <option value="full">Full Width</option>
+                            </select>
+                          </div>
+                        )}
                       </div>
                     )}
 

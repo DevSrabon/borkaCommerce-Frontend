@@ -1658,18 +1658,67 @@ export default function BlockRenderer({
     }
 
     case 'RICH_TEXT': {
+      const html = data.html_content || data.content || '<p>Start writing your content...</p>';
+      const titleEditing = isEditing('title');
+      const contentEditing = isEditing('html_content');
+
       return (
         <section className={layout.sectionClass} style={layout.style}>
           {bgImageLayer}
           <div className={layout.innerClass}>
-            {data.title && (
-              <h2 className={`${layout.headingFontClass} ${isMobile ? 'text-xl mb-4' : 'text-2xl sm:text-3xl mb-6'} font-bold`}>
+            {(data.title || titleEditing) && (
+              <h2
+                contentEditable={titleEditing}
+                suppressContentEditableWarning
+                onDoubleClick={(e) => {
+                  if (!onDataChange) return;
+                  e.stopPropagation();
+                  setInlineEditField('title');
+                }}
+                onBlur={(e) => {
+                  if (titleEditing) commitInlineEdit('title', e.currentTarget);
+                }}
+                className={`${layout.headingFontClass} ${isMobile ? 'text-xl mb-4' : 'text-2xl sm:text-3xl mb-6'} font-bold ${
+                  titleEditing
+                    ? 'outline-2 outline-dashed outline-[#e2285c] outline-offset-4 rounded cursor-text'
+                    : onDataChange ? 'cursor-text hover:outline-1 hover:outline-dashed hover:outline-[#2271b1] hover:rounded' : ''
+                }`}
+                title={onDataChange ? 'Double-click to edit title' : undefined}
+              >
                 {data.title}
               </h2>
             )}
             <div
-              className={`prose prose-invert ${isMobile ? 'prose-xs' : 'prose-sm sm:prose-base'} max-w-none opacity-90 leading-relaxed`}
-              dangerouslySetInnerHTML={{ __html: data.html_content || '<p>Start writing your content...</p>' }}
+              contentEditable={contentEditing}
+              suppressContentEditableWarning
+              onDoubleClick={(e) => {
+                if (!onDataChange) return;
+                e.stopPropagation();
+                setInlineEditField('html_content');
+              }}
+              onBlur={(e) => {
+                if (contentEditing && onDataChange) {
+                  const newHtml = e.currentTarget.innerHTML;
+                  if (newHtml !== html) {
+                    onDataChange(block.id, { ...data, html_content: newHtml, content: newHtml });
+                  }
+                  setInlineEditField(null);
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') {
+                  e.currentTarget.innerHTML = html;
+                  e.currentTarget.blur();
+                  setInlineEditField(null);
+                }
+              }}
+              className={`prose prose-neutral max-w-none leading-relaxed ${
+                contentEditing
+                  ? 'outline-2 outline-dashed outline-[#e2285c] outline-offset-4 rounded cursor-text bg-white/5 p-2'
+                  : onDataChange ? 'cursor-text hover:outline-1 hover:outline-dashed hover:outline-[#2271b1] hover:rounded' : ''
+              }`}
+              title={onDataChange ? 'Double-click to inline edit' : undefined}
+              dangerouslySetInnerHTML={contentEditing ? undefined : { __html: html }}
             />
           </div>
         </section>

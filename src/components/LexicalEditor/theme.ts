@@ -24,7 +24,7 @@ export const theme: EditorThemeClasses = {
     listitemChecked: 'editor-listitem-checked line-through text-muted-foreground',
     listitemUnchecked: 'editor-listitem-unchecked',
   },
-  image: 'editor-image inline-block relative max-w-full my-2',
+  image: 'editor-image block w-full relative my-2',
   link: 'editor-link text-primary underline hover:text-primary/80 transition-colors cursor-pointer',
   text: {
     bold: 'editor-text-bold font-bold',
