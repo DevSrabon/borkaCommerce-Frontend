@@ -12,6 +12,7 @@ import {
   FORMAT_ELEMENT_COMMAND,
   $getSelection,
   $isRangeSelection,
+  $isNodeSelection,
   COMMAND_PRIORITY_CRITICAL,
   ElementFormatType,
 } from 'lexical';
@@ -49,7 +50,7 @@ import {
   Minimize2,
   FileCode2,
 } from 'lucide-react';
-import { $createImageNode } from './ImageNode';
+import { $createImageNode, ImageNode } from './ImageNode';
 
 const FONT_FAMILIES = [
   'Arial',
@@ -215,7 +216,7 @@ export function ToolbarPlugin({
         }
 
         // Alignment
-        const format = element.getFormatType();
+        const format = (element as any).getFormatType ? (element as any).getFormatType() : (element as any).getFormat?.();
         setAlignment(format || 'left');
       }
     }
@@ -341,7 +342,7 @@ export function ToolbarPlugin({
 
     editor.update(() => {
       const selection = $getSelection();
-      if ($isNodeSelection(selection)) {
+      if (selection && $isNodeSelection(selection)) {
         const nodes = selection.getNodes();
         nodes.forEach((node) => {
           if (node instanceof ImageNode) {

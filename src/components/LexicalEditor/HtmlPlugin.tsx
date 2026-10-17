@@ -9,8 +9,7 @@ import {
   $isElementNode,
   $isDecoratorNode,
   $isTextNode,
-  ElementNode,
-  DecoratorNode,
+  LexicalNode,
   ParagraphNode,
 } from 'lexical';
 
@@ -112,7 +111,7 @@ export function HtmlPlugin({ value, onChange }: HtmlPluginProps) {
           const dom = parser.parseFromString(preprocessed, 'text/html');
           const nodes = $generateNodesFromDOM(editor, dom);
 
-          const validRootNodes: (ElementNode | DecoratorNode)[] = [];
+          const validRootNodes: LexicalNode[] = [];
           let currentParagraph: ParagraphNode | null = null;
 
           for (const node of nodes) {

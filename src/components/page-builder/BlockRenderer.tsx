@@ -669,9 +669,7 @@ export default function BlockRenderer({
           {/* In editor: div wrapper so button doesn't navigate; in frontend: real Link */}
           {onDataChange ? (
             <div
-              className={`inline-flex items-center gap-2 ${sizeClass} ${variantClass} ${
-                onDataChange ? 'hover:outline-2 hover:outline-dashed hover:outline-[#2271b1] hover:outline-offset-4 hover:rounded' : ''
-              }`}
+              className={`inline-flex items-center gap-2 ${sizeClass} ${variantClass} hover:outline-2 hover:outline-dashed hover:outline-[#2271b1] hover:outline-offset-4 hover:rounded`}
               style={layout.style}
             >
               {buttonInner}

@@ -22,7 +22,7 @@ export function PastePlugin({
   useEffect(() => {
     return editor.registerCommand(
       PASTE_COMMAND,
-      (event: ClipboardEvent) => {
+      (event: any) => {
         const clipboardData = event.clipboardData;
         if (!clipboardData) return false;
 
