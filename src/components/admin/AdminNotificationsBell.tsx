@@ -50,6 +50,11 @@ export default function AdminNotificationsBell() {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [pushEnabled, setPushEnabled] = useState(false);
 
+  const soundEnabledRef = useRef(soundEnabled);
+  soundEnabledRef.current = soundEnabled;
+  const pushEnabledRef = useRef(pushEnabled);
+  pushEnabledRef.current = pushEnabled;
+
   const panelRef = useRef<HTMLDivElement>(null);
   const prevUnreadRef = useRef<number>(0);
   const isInitialLoad = useRef<boolean>(true);
@@ -177,10 +182,10 @@ export default function AdminNotificationsBell() {
   };
 
   useEffect(() => {
-    fetchNotifications();
-    const interval = setInterval(fetchNotifications, 8000);
-    return () => clearInterval(interval);
-  }, [token, soundEnabled, pushEnabled]);
+    if (token) {
+      fetchNotifications();
+    }
+  }, [token]);
 
   // Real-Time Socket.IO Notification Stream
   useEffect(() => {
@@ -203,11 +208,11 @@ export default function AdminNotificationsBell() {
         });
         setUnreadCount((c) => c + 1);
 
-        if (soundEnabled) {
+        if (soundEnabledRef.current) {
           playNotificationChime();
         }
 
-        if (pushEnabled && typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+        if (pushEnabledRef.current && typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
           new Notification(newNotif.title, {
             body: newNotif.message,
             icon: '/favicon.ico',
@@ -227,7 +232,7 @@ export default function AdminNotificationsBell() {
         socket.disconnect();
       }
     };
-  }, [soundEnabled, pushEnabled]);
+  }, []);
 
   // Click outside to close panel
   useEffect(() => {

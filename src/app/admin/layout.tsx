@@ -2,6 +2,7 @@
 
 import { API_BASE_URL } from '@/config/api';
 import React, { useState, useEffect } from 'react';
+import { io, Socket } from 'socket.io-client';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useSelector } from 'react-redux';
@@ -122,8 +123,42 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         .catch(() => {});
     };
     fetchUnread();
-    const interval = setInterval(fetchUnread, 4000);
-    return () => clearInterval(interval);
+
+    let socket: Socket | null = null;
+    try {
+      socket = io(API_BASE_URL, {
+        transports: ['websocket', 'polling'],
+        reconnection: true,
+      });
+
+      socket.on('connect', () => {
+        socket?.emit('join_admin');
+      });
+
+      socket.on('admin_chat_unread_count', (data: { unread_total: number }) => {
+        if (typeof data?.unread_total === 'number') {
+          setChatUnread(data.unread_total);
+        }
+      });
+
+      socket.on('chat_message', () => {
+        fetchUnread();
+      });
+
+      socket.on('chat_session_deleted', () => {
+        fetchUnread();
+      });
+
+      socket.on('chat_all_sessions_deleted', () => {
+        setChatUnread(0);
+      });
+    } catch (_) {}
+
+    return () => {
+      if (socket) {
+        socket.disconnect();
+      }
+    };
   }, [token]);
 
   useEffect(() => {

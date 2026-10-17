@@ -227,9 +227,10 @@ export default function AdminSingleProductPage() {
     setTimeout(() => setCopiedSlug(false), 2000);
   };
 
-  const copyProductId = () => {
+  const copyProductIdentifier = () => {
     if (!product) return;
-    navigator.clipboard.writeText(product.id);
+    const textToCopy = product.product_number || product.variants?.[0]?.sku || product.slug;
+    navigator.clipboard.writeText(textToCopy);
     setCopiedId(true);
     setTimeout(() => setCopiedId(false), 2000);
   };
@@ -442,16 +443,28 @@ export default function AdminSingleProductPage() {
             <span className="font-mono">
               Slug: <strong className="text-foreground">{product.slug}</strong>
             </span>
-            <span>•</span>
-            <button
-              type="button"
-              onClick={copyProductId}
-              className="inline-flex items-center gap-1 font-mono hover:text-primary transition cursor-pointer"
-              title="Click to copy internal UUID"
-            >
-              <span>ID: {product.id.slice(0, 8)}...</span>
-              {copiedId ? <Check size={11} className="text-emerald-500" /> : <Copy size={11} />}
-            </button>
+            {product.product_number && (
+              <>
+                <span>•</span>
+                <button
+                  type="button"
+                  onClick={copyProductIdentifier}
+                  className="inline-flex items-center gap-1 font-mono hover:text-primary transition cursor-pointer"
+                  title="Click to copy Product No"
+                >
+                  <span>Product No: <strong className="text-foreground">{product.product_number}</strong></span>
+                  {copiedId ? <Check size={11} className="text-emerald-500" /> : <Copy size={11} />}
+                </button>
+              </>
+            )}
+            {product.variants?.[0]?.sku && (
+              <>
+                <span>•</span>
+                <span className="font-mono">
+                  SKU: <strong className="text-foreground">{product.variants[0].sku}</strong>
+                </span>
+              </>
+            )}
             {product.sku_prefix && (
               <>
                 <span>•</span>
@@ -785,17 +798,28 @@ export default function AdminSingleProductPage() {
                     </span>
                   </div>
                 )}
-                <div className="flex items-center justify-between pt-1 border-t border-border">
-                  <span>Product UUID:</span>
-                  <button
-                    type="button"
-                    onClick={copyProductId}
-                    className="font-mono text-primary hover:underline flex items-center gap-1 cursor-pointer"
-                  >
-                    <span>{product.id.slice(0, 10)}...</span>
-                    <Copy size={11} />
-                  </button>
-                </div>
+                {product.product_number && (
+                  <div className="flex items-center justify-between pt-1 border-t border-border">
+                    <span>Product No:</span>
+                    <button
+                      type="button"
+                      onClick={copyProductIdentifier}
+                      className="font-mono text-primary hover:underline flex items-center gap-1 cursor-pointer font-bold"
+                      title="Click to copy Product No"
+                    >
+                      <span>{product.product_number}</span>
+                      <Copy size={11} />
+                    </button>
+                  </div>
+                )}
+                {product.variants?.[0]?.sku && (
+                  <div className="flex items-center justify-between">
+                    <span>SKU:</span>
+                    <span className="text-foreground font-mono font-medium">
+                      {product.variants[0].sku}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           </div>

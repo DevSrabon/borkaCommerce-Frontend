@@ -120,21 +120,18 @@ export default function NetworkStatusBanner() {
     window.addEventListener('offline', handleBrowserOffline);
     window.addEventListener('online', handleBrowserOnline);
 
-    // Initial check after 4 seconds (avoids triggering during page load / HMR)
-    const initialTimer = setTimeout(() => {
-      verifyServerHealth();
-    }, 4000);
-
-    // Standing heartbeat check every 8s if down, or 35s if healthy
-    const heartbeatInterval = setInterval(() => {
-      verifyServerHealth();
-    }, serverDown ? 8000 : 35000);
+    // Only periodically recheck if server is currently down to detect recovery
+    let heartbeatInterval: NodeJS.Timeout | null = null;
+    if (serverDown) {
+      heartbeatInterval = setInterval(() => {
+        verifyServerHealth();
+      }, 10000);
+    }
 
     return () => {
       window.removeEventListener('offline', handleBrowserOffline);
       window.removeEventListener('online', handleBrowserOnline);
-      clearTimeout(initialTimer);
-      clearInterval(heartbeatInterval);
+      if (heartbeatInterval) clearInterval(heartbeatInterval);
     };
   }, [verifyServerHealth, serverDown]);
 

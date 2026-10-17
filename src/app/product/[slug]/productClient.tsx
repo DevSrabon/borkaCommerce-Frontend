@@ -419,9 +419,26 @@ export default function ProductClient({ product }: { product: ProductDetails }) 
 
       {/* Product Details Section */}
       <div className="space-y-3.5 lg:py-0">
-        <div className="space-y-1">
+        <div className="space-y-1.5">
           <h1 className="font-serif text-xl sm:text-2xl font-bold tracking-tight">{product.name}</h1>
-          <div className="flex items-center space-x-2">
+          
+          {/* Product Identification: Product No & SKU */}
+          {(product.product_number || selectedVariant?.sku) && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono flex-wrap">
+              {product.product_number && (
+                <span className="px-2 py-0.5 rounded bg-muted/70 border border-border/80 text-[11px] font-semibold">
+                  Product No: <strong className="text-foreground">{product.product_number}</strong>
+                </span>
+              )}
+              {selectedVariant?.sku && (
+                <span className="px-2 py-0.5 rounded bg-muted/70 border border-border/80 text-[11px] font-semibold">
+                  SKU: <strong className="text-foreground">{selectedVariant.sku}</strong>
+                </span>
+              )}
+            </div>
+          )}
+
+          <div className="flex items-center space-x-2 pt-0.5">
             <div className="flex items-center text-amber-500 text-xs sm:text-sm">
               {[1, 2, 3, 4, 5].map((star) => (
                 <Star

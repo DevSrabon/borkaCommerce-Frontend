@@ -169,37 +169,18 @@ export default function CustomerChatWidget() {
     }
   };
 
-  // Heartbeat to keep customer presence active
+  // Fetch initial message history once when chat is opened
   useEffect(() => {
-    if (!sessionId) return;
-    const sendHeartbeat = () => {
-      fetch(`${API_BASE_URL}/ecommerce/chat/heartbeat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ session_id: sessionId }),
-      }).catch(() => {});
-    };
-
-    sendHeartbeat();
-    const heartbeatInterval = setInterval(sendHeartbeat, 20000);
-    return () => clearInterval(heartbeatInterval);
-  }, [sessionId]);
-
-  useEffect(() => {
-    if (!sessionId) return;
+    if (!sessionId || !isOpen) return;
     fetchMessages(sessionId);
-
-    const interval = setInterval(() => {
-      fetchMessages(sessionId);
-    }, 6000);
-
-    return () => clearInterval(interval);
   }, [sessionId, isOpen]);
 
   // Real-Time Socket.IO Synchronization for customer
   useEffect(() => {
     if (!sessionId) return;
     let socket: Socket | null = null;
+    let presenceTimer: NodeJS.Timeout | null = null;
+
     try {
       socket = io(API_BASE_URL, {
         transports: ['websocket', 'polling'],
@@ -209,6 +190,13 @@ export default function CustomerChatWidget() {
       socket.on('connect', () => {
         socket?.emit('join_session', { session_id: sessionId });
       });
+
+      // Maintain active customer presence over WebSocket (zero HTTP API requests)
+      presenceTimer = setInterval(() => {
+        if (socket?.connected) {
+          socket.emit('customer_presence', { session_id: sessionId });
+        }
+      }, 25000);
 
       socket.on('chat_message', (msg: ChatMessage) => {
         if (!msg) return;
@@ -229,6 +217,7 @@ export default function CustomerChatWidget() {
     } catch (_) {}
 
     return () => {
+      if (presenceTimer) clearInterval(presenceTimer);
       if (socket) socket.disconnect();
     };
   }, [sessionId, isOpen]);

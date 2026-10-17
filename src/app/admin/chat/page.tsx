@@ -240,9 +240,9 @@ export default function AdminChatPage() {
   };
 
   useEffect(() => {
-    fetchSessions();
-    const interval = setInterval(fetchSessions, 6000);
-    return () => clearInterval(interval);
+    if (token) {
+      fetchSessions();
+    }
   }, [token]);
 
   // Socket.IO Real-Time Chat Synchronization
@@ -316,11 +316,6 @@ export default function AdminChatPage() {
         headers: { Authorization: `Bearer ${token}` },
       }).catch(() => {});
     }
-
-    const interval = setInterval(() => {
-      fetchActiveMessages(activeSessionId, false);
-    }, 5000);
-    return () => clearInterval(interval);
   }, [activeSessionId, token]);
 
   // Smart auto-scroll: ONLY when switching session or when new messages arrive while at bottom
