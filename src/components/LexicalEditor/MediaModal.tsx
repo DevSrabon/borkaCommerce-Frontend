@@ -77,12 +77,12 @@ export function MediaModal({ isOpen, onClose, onInsert }: MediaModalProps) {
     try {
       const formData = new FormData();
       formData.append('image', file);
-      formData.append('folder', 'blog');
+      formData.append('folder', 'media');
 
       const headers: Record<string, string> = {};
       if (token) headers['Authorization'] = `Bearer ${token}`;
 
-      const res = await fetch(`${API_BASE_URL}/admin/media/upload`, {
+      const res = await fetch(`${API_BASE_URL}/admin/media/upload?folder=media`, {
         method: 'POST',
         headers,
         body: formData,
@@ -90,7 +90,7 @@ export function MediaModal({ isOpen, onClose, onInsert }: MediaModalProps) {
 
       if (res.ok) {
         const data = await res.json();
-        const uploadedUrl = data.url || (data.item && data.item.url);
+        const uploadedUrl = data.url || data.imageUrl || (data.item && (data.item.url || data.item.imageUrl));
         if (uploadedUrl) {
           onInsert({
             src: uploadedUrl,
